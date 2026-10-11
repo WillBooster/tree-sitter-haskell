@@ -26,7 +26,8 @@ upstream's corpus are those of upstream's 0.23.1, except for:
   written `token(prec(0, /\n/))` in both places. The WillBooster/tree-sitter generator turns an unnamed pattern in
   `extras` into a lexer separator, which leaves the external token of the same pattern without a symbol, and the
   generator then fails. Precedence 0 is the default, so the token lexes as before, and the generated parser has the
-  same symbols as upstream's. Restore upstream's `/\n/` once the generator keeps such a pattern as a token.
+  same symbols as upstream's. A later upstream version of these files needs the same two lines until the generator
+  keeps such a pattern as a token.
 - **`queries/highlights.scm`**: three patterns that match fields of the supertype `decl` are written through its
   subtypes (`decl/function`, `decl/bind`, `decl/signature`), as upstream's repository has them since
   `tree-sitter/tree-sitter-haskell@0b2ebf7`. A parser of ABI 15 or later carries the supertypes, and the runtime then

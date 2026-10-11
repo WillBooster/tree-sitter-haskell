@@ -8,12 +8,11 @@ const oxfmtResolvedConfig: OxfmtConfig = oxfmtConfig.default ?? oxfmtConfig;
 // wbfy:end oxfmt-base
 
 // `tree-sitter generate` writes src/ and `tree-sitter init` writes bindings/ in their own style. grammar.js and
-// grammar/ stay identical to upstream's files, so that `diff` shows the grammar is unchanged and a later upstream
-// version replaces them. examples/ holds parser inputs.
+// grammar/ keep upstream's text except for the lines README.md lists under "Differences from upstream", so that `diff`
+// against upstream shows exactly those lines.
 oxfmtResolvedConfig.ignorePatterns = [
   ...(oxfmtResolvedConfig.ignorePatterns ?? []),
   'bindings/**',
-  'examples/**',
   'grammar.js',
   'grammar/**',
   'src/**',
