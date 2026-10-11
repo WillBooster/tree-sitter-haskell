@@ -12806,8 +12806,15 @@
       "value": "\\p{Zs}"
     },
     {
-      "type": "PATTERN",
-      "value": "\\n"
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 0,
+        "content": {
+          "type": "PATTERN",
+          "value": "\\n"
+        }
+      }
     },
     {
       "type": "PATTERN",
@@ -13191,8 +13198,15 @@
       "name": "_consym"
     },
     {
-      "type": "PATTERN",
-      "value": "\\n"
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 0,
+        "content": {
+          "type": "PATTERN",
+          "value": "\\n"
+        }
+      }
     }
   ],
   "inline": [
@@ -13263,5 +13277,6 @@
     "statement",
     "qualifier",
     "guard"
-  ]
+  ],
+  "reserved": {}
 }

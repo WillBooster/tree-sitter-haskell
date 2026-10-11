@@ -56,7 +56,8 @@ module.exports = grammar({
    */
   extras: $ => [
     /\p{Zs}/,
-    /\n/,
+    // Not upstream's bare `/\n/` here and in grammar/externals.js: see "Differences from upstream" in README.md.
+    token(prec(0, /\n/)),
     /\r/,
     $.cpp,
     $.comment,

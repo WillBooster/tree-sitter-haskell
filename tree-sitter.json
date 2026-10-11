@@ -1,14 +1,12 @@
 {
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
   "grammars": [
     {
       "name": "haskell",
       "camelcase": "Haskell",
       "scope": "source.haskell",
       "path": ".",
-      "file-types": [
-        "hs",
-        "hs-boot"
-      ],
+      "file-types": ["hs", "hs-boot"],
       "highlights": "queries/highlights.scm",
       "injection-regex": "^(hs|haskell)$"
     }
@@ -19,29 +17,21 @@
     "description": "Haskell grammar for tree-sitter",
     "authors": [
       {
-        "name": "Rick Winfrey"
-      },
-      {
-        "name": "Max Brunsfeld",
-        "email": "maxbrunsfeld@gmail.com"
-      },
-      {
-        "name": "Owen Shepherd"
-      },
-      {
-        "name": "Torsten Schmits"
+        "name": "WillBooster Inc."
       }
     ],
     "links": {
-      "repository": "https://github.com/tree-sitter/tree-sitter-haskell"
+      "repository": "https://github.com/WillBooster/tree-sitter-haskell"
     }
   },
   "bindings": {
-    "c": true,
-    "go": true,
-    "node": true,
-    "python": true,
+    "c": false,
+    "go": false,
+    "java": false,
+    "node": false,
+    "python": false,
     "rust": true,
-    "swift": true
+    "swift": false,
+    "zig": false
   }
 }
