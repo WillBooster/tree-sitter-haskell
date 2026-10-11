@@ -1,0 +1,7 @@
+# script/generate writes parser.c, tree_sitter/, and the JSON files with trailing whitespace and without a final
+# newline, and CI fails when the committed files differ from a regeneration, so editors must keep them as they are.
+# scanner.c and unicode.h are upstream's files, kept byte for byte. Kept here because the root .editorconfig is
+# generated.
+[*]
+insert_final_newline = unset
+trim_trailing_whitespace = false
