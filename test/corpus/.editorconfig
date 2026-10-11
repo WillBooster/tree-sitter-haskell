@@ -1,5 +1,0 @@
-# The corpus cases are parser inputs: trailing whitespace is part of what some of them exercise, so editors must keep
-# the lines as they are. Kept here because the root .editorconfig is generated.
-[*.txt]
-insert_final_newline = unset
-trim_trailing_whitespace = false
