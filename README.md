@@ -14,8 +14,10 @@ to its authors and contributors. This is not an official release of that project
 
 This fork keeps the grammar of upstream's version 0.23.1 and generates the parser with the
 [WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator at ABI 16, whose compact parse tables
-need that fork's runtime. Upstream's README at that version lists the supported language extensions and explains how
-to query the grammar's supertypes.
+need that fork's runtime.
+[Upstream's README at that version](https://github.com/tree-sitter/tree-sitter-haskell/blob/v0.23.1/README.md) lists
+the supported language extensions and, under "Querying", explains how to query the grammar's supertypes; it is the
+readme that the comments in `grammar.js` refer to.
 
 ## Differences from upstream
 
