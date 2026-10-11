@@ -58,11 +58,11 @@ In browsers, serve both `.wasm` files and load them by URL (the example uses Vit
 ```js
 import { Language, Parser } from '@willbooster/web-tree-sitter';
 import runtimeUrl from '@willbooster/web-tree-sitter/web-tree-sitter.wasm?url';
-import goUrl from '@willbooster/tree-sitter-haskell/tree-sitter-haskell.wasm?url';
+import haskellUrl from '@willbooster/tree-sitter-haskell/tree-sitter-haskell.wasm?url';
 
 await Parser.init({ locateFile: () => runtimeUrl });
 const parser = new Parser();
-parser.setLanguage(await Language.load(goUrl));
+parser.setLanguage(await Language.load(haskellUrl));
 ```
 
 Cloudflare Workers do not allow compiling Wasm at run time, so import both `.wasm` files as modules, with or without
@@ -71,11 +71,11 @@ Node.js compatibility:
 ```js
 import { Language, Parser } from '@willbooster/web-tree-sitter';
 import runtime from '@willbooster/web-tree-sitter/web-tree-sitter.wasm';
-import go from '@willbooster/tree-sitter-haskell/tree-sitter-haskell.wasm';
+import haskell from '@willbooster/tree-sitter-haskell/tree-sitter-haskell.wasm';
 
 await Parser.init({ wasmModule: runtime });
 const parser = new Parser();
-parser.setLanguage(await Language.load(go));
+parser.setLanguage(await Language.load(haskell));
 ```
 
 The package also ships `grammar.js` with the files in `grammar/` it loads, the queries in `queries/`, and the node types in `src/node-types.json`.
