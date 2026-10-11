@@ -15,14 +15,15 @@ parser.setLanguage(await Language.load(WasmPath));
 
 // The tests load the existing Wasm build, so a stale one would hide an edit that makes parsing slower than linear.
 test('uses a Wasm build built from the current parser', () => {
-  const grammarFiles = fs.readdirSync(path.join(Root, 'grammar')).map((name) => `grammar/${name}`);
+  const filesIn = (directory: string): string[] =>
+    fs.readdirSync(path.join(Root, directory)).map((name) => `${directory}/${name}`);
   const sources = [
     'grammar.js',
-    ...grammarFiles,
+    ...filesIn('grammar'),
     'src/parser.c',
     'src/scanner.c',
     'src/unicode.h',
-    'src/tree_sitter/parser.h',
+    ...filesIn('src/tree_sitter'),
   ].map((name) => fs.statSync(path.join(Root, name)).mtimeMs);
   expect(
     Math.max(generationInputMtime(Root), ...sources) > fs.statSync(WasmPath).mtimeMs,
