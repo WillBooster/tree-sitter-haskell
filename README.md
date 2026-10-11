@@ -25,7 +25,7 @@ readme that the comments in `grammar.js` refer to.
 upstream's corpus are those of upstream's 0.23.1, except for:
 
 - **The newline token** (`grammar.js`, `grammar/externals.js`): the entry `/\n/` of `extras` and of `externals` is
-  written `token(prec(0, /\n/))` in both places. The WillBooster/tree-sitter generator turns an unnamed pattern in
+  written `token(prec(0, /\n/))` in both places, with a comment line above the one in `grammar.js` that points here. The WillBooster/tree-sitter generator turns an unnamed pattern in
   `extras` into a lexer separator, which leaves the external token of the same pattern without a symbol, and the
   generator then fails. Precedence 0 is the default, so the token lexes as before, and the generated parser has the
   same symbols as upstream's. A later upstream version of these files needs the same two lines until the generator
