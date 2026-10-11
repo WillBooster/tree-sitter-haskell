@@ -1,394 +1,153 @@
-# tree-sitter-haskell
+# @willbooster/tree-sitter-haskell
 
-[![CI][ci]](https://github.com/tree-sitter/tree-sitter-haskell/actions/workflows/ci.yml)
-[![discord][discord]](https://discord.gg/w7nTvsVJhm)
-[![matrix][matrix]](https://matrix.to/#/#tree-sitter-chat:matrix.org)
-[![crates][crates]](https://crates.io/crates/tree-sitter-haskell)
-[![npm][npm]](https://www.npmjs.com/package/tree-sitter-haskell)
-[![pypi][pypi]](https://pypi.org/project/tree-sitter-haskell)
+[![npm version](https://img.shields.io/npm/v/@willbooster/tree-sitter-haskell.svg)](https://www.npmjs.com/package/@willbooster/tree-sitter-haskell)
+[![license](https://img.shields.io/npm/l/@willbooster/tree-sitter-haskell.svg)](https://www.npmjs.com/package/@willbooster/tree-sitter-haskell)
+[![Test](https://github.com/WillBooster/tree-sitter-haskell/actions/workflows/test.yml/badge.svg)](https://github.com/WillBooster/tree-sitter-haskell/actions/workflows/test.yml)
+[![Test rust](https://github.com/WillBooster/tree-sitter-haskell/actions/workflows/test-rust.yml/badge.svg)](https://github.com/WillBooster/tree-sitter-haskell/actions/workflows/test-rust.yml)
+[![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
+[![wbfy](https://img.shields.io/badge/wbfy-20.36.11-1e90ff.svg)](https://github.com/WillBooster/shared/tree/main/packages/wbfy)
+[![crates.io](https://img.shields.io/crates/v/willbooster-tree-sitter-haskell.svg)](https://crates.io/crates/willbooster-tree-sitter-haskell)
 
-Haskell grammar for [tree-sitter].
+Haskell grammar for [tree-sitter](https://github.com/tree-sitter/tree-sitter), forked from
+[tree-sitter/tree-sitter-haskell](https://github.com/tree-sitter/tree-sitter-haskell). We are grateful
+to its authors and contributors. This is not an official release of that project.
 
-# References
+This fork keeps the grammar of upstream's version 0.23.1 and generates the parser with the
+[WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator at ABI 16, whose compact parse tables
+need that fork's runtime. Upstream's README at that version lists the supported language extensions and explains how
+to query the grammar's supertypes.
 
-- [Haskell 2010 Language Report – Syntax References][ref]
-- [GHC Language Extensions][ext]
+## Differences from upstream
 
-# Supported Language Extensions
+`grammar.js`, the files in `grammar/`, the external scanner (`src/scanner.c`, `src/unicode.h`), `queries/`, and
+upstream's corpus are those of upstream's 0.23.1, except for:
 
-These extensions are supported ✅, unsupported ❌ or not applicable because they don't involve parsing ➖️:
+- **The newline token** (`grammar.js`, `grammar/externals.js`): the entry `/\n/` of `extras` and of `externals` is
+  written `token(prec(0, /\n/))` in both places. The WillBooster/tree-sitter generator turns an unnamed pattern in
+  `extras` into a lexer separator, which leaves the external token of the same pattern without a symbol, and the
+  generator then fails. Precedence 0 is the default, so the token lexes as before, and the generated parser has the
+  same symbols as upstream's. Restore upstream's `/\n/` once the generator keeps such a pattern as a token.
+- **`queries/highlights.scm`**: three patterns that match fields of the supertype `decl` are written through its
+  subtypes (`decl/function`, `decl/bind`, `decl/signature`), as upstream's repository has them since
+  `tree-sitter/tree-sitter-haskell@0b2ebf7`. A parser of ABI 15 or later carries the supertypes, and the runtime then
+  rejects the 0.23.1 patterns as impossible; upstream's own CLI 0.27.0 does so as well.
+- **`test/corpus/null-characters.txt`** is added, because the fuzz job checks that every NUL character of the corpus
+  reaches the fuzz seeds and upstream's corpus has none.
 
-- AllowAmbiguousTypes ➖️
-- ApplicativeDo ➖️
-- Arrows ❌
-- BangPatterns ✅
-- BinaryLiterals ✅
-- BlockArguments ✅
-- CApiFFI ✅
-- ConstrainedClassMethods ✅
-- ConstraintKinds ✅
-- CPP ✅
-- CUSKs ✅
-- DataKinds ✅
-- DatatypeContexts ✅
-- DefaultSignatures ✅
-- DeriveAnyClass ➖️
-- DeriveDataTypeable ➖️
-- DeriveFoldable ➖️
-- DeriveFunctor ➖️
-- DeriveGeneric ➖️
-- DeriveLift ➖️
-- DeriveTraversable ➖️
-- DerivingStrategies ✅
-- DerivingVia ✅
-- DisambiguateRecordFields ➖️
-- DuplicateRecordFields ➖️
-- EmptyCase ✅
-- EmptyDataDecls ✅
-- EmptyDataDeriving ✅
-- ExistentialQuantification ✅
-- ExplicitForAll ✅
-- ExplicitNamespaces ✅
-- ExtendedDefaultRules ➖️
-- FlexibleContexts ✅
-- FlexibleInstances ✅
-- ForeignFunctionInterface ✅
-- FunctionalDependencies ✅
-- GADTs ✅
-- GADTSyntax ✅
-- GeneralisedNewtypeDeriving ➖️
-- GHCForeignImportPrim ✅
-- Haskell2010 ➖️
-- Haskell98 ➖️
-- HexFloatLiterals ✅
-- ImplicitParams ✅
-- ImplicitPrelude ➖️
-- ImportQualifiedPost ✅
-- ImpredicativeTypes ➖️
-- IncoherentInstances ➖️
-- InstanceSigs ✅
-- InterruptibleFFI ✅
-- KindSignatures ✅
-- LambdaCase ✅
-- LexicalNegation ❌
-- LiberalTypeSynonyms ✅
-- LinearTypes ✅
-- ListTuplePuns ✅
-- MagicHash ✅
-- Modifiers ❌
-- MonadComprehensions ➖️
-- MonadFailDesugaring ➖️
-- MonoLocalBinds ➖️
-- MonomorphismRestriction ➖️
-- MultiParamTypeClasses ✅
-- MultiWayIf ✅
-- NamedFieldPuns ✅
-- NamedWildCards ✅
-- NegativeLiterals ➖️
-- NondecreasingIndentation ✅
-- NPlusKPatterns ➖️
-- NullaryTypeClasses ✅
-- NumDecimals ➖️
-- NumericUnderscores ✅
-- OverlappingInstances ➖️
-- OverloadedLabels ✅
-- OverloadedLists ➖️
-- OverloadedRecordDot ✅
-- OverloadedRecordUpdate ✅
-- OverloadedStrings ➖️
-- PackageImports ✅
-- ParallelListComp ✅
-- PartialTypeSignatures ✅
-- PatternGuards ✅
-- PatternSynonyms ✅
-- PolyKinds ➖️
-- PostfixOperators ➖️
-- QualifiedDo ✅
-- QuantifiedConstraints ✅
-- QuasiQuotes ✅
-- Rank2Types ✅
-- RankNTypes ✅
-- RebindableSyntax ➖️
-- RecordWildCards ➖️
-- RecursiveDo ✅
-- RequiredTypeArguments ✅
-- RoleAnnotations ✅
-- Safe ➖️
-- ScopedTypeVariables ✅
-- StandaloneDeriving ✅
-- StandaloneKindSignatures ✅
-- StarIsType ✅
-- StaticPointers ❌
-- Strict ➖️
-- StrictData ✅
-- TemplateHaskell ✅
-- TemplateHaskellQuotes ✅
-- TraditionalRecordSyntax ➖️
-- TransformListComp ✅
-- Trustworthy ➖️
-- TupleSections ✅
-- TypeAbstractions ✅
-- TypeApplications ✅
-- TypeData ✅
-- TypeFamilies ✅
-- TypeFamilyDependencies ✅
-- TypeInType ✅
-- TypeOperators ✅
-- TypeSynonymInstances ➖️
-- UnboxedSums ✅
-- UnboxedTuples ✅
-- UndecidableInstances ➖️
-- UndecidableSuperClasses ➖️
-- UnicodeSyntax ✅
-- UnliftedFFITypes ➖️
-- UnliftedNewtypes ✅
-- Unsafe ➖️
-- ViewPatterns ✅
+A NUL character inside a string or character literal parses as part of the literal, where upstream's prebuilt parser
+reports an error: the lexers of the WillBooster/tree-sitter generator let character classes match a NUL character.
 
-# Bugs
+## Usage
 
-## CPP
+The npm package ships `tree-sitter-haskell.wasm` for
+[@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter) version 1.4.3 or later, which runs in Node.js, Bun, browsers, and Cloudflare Workers. In Node.js and Bun, load the grammar from its path:
 
-Preprocessor `#elif` and `#else` directives cannot be handled correctly, since the parser state would have to be
-manually reset to what it was at the `#if`.
-As a workaround, the code blocks in the alternative branches are parsed as part of the directives.
+```js
+import { fileURLToPath } from 'node:url';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 
-# Querying
-
-The grammar contains several [supertypes](https://tree-sitter.github.io/tree-sitter/using-parsers#static-node-types),
-which group multiple other node types under a single name.
-
-Supertype names do not occur as extra nodes in parse trees, but they can be used in queries in special ways:
-
-- As an alias, matching any of their subtypes
-- As prefix for one of their subtypes, matching its symbol only when it occurs as a production of the supertype
-
-For example, the query `(expression)` matches the nodes `infix`, `record`, `projection`, `constructor`, and the second
-and third `variable` in this tree for `cats <> Cat {mood = moods.sleepy}`:
-
-```
-(infix
-  (variable)
-  (operator)
-  (record
-    (constructor)
-    (field_update
-      (field_name (variable))
-      (projection (variable) (field_name (variable)))))))))
+await Parser.init();
+const parser = new Parser();
+const wasmPath = fileURLToPath(import.meta.resolve('@willbooster/tree-sitter-haskell/tree-sitter-haskell.wasm'));
+parser.setLanguage(await Language.load(wasmPath));
+const tree = parser.parse('main = putStrLn "Hello World!"\n');
 ```
 
-The two occurrences of `variable` in `field_name` (`mood` and `sleepy`) are not expressions, but record field names part
-of a composite `record` expression.
+In browsers, serve both `.wasm` files and load them by URL (the example uses Vite's `?url` imports):
 
-Matching `variable` nodes specifically that are expressions is possible with the second special form.
-A query for `(expression/variable)` will match only the other two, `cats` and `moods`.
+```js
+import { Language, Parser } from '@willbooster/web-tree-sitter';
+import runtimeUrl from '@willbooster/web-tree-sitter/web-tree-sitter.wasm?url';
+import goUrl from '@willbooster/tree-sitter-haskell/tree-sitter-haskell.wasm?url';
 
-The grammar's supertypes consist of the following sets:
-
-- [`expression`](./grammar/exp.js)
-
-  Rules that are valid in any expression position, excluding type applications, explicit types and expression
-  signatures.
-
-- [`pattern`](./grammar/pat.js)
-
-  Rules that are valid in any pattern position, excluding type binders, explicit types and pattern signatures.
-
-- [`type`](./grammar/type.js)
-
-  Types that are either atomic (have no ambiguous associativity, like bracketed constructs, variables and type
-  constructors), applied types or infix types.
-
-- [`quantified_type`](./grammar/type.js)
-
-  Types prefixed with a `forall`, context or function parameter.
-
-- [`constraint`](./grammar/constraint.js)
-
-  Almost the same rules as `type`, but mirrored for use in contexts.
-
-- [`constraints`](./grammar/constraints.js)
-
-  Analog of `quantified_type`, for constraints with `forall` or context.
-
-- [`type_param`](./grammar/type.js)
-
-  Atomic nodes in type and class heads, like the three nodes following `A` in `data A @k a (b :: k)`.
-
-- [`declaration`](./grammar/module.js)
-
-  All top-level declarations, like functions and data types.
-
-- [`decl`](./grammar/decl.js)
-
-  Shorthand for declarations that are also valid in local bindings (`let` and `where`) and in class and instance bodies,
-  except for fixity declarations.
-  Consists of `signature`, `function` and `bind`.
-
-- [`class_decl` and `instance_decl`](./grammar/class.js)
-
-  All declarations that are valid in classes and instances, which includes associated type and data families.
-
-- [`statement`](./grammar/exp.js)
-
-  Different forms of `do`-notation statements.
-
-- [`qualifier`](./grammar/exp.js)
-
-  Different forms of list comprehension qualifiers.
-
-- [`guard`](./grammar/exp.js)
-
-  Different forms of guards in function equations and case alternatives.
-
-# Development
-
-The main driver for generating and testing the parser for this grammar is the [tree-sitter CLI][cli].
-Other components of the project require additional tools, described below.
-
-Some are made available through `npm` – for example, `npx tree-sitter` runs the CLI.
-If you don't have `tree-sitter` available otherwise, prefix all the commands in the following sections with `npx`.
-
-## Output path
-
-The CLI writes the shared library containing the parser to the directory denoted by `$TREE_SITTER_LIBDIR`.
-If that variable is unset, it defaults to `$HOME/.cache/tree-sitter/lib`.
-
-In order to avoid clobbering this global directory with development versions, you can set the env var to a local path:
-
-```
-export TREE_SITTER_LIBDIR=$PWD/.lib
+await Parser.init({ locateFile: () => runtimeUrl });
+const parser = new Parser();
+parser.setLanguage(await Language.load(goUrl));
 ```
 
-## The grammar
+Cloudflare Workers do not allow compiling Wasm at run time, so import both `.wasm` files as modules, with or without
+Node.js compatibility:
 
-The javascript file `grammar.js` contains the entry point into the grammar's production rules.
-Please consult the [tree-sitter documentation][grammar-docs] for a comprehensive introduction to the syntax and
-semantics.
+```js
+import { Language, Parser } from '@willbooster/web-tree-sitter';
+import runtime from '@willbooster/web-tree-sitter/web-tree-sitter.wasm';
+import go from '@willbooster/tree-sitter-haskell/tree-sitter-haskell.wasm';
 
-Parsing starts with the first item in the `rules` field:
-
-```javascript
-{
-  rules: {
-    haskell: $ => seq(
-      optional($.header),
-      optional($._body),
-    ),
-  }
-}
+await Parser.init({ wasmModule: runtime });
+const parser = new Parser();
+parser.setLanguage(await Language.load(go));
 ```
 
-## Generating the parser
+The package also ships `grammar.js` with the files in `grammar/` it loads, the queries in `queries/`, and the node types in `src/node-types.json`.
 
-The first step in the development workflow converts the javascript rule definitions to C code in `src/parser.c`:
+In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-haskell) and on
+[willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter), the runtime this package is tested and
+fuzzed with:
 
-```
-$ tree-sitter generate
-```
-
-Two byproducts of this process are written to `src/grammar.json` and `src/node-types.json`.
-
-## Compiling the parser
-
-The C code is automatically compiled by most of the test tools mentioned below, but you can instruct tree-sitter to do
-it in one go:
-
-```
-$ tree-sitter generate --build
+```toml
+[dependencies]
+tree-sitter = { package = "willbooster-tree-sitter", version = "1.4.3" }
+tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "1" }
 ```
 
-If you've set `$TREE_SITTER_LIBDIR` as mentioned above, the shared object will be written to `$PWD/.lib/haskell.so`.
-
-Aside from the generated `src/parser.c`, tree-sitter will also compile and link `src/scanner.c` into this object.
-This file contains the _external scanner_, which is a custom extension of the built-in lexer whose purpose is to handle
-language constructs that cannot be expressed (efficiently) in the javascript grammar, like Haskell layouts.
-
-### WebAssembly
-
-The parser can be compiled to WebAssembly as well, which requires `emscripten`:
-
-```
-$ tree-sitter build --wasm
+```rust
+let mut parser = tree_sitter::Parser::new();
+parser.set_language(&tree_sitter_haskell::LANGUAGE.into())?;
 ```
 
-The resulting binary is written to `$PWD/tree-sitter-haskell.wasm`.
+## Development
 
-## Testing the parser
-
-The most fundamental test infrastructure for tree-sitter grammars consists of a set of code snippets with associated
-reference ASTs stored in `./test/corpus/*.txt`.
-
-```
-$ tree-sitter test
-```
-
-Individual tests can be run by specifying (a substring of) their description with `-f`:
-
-```
-$ tree-sitter test -f 'module: exports empty'
+```sh
+mise install
+bun install --frozen-lockfile
+bun run test/ci-setup # installs Chromium for the browser test
+bun run build/ci
+bun run test
+script/parse-examples
+cargo test
 ```
 
-The project contains several other types of tests:
+The scripts and tests generate, build, test, and parse with `script/tree-sitter`, the tree-sitter CLI of the
+WillBooster/tree-sitter runtime version locked in `Cargo.lock`, since the generator and the runtime of upstream's CLI are
+not the ones this package ships with. Its first run downloads that CLI from the runtime's GitHub Release, or builds it
+with `cargo` (whose build runs the CMake that `mise.toml` pins) when the download fails or the release has no binary that runs here. Run other CLI commands through it as
+well (e.g. `script/tree-sitter parse file.hs`).
 
-- `test/parse/run.bash [update] [test names ...]` parses the files in `test/parse/*.hs` and compares the output with
-  `test/parse/*.target`.
-  If `update` is specified as the first argument, it will update the `.target` file for the first failing test.
+`bun run generate` records a fresh ABI 16 generation profile from the applicable `test/corpus` cases and Git-tracked
+files in `examples/`, then generates compact parser tables. The parser also embeds metadata from `tree-sitter.json`. After changing a grammar file,
+`tree-sitter.json`, a corpus case, or a tracked example,
+regenerate and commit `src/`. Stage added or removed examples with `git add -A examples` before generation so the profile uses the intended file list.
+Profiles in `.tmp/generation-profiles/` are temporary and must not be committed. `bun run build-wasm`, `bun run build/ci`,
+and the release build regenerate the parsers before compiling them.
 
-- `test/query/run.bash [update] [test names ...]` parses the files in `test/query/*.hs`, applies the queries in
-  `test/query/*.query` and compares the output with `test/query/*.target`, similar to `test/parse`.
+`bun run test` runs:
 
-- `test/rust/parse-test.rs` contains a few tests that use tree-sitter's Rust API to extract the test ranges for
-  terminals in a slightly more convenient way.
-  This requires `cargo` to be installed, and can be executed with `cargo test` (which also runs the tests in
-  `bindings/rust`).
+- the corpus in `test/corpus`, with the native build and with the Wasm build (the first run downloads the WASI SDK);
+- an incremental-parsing check (`test/unit/incremental.test.ts`): `script/fuzz-corpus` runs `tree-sitter fuzz`, which
+  edits each corpus case at random, reparses it, undoes the edits, and reparses again. `TREE_SITTER_SEED`,
+  `TREE_SITTER_ITERATIONS`, and `TREE_SITTER_EDITS` run other or more edits. It skips the eleven cases that
+  upstream's own parser also reparses differently from a fresh parse (see `script/fuzz-corpus`);
+- a check that the real-world Haskell files in `examples/`, the checked-in ones and those of the cloned repositories, fail to
+  parse exactly as listed in `script/known-failures.txt`; upstream's prebuilt parser fails on the same files. The first run clones the repositories. The example repositories are pinned to commits in
+  `script/parse-examples`. After a grammar change or a moved pin alters that list, `script/parse-examples` rewrites it;
+  review its diff before committing;
+- a performance check (`test/unit/performance.test.ts`) that recovering from an error on each line takes linear
+  time, since consumers parse files while they are being edited. It loads the Wasm build through
+  @willbooster/web-tree-sitter, which `bun run build/ci` rebuilds after regenerating the parser;
+- a check (`test/unit/runtimeVersion.test.ts`) that `@willbooster/web-tree-sitter` in `package.json` and
+  `willbooster-tree-sitter` in `Cargo.lock` are the same version, since the Wasm tests run on the former and the Rust
+  tests, the fuzzer, and the CLI on the latter;
+- tests that load the Wasm build with @willbooster/web-tree-sitter in Chromium (`test/e2e/browser.test.ts`) and in
+  Cloudflare Workers with and without Node.js compatibility (`test/e2e/workers.test.ts`).
 
-- `test/parse-libs [wasm]` clones a set of Haskell libraries to `test/libs` and parses the entire codebase.
-  When invoked as `test/parse-libs wasm`, it will use the WebAssembly parser.
-  This requires `bc` to be installed.
+The tests and `script/parse-examples` compile the parser into `.tmp/tree-sitter-lib` rather than the CLI's cache shared
+by every checkout; `script/fuzz-corpus` builds a parser of its own in `.tmp/fuzz` for each run and deletes it
+afterwards.
 
-- `test/parse-lib name [wasm]` parses only the library `name` in that directory (without cloning the repository).
+CI also runs these tests on Linux arm64 and macOS, where the CLI compiles the parser and the scanner natively, and fuzzes the parser
+with libFuzzer and sanitizers (`.github/workflows/robustness.yml`).
 
-### Debugging
+### References
 
-The shared library built by `tree-sitter test` includes debug symbols, so if the scanner segfaults you can just run
-`coredumpctl debug` to inspect the backtrace and memory:
-
-```
-newline_lookahead () at src/scanner.c:2583
-2583                ((Newline *) 0)->indent = 5;
-(gdb) bt
-#0  newline_lookahead () at src/scanner.c:2583
-#1  0x00007ffff7a0740e in newline_start () at src/scanner.c:2604
-#2  scan () at src/scanner.c:2646
-#3  eval () at src/scanner.c:2684
-#4  tree_sitter_haskell_external_scanner_scan (payload=<optimized out>, lexer=<optimized out>,
-    valid_symbols=<optimized out>) at src/scanner.c:2724
-#5  0x0000555555772488 in ts_parser.lex ()
-```
-
-For more control, launch `gdb tree-sitter` and start the process with `run test -f 'some test'`, and set a breakpoint
-with `break tree_sitter_haskell_external_scanner_scan`.
-
-To disable optimizations, run `tree-sitter test --debug-build`.
-
-#### Tracing
-
-The `test` and `parse` commands offer two modes for obtaining detailed information about the parsing process.
-
-With `tree-sitter test --debug`, every lexer step and shift/reduce action is printed to stderr.
-
-With `tree-sitter test --debug-graph`, the CLI will generate an HTML file showing a graph representation of every step.
-This requires `graphviz` to be installed.
-
-[tree-sitter]: https://github.com/tree-sitter/tree-sitter
-[ref]: https://www.haskell.org/onlinereport/haskell2010/haskellch10.html
-[ext]: https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/exts/table.html
-[cli]: https://github.com/tree-sitter/tree-sitter/tree/master/cli
-[grammar-docs]: https://tree-sitter.github.io/tree-sitter/creating-parsers#writing-the-grammar
-[ci]: https://img.shields.io/github/actions/workflow/status/tree-sitter/tree-sitter-haskell/ci.yml?logo=github&label=CI
-[discord]: https://img.shields.io/discord/1063097320771698699?logo=discord&label=discord
-[matrix]: https://img.shields.io/matrix/tree-sitter-chat%3Amatrix.org?logo=matrix&label=matrix
-[npm]: https://img.shields.io/npm/v/tree-sitter-haskell?logo=npm
-[crates]: https://img.shields.io/crates/v/tree-sitter-haskell?logo=rust
-[pypi]: https://img.shields.io/pypi/v/tree-sitter-haskell?logo=pypi&logoColor=ffd242
+- [Haskell 2010 Language Report: Syntax Reference](https://www.haskell.org/onlinereport/haskell2010/haskellch10.html)
+- [GHC Language Extensions](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/exts/table.html)

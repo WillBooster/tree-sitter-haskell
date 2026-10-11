@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+# Runs `tree-sitter fuzz`: it edits each corpus case at random, reparses it incrementally, undoes the edits, and reparses
+# again.
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+mkdir -p .tmp/fuzz
+# Runs in the same checkout may overlap, so each builds the parser into a file of its own.
+parser=$(mktemp .tmp/fuzz/haskell.XXXXXX)
+trap 'rm -f "$parser"' EXIT
+script/tree-sitter build -o "$parser"
+# For the excluded cases, the reparse after an edit is made and undone gives a different tree from a fresh parse.
+# Upstream's own 0.23.1 parser fails the same cases at the same seeds, on this runtime and on upstream's CLI 0.27.0, so
+# they would fail on every run without telling anything about this package's tables.
+# The CLI matches the pattern against the full case name, `<language> - corpus - <file> - <name>`.
+excluded=(
+  'decl: guards'
+  'exp: let basic'
+  'exp: multi-way if with two matches in a guard rhs'
+  'layout: do nested'
+  'layout: let with explicit semicolon'
+  'layout: let with multiple explicit semicolons before and after newline'
+  'layout: infix in statement position ends layout'
+  'layout: case in let, single line'
+  'layout: do in case in nested let, single line'
+  'layout: obscure case where eof layout end happens prematurely without no_lookahead check'
+  'Close nested layouts at closing bracket in decl quote'
+)
+script/tree-sitter fuzz --lib-path "$parser" --lang-name haskell \
+  --exclude " - ($(IFS='|'; echo "${excluded[*]}"))\$"
