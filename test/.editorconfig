@@ -1,5 +1,4 @@
 # Trailing whitespace is part of some corpus inputs, such as the spaces after a CPP directive. Kept here because the
-# root .editorconfig is generated, and outside test/corpus because test/helpers/generationInputs.ts takes every file
-# there for an input of the parser, so the performance test would ask for a rebuild after an edit.
+# root .editorconfig is generated, and outside test/corpus so that the directory holds corpus cases only.
 [corpus/*.txt]
 trim_trailing_whitespace = false

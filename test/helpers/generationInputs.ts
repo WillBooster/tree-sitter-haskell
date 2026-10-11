@@ -21,7 +21,11 @@ export function generationInputMtime(root: string): number {
   const inputs = [
     path.join(root, 'tree-sitter.json'),
     corpus,
-    ...fs.readdirSync(corpus, { recursive: true, encoding: 'utf8' }).map((file) => path.join(corpus, file)),
+    // The CLI reads no dotfile as a corpus case, so files such as .DS_Store or an editor's swap file are no inputs.
+    ...fs
+      .readdirSync(corpus, { recursive: true, encoding: 'utf8' })
+      .filter((file) => !path.basename(file).startsWith('.'))
+      .map((file) => path.join(corpus, file)),
     ...examples.map((file) => path.join(root, file)),
   ];
   return Math.max(
