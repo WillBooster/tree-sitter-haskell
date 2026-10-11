@@ -15,7 +15,8 @@ script/tree-sitter build -o "$parser"
 # For the excluded cases, the reparse after an edit is made and undone gives a different tree from a fresh parse.
 # Upstream's own 0.23.1 parser fails the same cases at the same seeds, on this runtime and on upstream's CLI 0.27.0, so
 # they would fail on every run without telling anything about this package's tables.
-# The CLI matches the pattern against the full case name, `<language> - corpus - <file> - <name>`.
+# The CLI matches the pattern against `corpus - <file> - <name>`; the language name it prints before that is not part
+# of the matched text.
 excluded=(
   'decl: guards'
   'exp: let basic'
