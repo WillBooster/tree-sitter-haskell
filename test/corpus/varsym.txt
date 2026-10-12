@@ -6,14 +6,13 @@ f = a | a
 
 --------------------------------------------------------------------------------
 
-(haskell
+(ERROR
   (declarations
     (bind
       (variable)
       (match
         (variable))))
-  (ERROR
-    (variable)))
+  (variable))
 
 ================================================================================
 varsym: error: lambda

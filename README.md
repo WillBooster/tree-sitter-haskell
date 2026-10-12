@@ -24,16 +24,11 @@ readme that the comments in `grammar.js` refer to.
 `grammar.js`, the files in `grammar/`, the external scanner (`src/scanner.c`, `src/unicode.h`), `queries/`, and
 upstream's corpus are those of upstream's 0.23.1, except for:
 
-- **The newline token** (`grammar.js`, `grammar/externals.js`): the entry `/\n/` of `extras` and of `externals` is
-  written `token(prec(0, /\n/))` in both places, with a comment line above the one in `grammar.js` that points here. The WillBooster/tree-sitter generator turns an unnamed pattern in
-  `extras` into a lexer separator, which leaves the external token of the same pattern without a symbol, and the
-  generator then fails. Precedence 0 is the default, so the token lexes as before, and the generated parser has the
-  same symbols as upstream's. A later upstream version of these files needs the same two lines until the generator
-  keeps such a pattern as a token ([WillBooster/tree-sitter#129](https://github.com/WillBooster/tree-sitter/issues/129)).
 - **`queries/highlights.scm`**: three patterns that match fields of the supertype `decl` are written through its
   subtypes (`decl/function`, `decl/bind`, `decl/signature`), as upstream's repository has them since
   `tree-sitter/tree-sitter-haskell@0b2ebf7`. A parser of ABI 15 or later carries the supertypes, and the runtime then
   rejects the 0.23.1 patterns as impossible; upstream's own CLI 0.27.0 does so as well.
+- **`test/corpus/varsym.txt`**: the expected recovery tree for the invalid `f = a | a` input matches this generator; the input still reports an error.
 - **`test/corpus/null-characters.txt`** is added, because the fuzz job checks that every NUL character of the corpus
   reaches the fuzz seeds and upstream's corpus has none.
 
