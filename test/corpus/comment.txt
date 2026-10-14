@@ -260,3 +260,22 @@ data A
     (haddock)
     (data_type
       (name))))
+
+================================================================================
+comment: haddock after ordinary comment
+================================================================================
+
+-- Ordinary comment
+-- | Documentation
+-- Continuation
+f :: Int
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (comment)
+  (haddock)
+  (declarations
+    (signature
+      (variable)
+      (name))))
