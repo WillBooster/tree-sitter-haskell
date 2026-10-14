@@ -279,3 +279,29 @@ f :: Int
     (signature
       (variable)
       (name))))
+
+================================================================================
+comment: indented haddock continuation
+================================================================================
+
+f ::
+  -- Ordinary comment
+  -- | Argument documentation
+  -- Continuation
+  Int ->
+  -- ^ Result documentation
+  -- Continuation
+  Int
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (signature
+      (variable)
+      (comment)
+      (haddock)
+      (function
+        (name)
+        (haddock)
+        (name)))))

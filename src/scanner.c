@@ -2487,6 +2487,8 @@ static Symbol inline_comment(Env *env) {
     MARK("inline comment");
     S_ADVANCE;
     reset_lookahead(env);
+    take_space_from(env, 0);
+    reset_lookahead(env);
   } while (line_comment_herald(env) && (sym == HADDOCK || comment_type(env) == COMMENT));
   return sym;
 }
