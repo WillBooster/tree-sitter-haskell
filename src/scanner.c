@@ -2478,8 +2478,7 @@ static Symbol comment_type(Env *env) {
 }
 
 /**
- * Inline comments extend over all consecutive lines that start with comments.
- * Could be improved by requiring equal indent.
+ * Haddock continuation lines have no marker; keep them with their documentation block.
  */
 static Symbol inline_comment(Env *env) {
   Symbol sym = comment_type(env);
@@ -2488,7 +2487,7 @@ static Symbol inline_comment(Env *env) {
     MARK("inline comment");
     S_ADVANCE;
     reset_lookahead(env);
-  } while (line_comment_herald(env));
+  } while (line_comment_herald(env) && (sym == HADDOCK || comment_type(env) == COMMENT));
   return sym;
 }
 
