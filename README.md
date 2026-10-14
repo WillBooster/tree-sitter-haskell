@@ -24,7 +24,8 @@ readme that the comments in `grammar.js` refer to.
 The fork's main differences from upstream 0.23.1 are:
 
 - **Comment scanning**: an ordinary line comment does not absorb a following marked Haddock comment.
-  Unmarked continuation lines remain in their existing comment block.
+  Unmarked continuation lines beginning in the first column remain in their existing comment block.
+  Indented continuation lines are separate comment nodes.
 - **`queries/highlights.scm`**: three patterns that match fields of the supertype `decl` are written through its
   subtypes (`decl/function`, `decl/bind`, `decl/signature`), as upstream's repository has them since
   `tree-sitter/tree-sitter-haskell@0b2ebf7`. A parser of ABI 15 or later carries the supertypes, and the runtime then

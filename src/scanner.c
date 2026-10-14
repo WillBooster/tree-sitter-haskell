@@ -2478,7 +2478,7 @@ static Symbol comment_type(Env *env) {
 }
 
 /**
- * Haddock continuation lines have no marker; keep them with their documentation block.
+ * Consecutive marked Haddock lines intentionally retain their existing merged representation.
  */
 static Symbol inline_comment(Env *env) {
   Symbol sym = comment_type(env);
