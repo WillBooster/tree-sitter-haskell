@@ -279,3 +279,26 @@ f :: Int
     (signature
       (variable)
       (name))))
+
+================================================================================
+comment: separate trailing and leading haddock blocks
+================================================================================
+
+foo :: Int -- ^ Documentation for foo
+-- More about foo
+-- | Documentation for bar
+-- More about bar
+bar :: Int
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (signature
+      (variable)
+      (name))
+    (haddock)
+    (haddock)
+    (signature
+      (variable)
+      (name))))
