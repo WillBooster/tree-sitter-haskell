@@ -12,7 +12,7 @@ Haskell grammar for [tree-sitter](https://github.com/tree-sitter/tree-sitter), f
 [tree-sitter/tree-sitter-haskell](https://github.com/tree-sitter/tree-sitter-haskell). We are grateful
 to its authors and contributors. This is not an official release of that project.
 
-This fork keeps the grammar of upstream's version 0.23.1 and generates the parser with the
+This fork is based on upstream's version 0.23.1 grammar and generates the parser with the
 [WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parser carries that fork's own ABI number, so it loads only with that fork's runtime, version 2.0.0
 or later; upstream's runtime rejects it.
 [Upstream's README at that version](https://github.com/tree-sitter/tree-sitter-haskell/blob/v0.23.1/README.md) lists
@@ -21,9 +21,10 @@ readme that the comments in `grammar.js` refer to.
 
 ## Differences from upstream
 
-`grammar.js`, the files in `grammar/`, the external scanner (`src/scanner.c`, `src/unicode.h`), `queries/`, and
-upstream's corpus are those of upstream's 0.23.1, except for:
+The fork's main differences from upstream 0.23.1 are:
 
+- **Comment scanning**: an ordinary line comment does not absorb a following marked Haddock comment.
+  Unmarked continuation lines remain in their existing comment block.
 - **`queries/highlights.scm`**: three patterns that match fields of the supertype `decl` are written through its
   subtypes (`decl/function`, `decl/bind`, `decl/signature`), as upstream's repository has them since
   `tree-sitter/tree-sitter-haskell@0b2ebf7`. A parser of ABI 15 or later carries the supertypes, and the runtime then
