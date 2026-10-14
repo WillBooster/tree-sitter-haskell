@@ -305,3 +305,42 @@ f ::
         (name)
         (haddock)
         (name)))))
+
+================================================================================
+comment: indented ordinary lines remain separate
+================================================================================
+
+f = do
+  -- First comment
+  -- Second comment
+  x
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (do
+          (comment)
+          (comment)
+          (exp
+            (variable)))))))
+
+================================================================================
+comment: tab-indented haddock continuation
+================================================================================
+
+-- | Documentation
+	-- Continuation
+f :: Int
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (haddock)
+  (declarations
+    (signature
+      (variable)
+      (name))))
