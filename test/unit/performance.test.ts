@@ -1,35 +1,14 @@
 import { expect, test } from 'vitest';
-import fs from 'node:fs';
 import path from 'node:path';
 
-import { generationInputMtime } from '../helpers/generationInputs.js';
+import { currentWasmPath } from '../helpers/generationInputs.js';
 
 import { Language, Parser } from '@willbooster/web-tree-sitter';
 
 const Root = path.join(import.meta.dirname, '../..');
-// The Wasm build is the one the package ships.
-const WasmPath = path.join(Root, 'tree-sitter-haskell.wasm');
 await Parser.init();
 const parser = new Parser();
-parser.setLanguage(await Language.load(WasmPath));
-
-// The tests load the existing Wasm build, so a stale one would hide an edit that makes parsing slower than linear.
-test('uses a Wasm build built from the current parser', () => {
-  const filesIn = (directory: string): string[] =>
-    fs.readdirSync(path.join(Root, directory)).map((name) => `${directory}/${name}`);
-  const sources = [
-    'grammar.js',
-    ...filesIn('grammar'),
-    'src/parser.c',
-    'src/scanner.c',
-    'src/unicode.h',
-    ...filesIn('src/tree_sitter'),
-  ].map((name) => fs.statSync(path.join(Root, name)).mtimeMs);
-  expect(
-    Math.max(generationInputMtime(Root), ...sources) > fs.statSync(WasmPath).mtimeMs,
-    'generation inputs or src/ changed after the Wasm build was built; run `bun run build/ci`'
-  ).toBe(false);
-});
+parser.setLanguage(await Language.load(currentWasmPath(Root)));
 
 // Consumers parse files while they are being edited, when many lines do not parse, so error recovery must stay linear:
 // ten times the lines take about ten times as long, against a hundred times for a quadratic cost. The ratio catches a

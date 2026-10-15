@@ -1,11 +1,13 @@
 import { afterAll, expect, test } from 'vitest';
 import path from 'node:path';
 
+import { currentWasmPath } from '../helpers/generationInputs.js';
+
 import { Language, Parser } from '@willbooster/web-tree-sitter';
 
 await Parser.init();
 const parser = new Parser();
-parser.setLanguage(await Language.load(path.join(import.meta.dirname, '../../tree-sitter-haskell.wasm')));
+parser.setLanguage(await Language.load(currentWasmPath(path.join(import.meta.dirname, '../..'))));
 afterAll(() => parser.delete());
 
 test.each([
