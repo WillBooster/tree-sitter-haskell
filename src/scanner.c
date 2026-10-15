@@ -2477,16 +2477,19 @@ static Symbol comment_type(Env *env) {
   return COMMENT;
 }
 
-/**
- * Consecutive marked Haddock lines intentionally retain their existing merged representation.
- */
 static Symbol inline_comment(Env *env) {
   Symbol sym = comment_type(env);
   do {
     take_line(env);
     MARK("inline comment");
+    int32_t newline = PEEK;
     S_ADVANCE;
+    if (sym == HADDOCK && newline == '\r' && PEEK == '\n') S_ADVANCE;
     reset_lookahead(env);
+    if (sym == HADDOCK) {
+      advance_while(env, 0, is_space_or_tab);
+      reset_lookahead(env);
+    }
   } while (line_comment_herald(env) && (sym == HADDOCK || comment_type(env) == COMMENT));
   return sym;
 }
