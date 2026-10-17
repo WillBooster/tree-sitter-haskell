@@ -2463,12 +2463,11 @@ static Symbol cpp_line(Env *env) {
 // Comments
 // --------------------------------------------------------------------------------------------------------
 
-/**
- * Distinguish between haddocks and plain comments by matching on the first non-whitespace character.
- */
 static Symbol comment_type(Env *env) {
   uint32_t i = 2;
-  while (peek(env, i) == '-') i++;
+  if (peek0(env) == '-') {
+    while (peek(env, i) == '-') i++;
+  }
   while (not_eof(env)) {
     int32_t c = peek(env, i++);
     if (c == '|' || c == '^') return HADDOCK;
