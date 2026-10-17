@@ -344,3 +344,46 @@ f :: Int
     (signature
       (variable)
       (name))))
+
+================================================================================
+comment: empty block comments preserve following declarations
+================================================================================
+
+{--}
+a = 1
+{---}
+b = {----} 2
+{- {--} -}
+c = 3
+{- 	-}
+d = 4
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (comment)
+  (declarations
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))
+    (comment)
+    (bind
+      (variable)
+      (match
+        (comment)
+        (literal
+          (integer))))
+    (comment)
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))
+    (comment)
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))))
