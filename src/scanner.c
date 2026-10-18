@@ -1596,7 +1596,10 @@ static uint32_t take_multiline_string_literal(Env *env) {
     if (char_at(env, end, '\\')) {
       int32_t escaped = peek(env, ++end);
       if (is_string_gap_space(escaped)) end = advance_while(env, end, is_string_gap_space);
-      else if (escaped == '^') end++;
+      else if (escaped == '^') {
+        int32_t control = peek(env, end + 1);
+        if (control >= '@' && control <= '_') end++;
+      }
     }
     end++;
   }

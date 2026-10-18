@@ -152,3 +152,40 @@ test.each([
     tree.delete();
   }
 });
+
+test.each(['value = ', 'value :: Proxy '])(
+  'retains the following binding after a malformed caret escape in %s',
+  (prefix) => {
+    const tree = parser.parse(`${prefix}"""a\\^"""\nafter = """second"""\n`)!;
+    try {
+      expect(
+        tree.rootNode
+          .descendantsOfType('bind')
+          .filter((node) => node.childForFieldName('name')?.text === 'after')
+          .map((node) => node.text)
+      ).toEqual(['after = """second"""']);
+      expect(tree.rootNode.descendantsOfType('string').map((node) => node.text)).toContain('"""second"""');
+      expect(tree.rootNode.descendantsOfType('string').some((node) => node.text.includes('after ='))).toBe(false);
+    } finally {
+      tree.delete();
+    }
+  }
+);
+
+test.each(['@', 'A', 'Z', '[', '\\', ']', '^', '_'])(
+  'ends a type string after the valid caret control %j',
+  (control) => {
+    const literal = `"""a\\^${control}"""`;
+    const tree = parser.parse(`value :: Proxy ${literal} => Int\nafter = """second"""\n`)!;
+    try {
+      expect(tree.rootNode.hasError).toBe(false);
+      expect(tree.rootNode.descendantsOfType('context')).toHaveLength(1);
+      expect(tree.rootNode.descendantsOfType('string').map((node) => node.text)).toEqual([literal, '"""second"""']);
+      expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
+        'after',
+      ]);
+    } finally {
+      tree.delete();
+    }
+  }
+);

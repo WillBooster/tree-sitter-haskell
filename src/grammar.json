@@ -10904,7 +10904,7 @@
                             },
                             {
                               "type": "PATTERN",
-                              "value": "\\\\(?:\\^[^\\p{White_Space}]|[^\\p{White_Space}^])"
+                              "value": "\\\\(?:\\^[@-_]|[^\\p{White_Space}^])"
                             },
                             {
                               "type": "PATTERN",

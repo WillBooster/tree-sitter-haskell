@@ -141,3 +141,14 @@ after = """second"""
 --------------------------------------------------------------------------------
 
 (haskell (declarations (bind (variable) (match (literal (string)))) (bind (variable) (match (literal (string))))))
+
+================================================================================
+string: multiline caret controls in context
+================================================================================
+
+value :: Proxy """a\^@\^A\^Z\^[\^\\^]\^^\^_""" => Int
+after = """second"""
+
+--------------------------------------------------------------------------------
+
+(haskell (declarations (signature (variable) (context (apply (name) (literal (string))) (name))) (bind (variable) (match (literal (string))))))

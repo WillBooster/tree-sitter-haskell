@@ -46,7 +46,7 @@ module.exports = {
         '"""',
         repeat(seq(
           optional(/""?/),
-          choice(/[^\\"]/, /\\(?:\^[^\p{White_Space}]|[^\p{White_Space}^])/, string_gap),
+          choice(/[^\\"]/, /\\(?:\^[@-_]|[^\p{White_Space}^])/, string_gap),
         )),
         '"""',
       ),
