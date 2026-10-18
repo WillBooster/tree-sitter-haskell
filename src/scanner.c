@@ -1914,6 +1914,12 @@ static Symbol end_layout_indent(Env *env) {
   return FAIL;
 }
 
+static bool pending_layout_semicolon(Env *env) {
+  return is_semicolon_context(env)
+    && !(env->state->newline.no_semi || env->state->newline.skip_semi)
+    && indent_lesseq(env, env->state->newline.indent);
+}
+
 /**
  * An expression layout may be closed by an infix operator when it is not valid at that position:
  *
@@ -1930,6 +1936,7 @@ static Symbol end_layout_indent(Env *env) {
  * It doesn't apply to multi-way if layouts, because those don't use semicolons.
  */
 static Symbol end_layout_infix(Env *env) {
+  if (newline_active(env) && valid(env, SEMICOLON) && pending_layout_semicolon(env)) return FAIL;
   if (!valid(env, VARSYM) && !valid(env, CONSYM)) return end_layout(env, "symop invalid");
   return FAIL;
 }
@@ -2692,13 +2699,7 @@ static Symbol resolve_semicolon(Env *env, Lexed next) {
  * - `skip_semi` was set because the previous line ended with an explicit semicolon.
  */
 static Symbol semicolon(Env *env) {
-  if (
-      is_semicolon_context(env)
-      &&
-      !(env->state->newline.no_semi || env->state->newline.skip_semi)
-      &&
-      indent_lesseq(env, env->state->newline.indent)
-     ) {
+  if (pending_layout_semicolon(env)) {
     env->state->newline.no_semi = true;
     return finish(SEMICOLON, "newline");
   }
