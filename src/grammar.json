@@ -1222,7 +1222,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_phantom_arrow"
+                  "name": "_phantom_linear_arrow"
                 },
                 {
                   "type": "BLANK"
@@ -13091,6 +13091,10 @@
     {
       "type": "SYMBOL",
       "name": "_phantom_arrow"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_phantom_linear_arrow"
     },
     {
       "type": "SYMBOL",

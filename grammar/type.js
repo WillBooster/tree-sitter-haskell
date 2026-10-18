@@ -197,7 +197,7 @@ module.exports = {
       $._fun_arrow,
     ),
     seq(
-      optional($._phantom_arrow),
+      optional($._phantom_linear_arrow),
       field('arrow', $._linear_arrow),
     ),
   ),

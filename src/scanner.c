@@ -131,6 +131,7 @@ typedef enum {
   WHERE,
   IN,
   ARROW,
+  LINEAR_ARROW,
   BAR,
   DERIVING,
   COMMENT,
@@ -185,6 +186,7 @@ static const char *sym_names[] = {
   "where",
   "in",
   "arrow",
+  "linear_arrow",
   "bar",
   "deriving",
   "comment",
@@ -2743,8 +2745,10 @@ static Symbol process_token_safe(Env *env, Lexed next) {
     case LUnboxedClose:
       SEQ(token_end_layout_texp(env));
       return end_layout_infix(env);
-    case LArrow:
     case LLArrow:
+      if (!valid(env, LINEAR_ARROW)) return end_layout_infix(env);
+      break;
+    case LArrow:
       if (!valid(env, ARROW)) return token_end_layout_texp(env);
       break;
     case LTexpCloser:
@@ -2791,7 +2795,7 @@ static Symbol process_token_symop(Env *env, bool whitespace, Lexed next) {
       if (valid(env, MINUS) && match_symop(env, "-")) return finish(MINUS, "symop");
       break;
     case LLArrow:
-      if (!valid(env, ARROW)) return finish_symop(env, VARSYM);
+      if (!valid(env, LINEAR_ARROW)) return finish_symop(env, VARSYM);
       break;
     case LUnboxedClose:
     case LHash:
@@ -3145,6 +3149,7 @@ static CtrResult ctr_top(Env *env, Lexed next) {
     case LBar:
       return CtrBarFound;
     case LArrow:
+    case LLArrow:
     case LWhere:
     case LDotDot:
     case LSemi:

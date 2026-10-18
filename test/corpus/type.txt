@@ -1230,3 +1230,43 @@ type A = A ->.. A
         (name)
         (operator)
         (name)))))
+
+================================================================================
+type: linear function with constrained result
+================================================================================
+
+f :: a ->. Show a => String
+g :: a ⊸ Show a => String
+h :: a -> Show a => String
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (signature
+      (variable)
+      (linear_function
+        (variable)
+        (context
+          (apply
+            (name)
+            (variable))
+          (name))))
+    (signature
+      (variable)
+      (linear_function
+        (variable)
+        (context
+          (apply
+            (name)
+            (variable))
+          (name))))
+    (signature
+      (variable)
+      (function
+        (variable)
+        (context
+          (apply
+            (name)
+            (variable))
+          (name))))))
