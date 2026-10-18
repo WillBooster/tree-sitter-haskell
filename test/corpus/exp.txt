@@ -3007,3 +3007,72 @@ a = a'\n' -> a
             (patterns
               (variable))
             (variable)))))))
+
+================================================================================
+exp: linear arrows as value operators
+================================================================================
+
+x = a ->. b
+y = a ⊸ b
+z = (->.) a b
+left = (a ->.)
+right = (->. b)
+qualified = a A.->. b
+longer = a ->.. b
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (infix
+          (variable)
+          (operator)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (infix
+          (variable)
+          (operator)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (apply
+          (apply
+            (prefix_id
+              (operator))
+            (variable))
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (left_section
+          (variable)
+          (operator))))
+    (bind
+      (variable)
+      (match
+        (right_section
+          (operator)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (infix
+          (variable)
+          (qualified
+            (module
+              (module_id))
+            (operator))
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (infix
+          (variable)
+          (operator)
+          (variable))))))
