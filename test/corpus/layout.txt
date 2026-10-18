@@ -3403,3 +3403,65 @@ a = a
               (variable)
               (comment)
               (variable))))))))
+
+================================================================================
+layout: typed hole in do before function signature
+================================================================================
+
+foo :: Int
+foo = do
+  _
+
+bar :: () -> () -> Maybe ()
+bar = x
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (signature
+      (variable)
+      (name))
+    (bind
+      (variable)
+      (match
+        (do
+          (exp
+            (typed_hole)))))
+    (signature
+      (variable)
+      (function
+        (unit)
+        (function
+          (unit)
+          (apply
+            (name)
+            (unit)))))
+    (bind
+      (variable)
+      (match
+        (variable)))))
+
+================================================================================
+layout: typed hole application and wildcard bind in do
+================================================================================
+
+foo = do
+  _ <- action
+  _ argument
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (do
+          (bind
+            (wildcard)
+            (variable))
+          (exp
+            (apply
+              (typed_hole)
+              (variable))))))))

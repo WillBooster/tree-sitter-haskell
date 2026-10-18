@@ -25,6 +25,8 @@ module.exports = {
     $.label,
   ),
 
+  _exp_typed_hole: _ => '_',
+
   _exp_th_quoted_name: $ => choice(
     seq('\'', field('name', choice($._vars, $._cons))),
     prec('prefix', seq('\'\'', field('type', $.type))),
@@ -396,6 +398,7 @@ module.exports = {
     alias($._exp_case, $.case),
     alias($._exp_multi_way_if, $.multi_way_if),
     $._exp_name,
+    alias($._exp_typed_hole, $.typed_hole),
     $._universal,
   ),
 

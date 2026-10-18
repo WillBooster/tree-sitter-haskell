@@ -6,6 +6,7 @@
 
 (pattern/wildcard) @variable
 
+
 (decl/function
   patterns: (patterns
     (_) @variable.parameter))
@@ -81,6 +82,7 @@
   (constructor_operator)
   (all_names)
   (wildcard)
+  (typed_hole)
   "."
   ".."
   "="

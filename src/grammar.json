@@ -2624,6 +2624,10 @@
         }
       ]
     },
+    "_exp_typed_hole": {
+      "type": "STRING",
+      "value": "_"
+    },
     "_exp_th_quoted_name": {
       "type": "CHOICE",
       "members": [
@@ -4914,6 +4918,15 @@
         {
           "type": "SYMBOL",
           "name": "_exp_name"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_exp_typed_hole"
+          },
+          "named": true,
+          "value": "typed_hole"
         },
         {
           "type": "SYMBOL",
@@ -13219,11 +13232,13 @@
     "_any_tight_dot",
     "_unboxed_bar",
     "_exp_name",
+    "_exp_typed_hole",
     "_exp_greedy",
     "_let",
     "_pat_apply_arg",
     "_pat_name",
     "_pat_texp",
+    "_pat_wildcard",
     "_tyconid",
     "_tyconids",
     "_tycon",
