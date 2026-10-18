@@ -3007,3 +3007,223 @@ a = a'\n' -> a
             (patterns
               (variable))
             (variable)))))))
+
+================================================================================
+exp: linear arrows as value operators
+================================================================================
+
+x = a ->. b
+y = a ⊸ b
+z = (->.) a b
+left = (a ->.)
+right = (->. b)
+qualified = a A.->. b
+longer = a ->.. b
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (infix
+          (variable)
+          (operator)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (infix
+          (variable)
+          (operator)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (apply
+          (apply
+            (prefix_id
+              (operator))
+            (variable))
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (left_section
+          (variable)
+          (operator))))
+    (bind
+      (variable)
+      (match
+        (right_section
+          (operator)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (infix
+          (variable)
+          (qualified
+            (module
+              (module_id))
+            (operator))
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (infix
+          (variable)
+          (operator)
+          (variable))))))
+
+================================================================================
+exp: linear value operators in arrow-terminated guards
+================================================================================
+
+f = case x of
+  y | a ->. b -> c
+  z | a ⊸ b -> c
+g = \case
+  y | a ->. b -> c
+  z | a ⊸ b -> c
+h = if | a ->. b -> c
+       | a ⊸ b -> c
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (case
+          (variable)
+          (alternatives
+            (alternative
+              (variable)
+              (match
+                (guards
+                  (boolean
+                    (infix
+                      (variable)
+                      (operator)
+                      (variable))))
+                (variable)))
+            (alternative
+              (variable)
+              (match
+                (guards
+                  (boolean
+                    (infix
+                      (variable)
+                      (operator)
+                      (variable))))
+                (variable)))))))
+    (bind
+      (variable)
+      (match
+        (lambda_case
+          (alternatives
+            (alternative
+              (variable)
+              (match
+                (guards
+                  (boolean
+                    (infix
+                      (variable)
+                      (operator)
+                      (variable))))
+                (variable)))
+            (alternative
+              (variable)
+              (match
+                (guards
+                  (boolean
+                    (infix
+                      (variable)
+                      (operator)
+                      (variable))))
+                (variable)))))))
+    (bind
+      (variable)
+      (match
+        (multi_way_if
+          (match
+            (guards
+              (boolean
+                (infix
+                  (variable)
+                  (operator)
+                  (variable))))
+            (variable))
+          (match
+            (guards
+              (boolean
+                (infix
+                  (variable)
+                  (operator)
+                  (variable))))
+            (variable)))))))
+
+================================================================================
+exp: linear value operators inside parenthesized layouts
+================================================================================
+
+f = (do a ->. b)
+g = (do a ⊸ b)
+h = (case a of b -> c ->. d)
+i = (case a of b -> c ⊸ d)
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (parens
+          (do
+            (exp
+              (infix
+                (variable)
+                (operator)
+                (variable)))))))
+    (bind
+      (variable)
+      (match
+        (parens
+          (do
+            (exp
+              (infix
+                (variable)
+                (operator)
+                (variable)))))))
+    (bind
+      (variable)
+      (match
+        (parens
+          (case
+            (variable)
+            (alternatives
+              (alternative
+                (variable)
+                (match
+                  (infix
+                    (variable)
+                    (operator)
+                    (variable)))))))))
+    (bind
+      (variable)
+      (match
+        (parens
+          (case
+            (variable)
+            (alternatives
+              (alternative
+                (variable)
+                (match
+                  (infix
+                    (variable)
+                    (operator)
+                    (variable)))))))))))

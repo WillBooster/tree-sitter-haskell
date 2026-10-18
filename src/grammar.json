@@ -1222,7 +1222,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_phantom_arrow"
+                  "name": "_phantom_linear_arrow"
                 },
                 {
                   "type": "BLANK"
@@ -11696,8 +11696,17 @@
             "content": {
               "type": "ALIAS",
               "content": {
-                "type": "SYMBOL",
-                "name": "_arrow"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_arrow"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_linear_arrow"
+                  }
+                ]
               },
               "named": true,
               "value": "operator"
@@ -13128,6 +13137,10 @@
     {
       "type": "SYMBOL",
       "name": "_phantom_arrow"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_phantom_linear_arrow"
     },
     {
       "type": "SYMBOL",

@@ -91,6 +91,7 @@ module.exports = {
     $._phantom_where,
     $._phantom_in,
     $._phantom_arrow,
+    $._phantom_linear_arrow,
     $._phantom_bar,
     $._phantom_deriving,
 

@@ -505,3 +505,24 @@ import A
     (import
       (module
         (module_id)))))
+
+================================================================================
+import: linear arrow as value operator
+================================================================================
+
+import A ((->.), (⊸))
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (imports
+    (import
+      (module
+        (module_id))
+      (import_list
+        (import_name
+          (prefix_id
+            (operator)))
+        (import_name
+          (prefix_id
+            (operator)))))))

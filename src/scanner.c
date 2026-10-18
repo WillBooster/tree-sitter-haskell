@@ -131,6 +131,7 @@ typedef enum {
   WHERE,
   IN,
   ARROW,
+  LINEAR_ARROW,
   BAR,
   DERIVING,
   COMMENT,
@@ -185,6 +186,7 @@ static const char *sym_names[] = {
   "where",
   "in",
   "arrow",
+  "linear_arrow",
   "bar",
   "deriving",
   "comment",
@@ -330,6 +332,7 @@ typedef enum {
   LHash,
   LBar,
   LArrow,
+  LLArrow,
   LCArrow,
   LTexpCloser,
   LQuoteClose,
@@ -372,6 +375,7 @@ static const char *token_names[] = {
   "hash",
   "bar",
   "arrow",
+  "linear-arrow",
   "ctr",
   "texp-closer",
   "quote-close",
@@ -1932,6 +1936,12 @@ static Symbol end_layout_indent(Env *env) {
   return FAIL;
 }
 
+static bool pending_layout_semicolon(Env *env) {
+  return is_semicolon_context(env)
+    && !(env->state->newline.no_semi || env->state->newline.skip_semi)
+    && indent_lesseq(env, env->state->newline.indent);
+}
+
 /**
  * An expression layout may be closed by an infix operator when it is not valid at that position:
  *
@@ -1948,6 +1958,7 @@ static Symbol end_layout_indent(Env *env) {
  * It doesn't apply to multi-way if layouts, because those don't use semicolons.
  */
 static Symbol end_layout_infix(Env *env) {
+  if (newline_active(env) && valid(env, SEMICOLON) && pending_layout_semicolon(env)) return FAIL;
   if (!valid(env, VARSYM) && !valid(env, CONSYM)) return end_layout(env, "symop invalid");
   return FAIL;
 }
@@ -2153,8 +2164,9 @@ static Lexed lex_symop(Env *env) {
         else if (opening_token(env, 1)) return LDotOpen;
         else return LSymop;
       case 0x2192: // →
-      case 0x22b8: // ⊸
         return LArrow;
+      case 0x22b8: // ⊸
+        return LLArrow;
       case 0x21d2: // ⇒
         return LCArrow;
       case '=':
@@ -2204,7 +2216,7 @@ static Lexed lex_symop(Env *env) {
   }
   else switch (c1) {
     case '-':
-      if (seq(env, "->.")) return LArrow;
+      if (len == 3 && seq(env, "->.")) return LLArrow;
       break;
     case '.':
       return LDotSymop;
@@ -2709,13 +2721,7 @@ static Symbol resolve_semicolon(Env *env, Lexed next) {
  * - `skip_semi` was set because the previous line ended with an explicit semicolon.
  */
 static Symbol semicolon(Env *env) {
-  if (
-      is_semicolon_context(env)
-      &&
-      !(env->state->newline.no_semi || env->state->newline.skip_semi)
-      &&
-      indent_lesseq(env, env->state->newline.indent)
-     ) {
+  if (pending_layout_semicolon(env)) {
     env->state->newline.no_semi = true;
     return finish(SEMICOLON, "newline");
   }
@@ -2762,6 +2768,9 @@ static Symbol process_token_safe(Env *env, Lexed next) {
     case LUnboxedClose:
       SEQ(token_end_layout_texp(env));
       return end_layout_infix(env);
+    case LLArrow:
+      if (!valid(env, LINEAR_ARROW)) return end_layout_infix(env);
+      break;
     case LArrow:
       if (!valid(env, ARROW)) return token_end_layout_texp(env);
       break;
@@ -2807,6 +2816,9 @@ static Symbol process_token_symop(Env *env, bool whitespace, Lexed next) {
     case LSymopSpecial:
       SEQ(left_section_op(env, symop_lookahead(env)));
       if (valid(env, MINUS) && match_symop(env, "-")) return finish(MINUS, "symop");
+      break;
+    case LLArrow:
+      if (!valid(env, LINEAR_ARROW)) return finish_symop(env, VARSYM);
       break;
     case LUnboxedClose:
     case LHash:
@@ -3160,6 +3172,7 @@ static CtrResult ctr_top(Env *env, Lexed next) {
     case LBar:
       return CtrBarFound;
     case LArrow:
+    case LLArrow:
     case LWhere:
     case LDotDot:
     case LSemi:
