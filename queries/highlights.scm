@@ -6,6 +6,8 @@
 
 (pattern/wildcard) @variable
 
+(typed_hole) @variable
+
 (decl/function
   patterns: (patterns
     (_) @variable.parameter))
