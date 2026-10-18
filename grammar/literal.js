@@ -8,7 +8,7 @@ const decimal = /[0-9][0-9_]*/
 const exponent = /[eE][+-]?[0-9_]+/
 const hex_exponent = /[pP][+-]?[0-9a-fA-F_]+/
 const escaped = /\\(\^)?./
-const string_gap = /\\\s+\\/
+const string_gap = /\\\p{White_Space}+\\/
 const magic_hash = rule => token(seq(rule, optional(token.immediate(/##?/))))
 
 module.exports = {
@@ -46,7 +46,7 @@ module.exports = {
         '"""',
         repeat(seq(
           optional(/""?/),
-          choice(/[^\\"]/, escaped, string_gap),
+          choice(/[^\\"]/, /\\(?:\^[^\p{White_Space}]|[^\p{White_Space}^])/, string_gap),
         )),
         '"""',
       ),

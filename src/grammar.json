@@ -10904,11 +10904,11 @@
                             },
                             {
                               "type": "PATTERN",
-                              "value": "\\\\(\\^)?."
+                              "value": "\\\\(?:\\^[^\\p{White_Space}]|[^\\p{White_Space}^])"
                             },
                             {
                               "type": "PATTERN",
-                              "value": "\\\\\\s+\\\\"
+                              "value": "\\\\\\p{White_Space}+\\\\"
                             }
                           ]
                         }

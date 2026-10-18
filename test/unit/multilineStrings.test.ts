@@ -56,13 +56,16 @@ test('stops each multiline literal at its first unescaped delimiter', () => {
   }
 });
 
-test('reparses edits around escaped triple quotes consistently with a fresh parse', () => {
-  let source = 'value = """first\nsecond"""\nafter = "ordinary"\n';
+test.each([
+  ['expression', 'value = ', '\nafter = "ordinary"\n'],
+  ['constraint', 'value :: Proxy ', ' => Int\nvalue = undefined\n'],
+])('reparses %s edits around escaped triple quotes consistently with a fresh parse', (_kind, prefix, suffix) => {
+  let source = `${prefix}"""first\nsecond"""${suffix}`;
   let tree = parser.parse(source)!;
   try {
-    for (const content of ['"', '""', String.raw`"\"""`, String.raw`""\""`, '']) {
+    for (const content of ['"', '""', String.raw`"\"""`, String.raw`""\""`, '\\ \\', '']) {
       const startIndex = source.indexOf('second');
-      const endIndex = source.lastIndexOf('"""\nafter');
+      const endIndex = source.lastIndexOf('"""');
       const replacement = `second${content}`;
       const next = source.slice(0, startIndex) + replacement + source.slice(endIndex);
       tree.edit(
@@ -89,6 +92,62 @@ test('reparses edits around escaped triple quotes consistently with a fresh pars
       }
       source = next;
     }
+  } finally {
+    tree.delete();
+  }
+});
+
+test.each([
+  ' ',
+  '\t',
+  '\n',
+  '\r\n',
+  '\r',
+  '\f',
+  '\v',
+  '\u0085',
+  '\u00A0',
+  '\u1680',
+  '\u2000',
+  '\u2007',
+  '\u2028',
+  '\u2029',
+  '\u202F',
+  '\u205F',
+  '\u3000',
+])('ends a multiline string after a %j gap before the closing delimiter', (whitespace) => {
+  const literal = `"""first\\${whitespace}\\"""`;
+  const tree = parser.parse(`value = ${literal}\nafter = """second"""\n`)!;
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    expect(tree.rootNode.descendantsOfType('string').map((node) => node.text)).toEqual([literal, '"""second"""']);
+    expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
+      'value',
+      'after',
+    ]);
+  } finally {
+    tree.delete();
+  }
+});
+
+test.each([
+  ['a " => b', false],
+  ['a "b', true],
+  ['a "" => b', false],
+  [String.raw`a "\""" => b`, true],
+  ['first\\ \\', true],
+  ['first\\\n  \\', true],
+] as const)('skips the complete type string %j when finding context arrows', (content, constrained) => {
+  const literal = `"""${content}"""`;
+  const tree = parser.parse(`value :: Proxy ${literal}${constrained ? ' => Int' : ''}\nvalue = undefined\n`)!;
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    expect(tree.rootNode.descendantsOfType('signature')).toHaveLength(1);
+    expect(tree.rootNode.descendantsOfType('context')).toHaveLength(constrained ? 1 : 0);
+    expect(tree.rootNode.descendantsOfType('string').map((node) => node.text)).toEqual([literal]);
+    expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
+      'value',
+    ]);
   } finally {
     tree.delete();
   }
