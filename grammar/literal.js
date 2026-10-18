@@ -7,13 +7,11 @@ const {
 const decimal = /[0-9][0-9_]*/
 const exponent = /[eE][+-]?[0-9_]+/
 const hex_exponent = /[pP][+-]?[0-9a-fA-F_]+/
+const escaped = /\\(\^)?./
+const string_gap = /\\\p{White_Space}+\\/
 const magic_hash = rule => token(seq(rule, optional(token.immediate(/##?/))))
 
 module.exports = {
-
-  // ------------------------------------------------------------------------
-  // literals
-  // ------------------------------------------------------------------------
 
   // the `choice` here is necessary to avoid integers being parsed as floats
   float: _ => magic_hash(
@@ -34,14 +32,24 @@ module.exports = {
   ),
 
   string: _ => magic_hash(
-    seq(
-      '"',
-      repeat(choice(
-        /[^\\"\n]/,
-        /\\(\^)?./,
-        /\\\n\s*\\/,
-      )),
-      '"',
+    choice(
+      seq(
+        '"',
+        repeat(choice(
+          /[^\\"\n]/,
+          escaped,
+          /\\\n\s*\\/,
+        )),
+        '"',
+      ),
+      seq(
+        '"""',
+        repeat(seq(
+          optional(/""?/),
+          choice(/[^\\"]/, /\\(?:\^[@-_]|[^\p{White_Space}^])/, string_gap),
+        )),
+        '"""',
+      ),
     ),
   ),
 
