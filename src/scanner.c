@@ -1426,6 +1426,10 @@ static void take_line(Env *env) {
   while (not_eof(env) && !is_newline(PEEK)) S_ADVANCE;
 }
 
+static bool is_space_char_or_tab(int32_t c) {
+  return c == '\t' || is_space_char(c);
+}
+
 static bool is_space_or_tab(int32_t c) {
   return c == ' ' || c == '\t';
 }
@@ -1454,9 +1458,9 @@ static void take_line_escaped_newline(Env *env) {
  * Return whether any characters were skipped.
  */
 static bool skip_space(Env *env) {
-  if (!is_space_char(PEEK)) return false;
+  if (!is_space_char_or_tab(PEEK)) return false;
   S_SKIP;
-  while(is_space_char(PEEK)) S_SKIP;
+  while(is_space_char_or_tab(PEEK)) S_SKIP;
   return true;
 }
 
@@ -1497,7 +1501,7 @@ static Space skip_whitespace(Env *env) {
  * return the index of the next character.
  */
 static uint32_t take_space_from(Env *env, uint32_t start) {
-  return advance_while(env, start, is_space_char);
+  return advance_while(env, start, is_space_char_or_tab);
 }
 
 /**
@@ -2471,7 +2475,7 @@ static Symbol comment_type(Env *env) {
   while (not_eof(env)) {
     int32_t c = peek(env, i++);
     if (c == '|' || c == '^') return HADDOCK;
-    else if (!is_space_char(c)) break;
+    else if (!is_space_char_or_tab(c)) break;
   }
   return COMMENT;
 }
