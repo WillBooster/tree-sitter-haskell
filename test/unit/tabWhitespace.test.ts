@@ -97,3 +97,25 @@ test('reparses spaces replaced by tabs consistently with a fresh parse', () => {
     tree.delete();
   }
 });
+
+test.each([
+  String.raw`\n`,
+  String.raw`\t`,
+  String.raw`\NUL`,
+  String.raw`\^A`,
+  String.raw`\'`,
+  String.raw`\\`,
+  String.raw`\123`,
+  String.raw`\o17`,
+  String.raw`\xFF`,
+])('keeps tab-separated escaped character declarations distinct: %s', (escape) => {
+  const source = `a\t=\t'${escape}'\nb\t=\t'\\t'\n`;
+  const tree = parser.parse(source)!;
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    expect(tree.rootNode.descendantsOfType('char').map((node) => node.text)).toEqual([`'${escape}'`, String.raw`'\t'`]);
+    expect(tree.rootNode.descendantsOfType('bind')).toHaveLength(2);
+  } finally {
+    tree.delete();
+  }
+});
