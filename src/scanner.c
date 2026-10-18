@@ -1577,15 +1577,37 @@ static bool odd_backslashes_before(Env *env, int32_t index) {
   return odd;
 }
 
-/**
- * Advance before the next unescaped double quote.
- */
+static uint32_t take_multiline_string_literal(Env *env);
+static bool is_string_gap_space(int32_t c);
+
 static uint32_t take_string_literal(Env *env) {
+  if (seq(env, "\"\"\"")) return take_multiline_string_literal(env);
   uint32_t end = 1;
   while (true) {
     end = advance_until_char(env, end, '"') + 1;
     if (is_eof(env) || !odd_backslashes_before(env, (int) end - 2)) return end;
   }
+}
+
+static uint32_t take_multiline_string_literal(Env *env) {
+  uint32_t end = 3;
+  while (not_eof(env)) {
+    if (seq_from(env, "\"\"\"", end)) return end + 3;
+    if (char_at(env, end, '\\')) {
+      int32_t escaped = peek(env, ++end);
+      if (is_string_gap_space(escaped)) end = advance_while(env, end, is_string_gap_space);
+      else if (escaped == '^') {
+        int32_t control = peek(env, end + 1);
+        if (control >= '@' && control <= '_') end++;
+      }
+    }
+    end++;
+  }
+  return end;
+}
+
+static bool is_string_gap_space(int32_t c) {
+  return is_space_char(c) || (c >= '\t' && c <= '\r') || c == 0x85 || c == 0x2028 || c == 0x2029;
 }
 
 /**

@@ -23,6 +23,7 @@ readme that the comments in `grammar.js` refer to.
 
 The fork's main differences from upstream 0.23.1 are:
 
+- **MultilineStrings**: triple-quoted literals retain their complete source as a single `string` node, including embedded quotes, escapes, and string gaps.
 - **Comment scanning**: empty block comments such as `{--}` terminate at their closing delimiter and preserve following code.
   An ordinary line comment does not absorb a following marked Haddock comment.
   Unmarked continuation lines remain in their preceding Haddock block, including space or tab indentation and LF or CRLF newlines.
