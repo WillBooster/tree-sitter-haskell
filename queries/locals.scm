@@ -2,3 +2,4 @@
 (function name: (variable)) @local.definition
 (pattern/variable) @local.definition
 (expression/variable) @local.reference
+(parenthesized_callee (variable) @local.reference)
