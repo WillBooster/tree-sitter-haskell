@@ -77,13 +77,18 @@ testCommand(
           { name: 'Related', kind: 'implementation', role: 'ref', row: 62, column: 23 },
           { name: 'InfixUse', kind: 'class', role: 'def', row: 64, column: 5 },
           { name: ':%:', kind: 'class', role: 'def', row: 65, column: 7 },
+          { name: 'convert', kind: 'call', role: 'ref', row: 72, column: 23 },
+          { name: 'convert', kind: 'call', role: 'ref', row: 73, column: 37 },
+          { name: '<+>', kind: 'call', role: 'ref', row: 74, column: 37 },
+          { name: '<+>', kind: 'call', role: 'ref', row: 75, column: 51 },
         ])
       );
       expect(
         tags.filter(({ role, name }) => role === 'def' && ['value', 'left', 'right', 'a', 'Int'].includes(name))
       ).toHaveLength(0);
-      expect(tags.filter(({ role, kind }) => role === 'ref' && kind === 'call')).toHaveLength(9);
+      expect(tags.filter(({ role, kind }) => role === 'ref' && kind === 'call')).toHaveLength(13);
       expect(tags.filter(({ role, kind, row }) => role === 'def' && kind === 'class' && row >= 64)).toHaveLength(2);
+      expect(tags.filter(({ role, row }) => role === 'ref' && row >= 76)).toHaveLength(0);
       expect(
         tags.filter(({ kind }) => kind === 'function' || kind === 'method').some(({ name }) => name === '->')
       ).toBe(false);

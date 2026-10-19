@@ -81,6 +81,12 @@
     (qualified id: (variable) @name)
     (prefix_id (operator) @name)
     (prefix_id (qualified id: (operator) @name))
+    (parens expression: [
+      (variable) @name
+      (qualified id: (variable) @name)
+      (prefix_id (operator) @name)
+      (prefix_id (qualified id: (operator) @name))
+    ])
   ]) @reference.call
 
 (expression/infix

@@ -69,3 +69,10 @@ newtype instance Family Bool = FamilyBool Bool
 instance Associated Int where
   data Assoc Int = AssocInt
 type instance Int :?: Bool = Int
+
+parenthesized value = (convert) value
+qualifiedParenthesized value = (Demo.convert) value
+parenthesizedOperator left right = ((<+>)) left right
+qualifiedParenthesizedOperator left right = ((Demo.<+>)) left right
+unusedParenthesized = (convert)
+unusedQualifiedParenthesized = (Demo.convert)
