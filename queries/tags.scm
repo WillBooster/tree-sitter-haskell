@@ -33,20 +33,24 @@
 ]
 
 [
-  (data_type name: (_) @name)
-  (newtype name: (_) @name)
   (type_synonym name: (_) @name)
   (type_family name: (_) @name)
   (data_family name: (_) @name)
 ] @definition.class
 
 [
-  (data_type (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
-  (newtype (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
-  (type_synonym (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+  (type_synonym (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]) "=")
   (type_family (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
   (data_family (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
 ] @definition.class
+
+(declarations
+  [
+    (data_type name: (_) @name)
+    (newtype name: (_) @name)
+    (data_type (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+    (newtype (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+  ] @definition.class)
 
 (class name: (_) @name) @definition.interface
 (class (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)])) @definition.interface

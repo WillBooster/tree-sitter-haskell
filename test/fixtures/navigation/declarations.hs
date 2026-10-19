@@ -61,3 +61,11 @@ instance Defaulted Int where
 deriving instance Show (Box a)
 deriving instance Int :<: Int
 deriving instance Int `Related` Int
+
+type InfixUse a b = a :+: b
+type a :%: b = a :+: b
+data instance Family Int = FamilyInt
+newtype instance Family Bool = FamilyBool Bool
+instance Associated Int where
+  data Assoc Int = AssocInt
+type instance Int :?: Bool = Int
