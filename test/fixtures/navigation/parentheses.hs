@@ -40,3 +40,12 @@ heldQualified = (((Demo.f)))
 following = 1
 instance ((Kinded :: a :+: b))
 deriving instance ((Related :: a :*: b))
+a1 = (f) @Int x
+a2 = f @Int x
+a3 = (f) x
+a4 = ((f)) @Int x
+a5 = ((Demo.f)) @Int x
+a6 = (((<+>))) @Int x
+a7 = (((Demo.<+>))) @Int x
+a8 = (((f))) @Int
+a9 = (((f))) (type Int)

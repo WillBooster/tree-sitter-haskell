@@ -172,10 +172,19 @@ testCommand(
           { name: 'following', kind: 'variable', role: 'def', row: 39, column: 0 },
           { name: 'Kinded', kind: 'implementation', role: 'ref', row: 40, column: 11 },
           { name: 'Related', kind: 'implementation', role: 'ref', row: 41, column: 20 },
+          { name: 'f', kind: 'call', role: 'ref', row: 42, column: 6 },
+          { name: 'f', kind: 'call', role: 'ref', row: 43, column: 5 },
+          { name: 'f', kind: 'call', role: 'ref', row: 44, column: 6 },
+          { name: 'f', kind: 'call', role: 'ref', row: 45, column: 7 },
+          { name: 'f', kind: 'call', role: 'ref', row: 46, column: 12 },
+          { name: '<+>', kind: 'call', role: 'ref', row: 47, column: 8 },
+          { name: '<+>', kind: 'call', role: 'ref', row: 48, column: 13 },
+          { name: 'f', kind: 'call', role: 'ref', row: 49, column: 8 },
+          { name: 'f', kind: 'call', role: 'ref', row: 50, column: 8 },
         ])
       );
-      expect(tags.filter(({ kind }) => kind === 'call')).toHaveLength(4);
-      expect(tags.filter(({ row }) => row >= 40)).toHaveLength(2);
+      expect(tags.filter(({ kind }) => kind === 'call')).toHaveLength(13);
+      expect(tags.filter(({ row }) => row >= 40 && row <= 41)).toHaveLength(2);
       expect(tags.filter(({ kind, row }) => kind === 'function' && [5, 7, 22, 24].includes(row))).toHaveLength(0);
       expect(
         tags.filter(({ name }) =>

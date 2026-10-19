@@ -285,7 +285,7 @@ module.exports = {
 
   _callee_name: $ => choice($._vars, parens($, $._callee_name)),
 
-  parenthesized_callee: $ => parens($, $._callee_name),
+  parenthesized_callee: $ => prec.dynamic(1, parens($, $._callee_name)),
 
   _exp_apply: $ => prec.left('apply', seq(
     field('function', choice($.expression, $.parenthesized_callee)),

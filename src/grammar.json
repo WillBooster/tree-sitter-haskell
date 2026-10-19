@@ -4457,21 +4457,25 @@
       ]
     },
     "parenthesized_callee": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "_paren_open"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_callee_name"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_paren_close"
-        }
-      ]
+      "type": "PREC_DYNAMIC",
+      "value": 1,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_paren_open"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_callee_name"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_paren_close"
+          }
+        ]
+      }
     },
     "_exp_apply": {
       "type": "PREC_LEFT",
