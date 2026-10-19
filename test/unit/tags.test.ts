@@ -97,6 +97,16 @@ testCommand(
           { name: '%%', kind: 'class', role: 'def', row: 92, column: 6 },
           { name: '>>>', kind: 'class', role: 'def', row: 93, column: 13 },
           { name: ':#:', kind: 'class', role: 'def', row: 94, column: 13 },
+          { name: ':?>', kind: 'class', role: 'def', row: 96, column: 28 },
+          { name: ':*>', kind: 'class', role: 'def', row: 97, column: 28 },
+          { name: ':&>', kind: 'class', role: 'def', row: 98, column: 21 },
+          { name: ':^>', kind: 'class', role: 'def', row: 99, column: 40 },
+          { name: ':~>', kind: 'class', role: 'def', row: 100, column: 43 },
+          { name: ':+>', kind: 'class', role: 'def', row: 102, column: 23 },
+          { name: ':->', kind: 'class', role: 'def', row: 103, column: 23 },
+          { name: ':$>', kind: 'class', role: 'def', row: 104, column: 26 },
+          { name: ':%>', kind: 'class', role: 'def', row: 105, column: 46 },
+          { name: ':!>', kind: 'class', role: 'def', row: 109, column: 4 },
         ])
       );
       expect(
@@ -108,6 +118,7 @@ testCommand(
       ).toHaveLength(2);
       expect(tags.filter(({ role, row }) => role === 'ref' && row >= 76 && row <= 77)).toHaveLength(0);
       expect(tags.filter(({ role, row }) => role === 'def' && row >= 79 && row <= 85)).toHaveLength(7);
+      expect(tags.filter(({ role, kind, row }) => role === 'def' && kind === 'class' && row >= 96)).toHaveLength(10);
       expect(
         tags.filter(({ kind }) => kind === 'function' || kind === 'method').some(({ name }) => name === '->')
       ).toBe(false);

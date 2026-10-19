@@ -93,3 +93,18 @@ newtype (:%>) a b = PrefixWrap a
 type (%%) a b = (a, b)
 type family (>>>) a b
 data family (:#:) a
+
+type family {- comment -} a :?> b :: a :/: b
+data family {- comment -} a :*> b :: a :/: b
+data {- comment -} a :&> b :: a :/: b where
+data {- before -} Eq a => {- after -} a :^> b :: a :/: b where
+newtype {- before -} Eq a => {- after -} a :~> b :: a :/: b where
+class Commented a where
+  type {- comment -} a :+> b :: a :/: b
+  data {- comment -} a :-> b :: a :/: b
+type family {-| docs -} a :$> b :: a :/: b
+data family {-# ANN module "navigation" #-} a :%> b :: a :/: b
+type family
+#if NAVIGATION
+#endif
+  a :!> b :: a :/: b

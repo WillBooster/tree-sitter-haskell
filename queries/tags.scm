@@ -55,8 +55,8 @@
 
 [
   (type_synonym (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]) "=")
-  (type_family . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
-  (data_family . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+  (type_family . [(cpp) (comment) (haddock) (pragma)]* . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+  (data_family . [(cpp) (comment) (haddock) (pragma)]* . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
 ] @definition.class
 
 (declarations
@@ -73,8 +73,10 @@
     (prefix_id [(operator) @name (constructor_operator) @name])
     (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
   ])
-    (data_type . (context)? . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
-    (newtype . (context)? . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+    (data_type . [(cpp) (comment) (haddock) (pragma)]* . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+    (data_type . [(cpp) (comment) (haddock) (pragma)]* . (context) . [(cpp) (comment) (haddock) (pragma)]* . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+    (newtype . [(cpp) (comment) (haddock) (pragma)]* . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+    (newtype . [(cpp) (comment) (haddock) (pragma)]* . (context) . [(cpp) (comment) (haddock) (pragma)]* . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
   ] @definition.class)
 
 (class name: [
