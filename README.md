@@ -82,6 +82,8 @@ parser.setLanguage(await Language.load(haskell));
 
 The package also ships `grammar.js` with the files in `grammar/` it loads, the queries in `queries/`, and the node types in `src/node-types.json`.
 
+For code navigation, use `queries/tags.scm` (or `TAGS_QUERY` in Rust). It indexes module headers, top-level named functions and bindings, named types and classes, class and instance methods, and syntactic variable/operator calls. A signature and each equation have separate definition locations. Call references identify the called name without resolving its binding. Configure the CLI parser directories to include this grammar, then run `script/tree-sitter tags file.hs` to inspect the tags.
+
 In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-haskell) and on
 [willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter), the runtime this package is tested and
 fuzzed with:
