@@ -3,4 +3,4 @@
 (pattern/variable) @local.definition
 (expression/variable) @local.reference
 (expression/parenthesized_name (variable) @local.reference)
-(bind name: (parenthesized_name (variable) @local.definition))
+(_ name: (parenthesized_name (variable) @local.definition))

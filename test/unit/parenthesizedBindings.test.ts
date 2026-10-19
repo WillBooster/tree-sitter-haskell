@@ -86,3 +86,26 @@ test('incrementally wraps a simple binding without changing its definition locat
     parser.delete();
   }
 });
+
+test('retains binding definitions through the existing constructor-synonym alias without indexing them as declarations', () => {
+  const parser = new Parser().setLanguage(language);
+  const locals = new Query(language, localsText);
+  const tags = new Query(language, tagsText);
+  const source = 'pattern P <- Just a where ((build)) = Just a\nfollowing = 1\n';
+  const tree = parser.parse(source)!;
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    expect(
+      locals
+        .captures(tree.rootNode)
+        .filter(({ node }) => node.text === 'build')
+        .map(({ name, node }) => [name, node.startIndex, node.endIndex])
+    ).toEqual([['local.definition', source.indexOf('build'), source.indexOf('build') + 'build'.length]]);
+    expect(tags.captures(tree.rootNode).some(({ name, node }) => name === 'name' && node.text === 'build')).toBe(false);
+  } finally {
+    tree.delete();
+    tags.delete();
+    locals.delete();
+    parser.delete();
+  }
+});
