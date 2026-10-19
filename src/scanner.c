@@ -74,8 +74,8 @@
 
 #include <locale.h>
 
-#define S_ADVANCE advance_debug(env)
-#define S_SKIP skip_debug(env)
+#define S_ADVANCE advance(env)
+#define S_SKIP env->lexer->advance(env->lexer, true)
 #define MARK(s) mark_debug(env, s)
 #define dbg(...) do { fprintf(stderr, __VA_ARGS__); } while (0)
 
@@ -228,36 +228,10 @@ static const char *sym_names[] = {
 
 #ifdef TREE_SITTER_DEBUG
 
-typedef Array(int32_t) ParseLine;
-
-/**
- * A vector of lines, persisted across runs, for visualizing the current lexer position and scanner lookahead.
- */
-typedef Array(ParseLine) ParseLines;
-
-/**
- * Info about calls to `mark_end` and how far the lexer has progressed in a run.
- * Discarded after each run.
- */
 typedef struct {
   int marked;
-  unsigned marked_line;
-  unsigned start_col;
-  unsigned start_line;
-  unsigned end_col;
   const char *marked_by;
 } Debug;
-
-Debug debug_new(TSLexer *l) {
-  return (Debug) {
-    .marked = -1,
-    .marked_line = 0,
-    .start_col = l->get_column(l),
-    .start_line = 0,
-    .end_col = 0,
-    .marked_by = "",
-  };
-}
 
 #endif
 
@@ -576,22 +550,10 @@ typedef struct {
   uint32_t offset;
 } Lookahead;
 
-/**
- * The state that is persisted across scanner runs.
- *
- * Although 'Lookahead' is always reset when starting a new run, storing it in the state avoids having to allocate and
- * free the array repeatedly.
- * Instead we just reset the `len` attribute to 0 and reuse the previous memory.
- *
- * REVIEW: Can tree-sitter run the scanner concurrently on multiple nodes in the same file in some situations?
- */
 typedef struct {
   Contexts contexts;
   Newline newline;
   Lookahead lookahead;
-#ifdef TREE_SITTER_DEBUG
-  ParseLines parse;
-#endif
 } State;
 
 /**
@@ -615,7 +577,7 @@ static Env env_new(TSLexer *l, const bool * symbols, State *state) {
     .symop = 0,
     .state = state,
 #ifdef TREE_SITTER_DEBUG
-    .debug = debug_new(l),
+    .debug = {.marked = -1, .marked_by = ""},
 #endif
   };
 }
@@ -673,21 +635,8 @@ static bool set_result_symbol(Env *env, Symbol result) {
 static void mark_debug(Env *env, const char *restrict marked_by) {
   dbg("mark: %s\n", marked_by);
   env->debug.marked = (int) column(env);
-  env->debug.marked_line = 0;
   env->debug.marked_by = marked_by;
   env->lexer->mark_end(env->lexer);
-}
-
-static void append_parse_buffer(Env *env);
-
-static void advance_debug(Env *env) {
-  append_parse_buffer(env);
-  advance(env);
-}
-
-static void skip_debug(Env *env) {
-  append_parse_buffer(env);
-  env->lexer->advance(env->lexer, true);
 }
 
 #endif
@@ -1125,39 +1074,6 @@ static bool after_error(Env *env) { return valid(env, FAIL); }
 
 #ifdef TREE_SITTER_DEBUG
 
-static void push_parse_buffer_line(Env *env) {
-  ParseLine new_line = array_new();
-  array_reserve(&new_line, 1);
-  array_push(&env->state->parse, new_line);
-}
-
-static ParseLine *ensure_parse_buffer(Env *env) {
-  ParseLines *buffer = &env->state->parse;
-  if (buffer->size == 0) push_parse_buffer_line(env);
-  if (is_newline(PEEK)) push_parse_buffer_line(env);
-  return array_back(buffer);
-}
-
-static void append_parse_buffer(Env *env) {
-  ParseLine *current_line = ensure_parse_buffer(env);
-  if (is_newline(PEEK)) {
-    env->debug.marked_line++;
-    env->debug.start_line++;
-  }
-  else if (column(env) >= current_line->size) array_push(current_line, PEEK);
-}
-
-static void fill_parse_buffer(Env *env) {
-  env->debug.end_col = column(env);
-  while (!(is_newline(PEEK) || is_eof(env))) S_ADVANCE;
-}
-
-static bool seq(Env *env, const char *restrict s);
-
-static void print_lookahead(Env *env) {
-  dbg("lookahead: %.*ls\n", env->state->lookahead.size, env->state->lookahead.contents);
-}
-
 static const char * space = "<space>";
 static const char * newline_char = "\\n";
 
@@ -1250,7 +1166,7 @@ static void debug_valid(Env *env, const bool *syms) {
   }
 }
 
-static bool debug_init(Env *env) {
+static void debug_init(Env *env) {
   setlocale(LC_ALL, "C.UTF-8");
   dbg("\n");
   dbg("state:\n  syms = ");
@@ -1260,128 +1176,6 @@ static bool debug_init(Env *env) {
   dbg("\n  newline = ");
   debug_newline(env);
   dbg("\n");
-  return false;
-}
-
-void sgr(const char *restrict code) {
-  dbg("\x1b[%sm", code);
-}
-
-void color(unsigned c) {
-  char code[3];
-  sprintf(code, "3%d", c);
-  sgr(code);
-}
-
-void palette() {
-  color(4);
-  dbg("before");
-  color(2);
-  dbg("  marked");
-  color(3);
-  dbg("  advanced");
-  color(5);
-  dbg("  lookahead");
-  sgr("");
-  dbg("\n");
-}
-
-static bool debug_parse_metadata = false;
-
-static void dump_parse_metadata(Env *env) {
-  Debug *debug = &env->debug;
-  dbg(
-      "lines: %d | start_line: %d | start_col: %d | marked_line: %d | marked: %d | end_col: %d | persist lines: %d\n",
-      env->state->parse.size,
-      debug->start_line,
-      debug->start_col,
-      debug->marked_line,
-      debug->marked,
-      debug->end_col,
-      env->state->parse.size - debug->marked_line
-  );
-}
-
-/**
- * Note: We're printing individual characters here instead of using a format with precision like `%.*ls` and slicing
- * the buffer, because:
- * - The buffer contains wide characters, but `fprintf` counts bytes
- * - `fwprintf` counts wide characters, but can't be interleaved with `fprintf`, so we'd have to use that function, and
- *   therefore wide literals, everywhere, which is tedious
- */
-void debug_parse(Env *env) {
-  Debug *debug = &env->debug;
-  ParseLines *buffer = &env->state->parse;
-  uint32_t lines = buffer->size;
-  dbg("-----------------------\n");
-  // For investigating mistakes in the debugging code.
-  if (debug_parse_metadata) dump_parse_metadata(env);
-  if (lines > 0) {
-    color(4);
-    for (uint32_t i = 0; i < lines; i++) {
-	  ParseLine *line = array_get(buffer, i);
-      int32_t *buf = line->contents;
-      if (line->contents == NULL) break;
-      uint32_t pos = 0;
-
-      if (debug->start_line == lines - 1 - i) {
-        while (pos < debug->start_col) { dbg("%lc", buf[pos]); pos++; }
-        color(2);
-      }
-
-      if (debug->marked >= 0 && debug->marked_line == lines - 1 - i) {
-        while ((int) pos < debug->marked) { dbg("%lc", buf[pos]); pos++; }
-        color(3);
-      }
-
-      if (i == lines - 1) {
-        while (pos < debug->end_col) { dbg("%lc", buf[pos]); pos++; }
-        color(5);
-      }
-
-      while (pos < line->size) { dbg("%lc", buf[pos]); pos++; }
-
-      dbg("\n");
-    }
-    sgr("");
-  }
-  dbg("-----------------------\n");
-}
-
-static unsigned serialize_parse_lines(char *cursor, ParseLines *parse, unsigned to_copy) {
-  for (unsigned i = 0; i < parse->size; i++) {
-	ParseLine *line = array_get(parse, i);
-    unsigned line_size = line->size * sizeof(uint32_t);
-    to_copy += line_size + sizeof(uint32_t);
-    if (to_copy > TREE_SITTER_SERIALIZATION_BUFFER_SIZE) return 0;
-    *((uint32_t *) cursor) = line->size;
-    cursor += sizeof(line->size);
-    memcpy(cursor, line->contents, line_size);
-    cursor += line_size;
-  }
-  return to_copy;
-}
-
-static void deserialize_parse_lines(const char *cursor, ParseLines *parse, uint32_t size) {
-  // Ensure ParseLines has room for at _least_ as many lines as the new state
-  array_reserve(parse, size);
-  for (unsigned i = 0; i < size; i++) {
-	if (i >= parse->size) { array_push(parse, (ParseLine)array_new()); }
-    ParseLine *line = &parse->contents[i];
-    uint32_t line_len = *((uint32_t *) cursor);
-    cursor += sizeof(uint32_t);
-    array_reserve(line, line_len);
-    line->size = line_len;
-    unsigned line_size = line->size * sizeof(uint32_t);
-    memcpy(line->contents, cursor, line_size);
-    cursor += line_size;
-  }
-  // Free the excessive lines in the previous since we can't check in the next round whether there was a line in
-  // a slot before and reuse the pointer.
-  // This only happens when we didn't push any lines above, which would reset parse->len to len.
-  for (unsigned i = parse->size; i > size; i--) { array_delete(array_get(parse, i - 1)); }
-  // Truncate ParseLines in case the new state has fewer lines
-  parse->size = size;
 }
 
 void debug_finish(Env *env, Symbol result) {
@@ -1391,9 +1185,7 @@ void debug_finish(Env *env, Symbol result) {
   if (env->debug.marked == -1) dbg("%d", column(env));
   else dbg("%s@%d", env->debug.marked_by, env->debug.marked);
   dbg("\n\n");
-  fill_parse_buffer(env);
-  debug_parse(env);
-  env->state->parse.size -= env->debug.marked_line;
+  if (env->state->lookahead.size > 0) print_lookahead_chars_from(env, 0);
 }
 
 #endif
@@ -2955,7 +2747,7 @@ static void newline_lookahead(Env *env, Newline *newline) {
           break;
         }
         newline->end = lex(env, newline->indent == 0);
-        dbg("newline token: %s, %lc\n", token_names[newline->end], peek0(env));
+        dbg("newline token: %s\n", token_names[newline->end]);
         // Newlines without extras are only safe if `lex` didn't advance the lexer over non-whitespace.
         newline->unsafe |= !no_lookahead(env);
         switch (newline->end) {
@@ -3281,7 +3073,7 @@ static Symbol constraint_lookahead(Env *env) {
     newline_lookahead(env, &newline);
     if (newline.indent <= current_indent(env) && current_context(env) != Braces) break;
     CtrResult result = ctr_lookahead_step(env, &state, newline.end);
-    dbg("type: %lc, %s\n", peek0(env), ctr_result_names[result]);
+    dbg("type: %s\n", ctr_result_names[result]);
     switch (result) {
       case CtrArrowFound:
         state.context = true;
@@ -3374,17 +3166,6 @@ static Symbol scan_main(Env *env) {
   return FAIL;
 }
 
-#ifdef TREE_SITTER_DEBUG
-
-static Symbol scan_debug(Env *env) {
-  if (debug_init(env)) return update_state("debug init parse buffer");
-  Symbol result = scan_main(env);
-  debug_finish(env, result);
-  return result;
-}
-
-#endif
-
 static bool process_result(Env *env, Symbol result) {
   if (result == FAIL && is_eof(env) && no_lookahead(env)) {
     MARK("eof whitespace");
@@ -3394,8 +3175,8 @@ static bool process_result(Env *env, Symbol result) {
     else {
       result = force_end_context(env);
       if (result == FAIL) {
-        dbg("eof | context cap: %d | lookahead cap: %d | parse cap: %d\n",
-          env->state->contexts.capacity, env->state->lookahead.capacity, env->state->parse.capacity);}
+        dbg("eof | context cap: %d | lookahead cap: %d\n",
+          env->state->contexts.capacity, env->state->lookahead.capacity);}
     }
   }
   return set_result_symbol(env, result);
@@ -3405,11 +3186,16 @@ static bool process_result(Env *env, Symbol result) {
 static bool scan(Env *env) {
   if(after_error(env)) { dbg("error recovery\n"); return false; }
 #ifdef TREE_SITTER_DEBUG
-  Symbol result = scan_debug(env);
-#else
-  Symbol result = scan_main(env);
+  debug_init(env);
 #endif
+  Symbol result = scan_main(env);
+#ifdef TREE_SITTER_DEBUG
+  bool scanned = process_result(env, result);
+  debug_finish(env, scanned ? (Symbol) env->lexer->result_symbol : FAIL);
+  return scanned;
+#else
   return process_result(env, result);
+#endif
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -3419,28 +3205,15 @@ static bool scan(Env *env) {
 typedef struct {
   unsigned contexts;
   Newline newline;
-#ifdef TREE_SITTER_DEBUG
-  unsigned parse;
-#endif
 } Persist;
 
-/**
- * This function allocates the persistent state of the parser that is passed into the other API functions.
- */
 void *tree_sitter_haskell_external_scanner_create() {
   State *state = ts_calloc(1, sizeof(State));
   array_reserve(&state->contexts, 8);
   array_reserve(&state->lookahead, 8);
-#ifdef TREE_SITTER_DEBUG
-  array_reserve(&state->parse, 20);
-#endif
   return state;
 }
 
-/**
- * Main logic entry point.
- * Since the state is a singular vector, it can just be cast and used directly.
- */
 bool tree_sitter_haskell_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
   Env env = env_new(lexer, valid_symbols, (State*) payload);
   return scan(&env);
@@ -3449,17 +3222,11 @@ bool tree_sitter_haskell_external_scanner_scan(void *payload, TSLexer *lexer, co
 unsigned tree_sitter_haskell_external_scanner_serialize(void *payload, char *buffer) {
   State *state = (State *) payload;
   Persist persist = {.contexts = state->contexts.size, .newline = state->newline};
-#ifdef TREE_SITTER_DEBUG
-  persist.parse = state->parse.size;
-#endif
   unsigned contexts_size = persist.contexts * sizeof(Context);
   memcpy(buffer, &persist, sizeof(Persist));
   unsigned to_copy = sizeof(Persist) + contexts_size;
   if (to_copy > TREE_SITTER_SERIALIZATION_BUFFER_SIZE) return 0;
   memcpy(buffer + sizeof(Persist), state->contexts.contents, contexts_size);
-#ifdef TREE_SITTER_DEBUG
-  to_copy = serialize_parse_lines(buffer + sizeof(Persist) + contexts_size, &state->parse, to_copy);
-#endif
   return to_copy;
 }
 
@@ -3483,20 +3250,10 @@ void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char 
   state->lookahead.size = 0;
   state->lookahead.offset = 0;
   array_reserve(&state->lookahead, 8);
-#ifdef TREE_SITTER_DEBUG
-  if (length > 0)
-    deserialize_parse_lines(buffer + sizeof(Persist) + contexts_size, &state->parse, persist->parse);
-#endif
 }
 
 void tree_sitter_haskell_external_scanner_destroy(void *payload) {
   State *state = (State*) payload;
-#ifdef TREE_SITTER_DEBUG
-  palette();
-  ParseLines *parse = &state->parse;
-  for (unsigned i = 0; i < parse->size; i++) array_delete(array_get(parse, i));
-  array_delete(parse);
-#endif
   array_delete(&state->contexts);
   array_delete(&state->lookahead);
   ts_free(state);

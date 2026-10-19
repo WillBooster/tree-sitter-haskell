@@ -1,16 +1,30 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
-import { expect, test } from 'vitest';
+import { afterAll, beforeAll, expect, test } from 'vitest';
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 await Parser.init();
 const language = await Language.load(currentWasmPath(path.join(import.meta.dirname, '../..')));
 const tags = fs.readFileSync(path.join(import.meta.dirname, '../../queries/tags.scm'), 'utf8');
 
+let tagQuery: Query;
+let highlightQuery: Query;
+beforeAll(() => {
+  tagQuery = new Query(language, tags);
+  highlightQuery = new Query(
+    language,
+    fs.readFileSync(path.join(import.meta.dirname, '../../queries/highlights.scm'), 'utf8')
+  );
+}, 180_000);
+afterAll(() => {
+  tagQuery.delete();
+  highlightQuery.delete();
+});
+
 test('preserves subtraction after grouped names instead of applying them to negative arguments', () => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, tags);
+  const query = tagQuery;
   try {
     for (const expression of [
       '(f) - x',
@@ -40,18 +54,12 @@ test('preserves subtraction after grouped names instead of applying them to nega
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
 
 test('normalizes grouped name expressions while reserving call tags and highlights for function position', () => {
   const parser = new Parser().setLanguage(language);
-  const tagQuery = new Query(language, tags);
-  const highlightQuery = new Query(
-    language,
-    fs.readFileSync(path.join(import.meta.dirname, '../../queries/highlights.scm'), 'utf8')
-  );
   const source = 'held = (((f)))\ncalled = (((f))) (-x)\n';
   const tree = parser.parse(source)!;
   try {
@@ -80,19 +88,14 @@ test('normalizes grouped name expressions while reserving call tags and highligh
     expect(tree.rootNode.descendantsOfType('negation').map((node) => node.text)).toEqual(['-x']);
   } finally {
     tree.delete();
-    highlightQuery.delete();
-    tagQuery.delete();
     parser.delete();
   }
 });
 
 test('retains left-associative application when grouped names occupy argument positions', () => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, tags);
-  const highlights = new Query(
-    language,
-    fs.readFileSync(path.join(import.meta.dirname, '../../queries/highlights.scm'), 'utf8')
-  );
+  const query = tagQuery;
+  const highlights = highlightQuery;
   try {
     for (const [callee, grouped, finalArgument] of [
       ['map', '(helper)', 'xs'],
@@ -140,8 +143,6 @@ test('retains left-associative application when grouped names occupy argument po
       }
     }
   } finally {
-    highlights.delete();
-    query.delete();
     parser.delete();
   }
 });

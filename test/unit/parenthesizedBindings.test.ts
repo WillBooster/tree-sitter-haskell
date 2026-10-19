@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Edit, Language, Parser, Query } from '@willbooster/web-tree-sitter';
-import { expect, test } from 'vitest';
+import { afterAll, beforeAll, expect, test } from 'vitest';
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 await Parser.init();
@@ -9,10 +9,21 @@ const language = await Language.load(currentWasmPath(path.join(import.meta.dirna
 const tagsText = fs.readFileSync(path.join(import.meta.dirname, '../../queries/tags.scm'), 'utf8');
 const localsText = fs.readFileSync(path.join(import.meta.dirname, '../../queries/locals.scm'), 'utf8');
 
+let tagQuery: Query;
+let localQuery: Query;
+beforeAll(() => {
+  tagQuery = new Query(language, tagsText);
+  localQuery = new Query(language, localsText);
+}, 180_000);
+afterAll(() => {
+  tagQuery.delete();
+  localQuery.delete();
+});
+
 test('indexes deeply grouped simple bindings while retaining local definitions and pattern exclusions', () => {
   const parser = new Parser().setLanguage(language);
-  const tags = new Query(language, tagsText);
-  const locals = new Query(language, localsText);
+  const tags = tagQuery;
+  const locals = localQuery;
   try {
     for (const depth of [1, 2, 10, 50]) {
       const grouped = `${'('.repeat(depth)}named${')'.repeat(depth)}`;
@@ -42,15 +53,13 @@ test('indexes deeply grouped simple bindings while retaining local definitions a
       }
     }
   } finally {
-    tags.delete();
-    locals.delete();
     parser.delete();
   }
 });
 
 test('incrementally wraps a simple binding without changing its definition location or the following declaration', () => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, tagsText);
+  const query = tagQuery;
   const previous = parser.parse('named = 1\nfollowing = 2\n')!;
   try {
     previous.edit(
@@ -82,15 +91,14 @@ test('incrementally wraps a simple binding without changing its definition locat
     }
   } finally {
     previous.delete();
-    query.delete();
     parser.delete();
   }
 });
 
 test('retains binding definitions through the existing constructor-synonym alias without indexing them as declarations', () => {
   const parser = new Parser().setLanguage(language);
-  const locals = new Query(language, localsText);
-  const tags = new Query(language, tagsText);
+  const locals = localQuery;
+  const tags = tagQuery;
   const source = 'pattern P <- Just a where ((build)) = Just a\nfollowing = 1\n';
   const tree = parser.parse(source)!;
   try {
@@ -104,8 +112,6 @@ test('retains binding definitions through the existing constructor-synonym alias
     expect(tags.captures(tree.rootNode).some(({ name, node }) => name === 'name' && node.text === 'build')).toBe(false);
   } finally {
     tree.delete();
-    tags.delete();
-    locals.delete();
     parser.delete();
   }
 });
