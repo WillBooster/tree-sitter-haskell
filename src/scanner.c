@@ -634,13 +634,11 @@ static bool is_eof(Env *env) { return env->lexer->eof(env->lexer); }
 
 static bool not_eof(Env *env) { return !(is_eof(env)); }
 
-/**
- * The parser's position in the current line.
- * Note: This is expensive to use.
- */
+#ifdef TREE_SITTER_DEBUG
 static uint32_t column(Env *env) {
   return is_eof(env) ? 0 : env->lexer->get_column(env->lexer);
 }
+#endif
 
 static Symbol valid_layout_start_sym(Env *env);
 
