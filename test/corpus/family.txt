@@ -760,3 +760,71 @@ type instance a A.A.++ a = a
           (operator))
         (variable))
       (variable))))
+
+================================================================================
+family: injectivity after kind signature
+================================================================================
+
+type family MyTypeFamily (a :: Abc) :: (r :: Type) | a -> r where
+  MyTypeFamily 'Cba = SomeType
+
+type family Open a :: r | r -> a
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (type_family
+      (name)
+      (type_params
+        (parens
+          (annotated
+            (variable)
+            (name))))
+      (parens
+        (signature
+          (variable)
+          (name)))
+      (type_family_injectivity
+        (variable)
+        (variable))
+      (equations
+        (equation
+          (name)
+          (type_patterns
+            (promoted
+              (constructor)))
+          (name))))
+    (type_family
+      (name)
+      (type_params
+        (variable))
+      (variable)
+      (type_family_injectivity
+        (variable)
+        (variable)))))
+
+================================================================================
+family: injectivity without result signature
+================================================================================
+
+type family A a | a -> a where
+  A a = a
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (type_family
+      (name)
+      (type_params
+        (variable))
+      (type_family_injectivity
+        (variable)
+        (variable))
+      (equations
+        (equation
+          (name)
+          (type_patterns
+            (variable))
+          (variable))))))
