@@ -129,7 +129,8 @@ test.each([
   'f = do\tx\r\n\ty\r\n',
 ])('uses eight-column tab stops for layout in %j', (source) => {
   let column = 0;
-  const expanded = [...source]
+  const expanded = source
+    .split('')
     .map((character) => {
       if (character === '\n' || character === '\r' || character === '\f') {
         column = 0;
