@@ -26,8 +26,8 @@ module.exports = {
 
   char: _ => magic_hash(
     choice(
-      /'[^']'/,
-      /'\\[^ ]*'/,
+      /'[^'\r\n\f]'/,
+      seq("'\\", choice("'", /[^'\p{White_Space}]+/), "'"),
     ),
   ),
 
