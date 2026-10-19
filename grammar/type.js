@@ -29,9 +29,6 @@ module.exports = {
 
   _type_param_invisible: $ => prefix_at($, field('bind', $.type_param)),
 
-  /**
-   * This is a supertype.
-   */
   type_param: $ => choice(
     alias($._type_param_wildcard, $.wildcard),
     alias($._type_param_invisible, $.invisible),
@@ -101,9 +98,6 @@ module.exports = {
 
   _type_apply_arg: $ => choice($.type, alias($._at_type, $.kind_application)),
 
-  /**
-   * Type application, as in `Either e (Int, Text)` or `TypeRep @Int`.
-   */
   _type_apply: $ => prec.left('apply', seq(
     field('constructor', $.type),
     field('argument', $._type_apply_arg),
@@ -123,9 +117,6 @@ module.exports = {
   // unquantified type
   // ------------------------------------------------------------------------
 
-  /**
-   * This is a supertype.
-   */
   type: $ => choice(
     $._type_name,
     alias($._type_star, $.star),
@@ -240,9 +231,6 @@ module.exports = {
   // top level
   // ------------------------------------------------------------------------
 
-  /**
-   * This is a supertype.
-   */
   quantified_type: $ => choice(
     alias($._qtype_function, $.function),
     alias($._qtype_linear_function, $.linear_function),
@@ -293,7 +281,7 @@ module.exports = {
 
   _type_head_params: $ => choice(
     $._type_head_name,
-    alias($._type_head_parens, $.parens),
+    $._type_head_parens,
   ),
 
   _type_head_infix: $ => prec('infix', seq(
@@ -302,26 +290,9 @@ module.exports = {
     field('right_operand', $.type_param),
   )),
 
-  /**
-  * A type head introduces the name and parameters in the declaration of a data type/family, type synonym/family, or
-  * class.
-  *
-  * It can be in prefix or infix form:
-  *
-  * > A a b
-  * > a +++ b
-  *
-  * Parameters can be visible or invisible, the latter marked by a prefix `@`.
-  * They can be plain or parenthesized variable names, the latter with an optional kind signature.
-  * They can be wildcards.
-  *
-  * Examples: `a`, `@a`, `(a :: Type)`, `@(_ :: Type -> Type)`
-  *
-  * The rules are slightly relaxed compared to GHC.
-  */
   _type_head: $ => choice(
     seq($._type_head_params, optional(field('patterns', $.type_params))),
-    alias($._type_head_infix, $.infix),
+    field('head', alias($._type_head_infix, $.infix)),
   ),
 
   // ------------------------------------------------------------------------
@@ -339,18 +310,14 @@ module.exports = {
 
   _type_instance_head_params: $ => choice(
     field('name', $._tycons),
-    alias($._type_instance_head_parens, $.parens),
+    $._type_instance_head_parens,
   ),
 
   type_patterns: $ => repeat1(prec('patterns', $._type_apply_arg)),
 
-  /**
-   * The equivalent of a type head, for type instances, which can contain full type patterns rather than just variable
-   * binders.
-   */
   _type_instance_head: $ => choice(
     seq($._type_instance_head_params, optional(field('patterns', $.type_patterns))),
-    seq($._cond_infix, alias($._type_infix, $.infix)),
+    seq($._cond_infix, field('head', alias($._type_infix, $.infix))),
   ),
 
   // ------------------------------------------------------------------------

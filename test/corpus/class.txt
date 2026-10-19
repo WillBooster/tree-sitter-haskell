@@ -331,7 +331,7 @@ class a ++ b
 (haskell
   declarations: (declarations
     (class
-      (infix
+      head: (infix
         bind: (variable)
         operator: (operator)
         bind: (variable)))))
@@ -347,7 +347,7 @@ class a :++ b
 (haskell
   declarations: (declarations
     (class
-      (infix
+      head: (infix
         bind: (variable)
         operator: (constructor_operator)
         bind: (variable)))))
@@ -380,15 +380,13 @@ class ((((a)) `A` a))
 (haskell
   (declarations
     (class
-      (parens
+      (infix
         (parens
-          (infix
-            (parens
-              (parens
-                (variable)))
-            (infix_id
-              (name))
-            (variable)))))))
+          (parens
+            (variable)))
+        (infix_id
+          (name))
+        (variable)))))
 
 ================================================================================
 class: multiple type families unannotated

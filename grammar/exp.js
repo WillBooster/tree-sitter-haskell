@@ -78,9 +78,6 @@ module.exports = {
 
   _exp_list: $ => brackets($, sep1(',', field('element', $._exp)), optional(',')),
 
-  /**
-    * An expression like `[1,2..20]`.
-    */
   _exp_arithmetic_sequence: $ => brackets(
     $,
     field('from', $._exp),
@@ -119,9 +116,6 @@ module.exports = {
     alias($._exp, $.boolean),
   ),
 
-  /**
-   * This is a supertype.
-   */
   qualifiers: $ => seq(sep1(',', field('qualifier', $.qualifier))),
 
   _exp_list_comprehension: $ => brackets(
@@ -171,9 +165,6 @@ module.exports = {
 
   _exp_statement: $ => $._exp,
 
-  /**
-   * This is a supertype.
-   */
   statement: $ => choice(
     alias($._exp_statement, $.exp),
     alias($.generator, $.bind),
@@ -278,9 +269,6 @@ module.exports = {
     repeat(seq($._tight_dot, field('field', $.variable))),
   ),
 
-  /**
-   * A dot-syntax field projection like `var.name.othername`.
-   */
   _exp_projection: $ => seq(
     prec('projection', seq(
       field('expression', $.expression),
@@ -295,8 +283,12 @@ module.exports = {
 
   explicit_type: $ => parens($, 'type', field('type', $.type)),
 
+  _callee_name: $ => choice($._vars, parens($, $._callee_name)),
+
+  parenthesized_callee: $ => parens($, $._callee_name),
+
   _exp_apply: $ => prec.left('apply', seq(
-    field('function', $.expression),
+    field('function', choice($.expression, $.parenthesized_callee)),
     field('argument', choice(
       $.expression,
       alias($._at_type, $.type_application),
@@ -367,9 +359,6 @@ module.exports = {
   // top level
   // ------------------------------------------------------------------------
 
-  /**
-   * This is a supertype.
-   */
   expression: $ => choice(
     alias($._exp_infix, $.infix),
     alias($._exp_negation, $.negation),

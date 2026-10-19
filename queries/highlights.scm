@@ -449,3 +449,9 @@
 ; ----------------------------------------------------------------------------
 ; Spell checking
 (comment) @spell
+
+(parenthesized_callee
+  [
+    (variable) @function.call
+    (qualified id: (variable) @function.call)
+  ])

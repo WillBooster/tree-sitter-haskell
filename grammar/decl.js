@@ -68,7 +68,7 @@ module.exports = {
 
   _function_name: $ => field('name', $._var),
 
-  function_head_parens: $ => parens(
+  _function_head_parens: $ => parens(
     $,
     choice(
       $._function_head,
@@ -78,7 +78,7 @@ module.exports = {
 
   _function_head_patterns: $ => choice(
     $._function_name,
-    field('parens', $.function_head_parens),
+    $._function_head_parens,
   ),
 
   /**
@@ -98,7 +98,7 @@ module.exports = {
 
   _function_head: $ => choice(
     seq($._function_head_patterns, field('patterns', $.patterns)),
-    alias($._function_head_infix, $.infix),
+    field('head', alias($._function_head_infix, $.infix)),
   ),
 
   function: $ => seq(
@@ -119,9 +119,6 @@ module.exports = {
     $._bind_matches,
   )),
 
-  /**
-   * This is a supertype.
-   */
   decl: $ => choice(
     $.signature,
     $.function,

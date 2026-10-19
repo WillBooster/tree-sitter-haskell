@@ -85,7 +85,9 @@ The package also ships `grammar.js` with the files in `grammar/` it loads, the q
 
 For code navigation, use `queries/tags.scm` (or `TAGS_QUERY` in Rust). It indexes module headers, top-level named functions and simple named bindings, named types and classes, class and instance methods, and syntactic variable/operator calls. A signature and each equation have separate definition locations. Call references identify the called name without resolving its binding.
 
-Extra parentheses around a function or type declaration's head are not indexed; parenthesized operator identifiers such as `(:+:)` are supported. Call-name matching supports one extra expression-parenthesis wrapper; deeper wrappers are not indexed. Destructuring bindings, local pattern bindings and constructors (including pattern synonyms) are not indexed.
+Declaration names and variable/operator callees remain indexed through nested parentheses. Class and instance equations retain their method roles; grouping a value without applying it does not create a call reference. Destructuring bindings, local pattern bindings and constructors (including pattern synonyms) are not indexed.
+
+Declaration-head parentheses are anonymous syntax: the enclosing declaration directly exposes its `name`, parameter groups and infix `head` fields. Parentheses inside parameters and types retain their existing nodes. An applied parenthesized variable, qualified name or operator uses one `parenthesized_callee` node with a direct name child, independent of grouping depth; unapplied values and complex expression callees retain ordinary `parens` nodes. These changes affect public syntax trees.
 
 In a repository checkout, configure the CLI parser directories to include the grammar, then run `script/tree-sitter tags file.hs` to inspect the tags.
 
@@ -96,7 +98,7 @@ fuzzed with:
 ```toml
 [dependencies]
 tree-sitter = { package = "willbooster-tree-sitter", version = "6.0.0" }
-tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "4" }
+tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "5" }
 ```
 
 ```rust

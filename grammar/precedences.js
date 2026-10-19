@@ -41,25 +41,16 @@ module.exports = {
     // qualified names
     // ------------------------------------------------
 
-    /**
-     * Prioritize shifting over a tight infix dot over reducing to a qualified constructor or module.
-     */
     [
       'qualifying-module',
       'qualified-id',
     ],
 
-    /**
-     * Prioritize qualified variables over record field projection on constructors.
-     */
     [
       'qualifying-module',
       'con',
     ],
 
-    /**
-     * Prioritize qualified names over the infix operator dot in types.
-     */
     [
       'qualifying-module',
       'type-name',
@@ -103,6 +94,8 @@ module.exports = {
       'patterns',
       'apply',
     ],
+
+    [$.parenthesized_callee, $._exp_parens],
 
   ],
 

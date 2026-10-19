@@ -183,11 +183,9 @@ instance A ~~ A => ((A) a)
           (name)
           (operator)
           (name)))
-      (parens
-        (parens
-          (name))
-        (type_patterns
-          (variable))))))
+      (name)
+      (type_patterns
+        (variable)))))
 
 ================================================================================
 instance: associated type instance
@@ -436,19 +434,16 @@ instance ((A :: Type -> Constraint) A :: Constraint)
 (haskell
   declarations: (declarations
     (instance
-      (parens
-        name: (name)
-        kind: (name)))
+      name: (name)
+      kind: (name))
     (instance
-      (parens
-        (parens
-          name: (name)
-          kind: (function
-            parameter: (name)
-            result: (name)))
-        patterns: (type_patterns
-          (name))
-        kind: (name)))))
+      name: (name)
+      kind: (function
+        parameter: (name)
+        result: (name))
+      patterns: (type_patterns
+        (name))
+      kind: (name))))
 
 ================================================================================
 instance: minus

@@ -352,11 +352,10 @@ decl: infix function with extra args
 (haskell
   (declarations
     (function
-      (function_head_parens
-        (infix
-          (variable)
-          (operator)
-          (variable)))
+      (infix
+        (variable)
+        (operator)
+        (variable))
       (patterns
         (variable)
         (variable))
@@ -503,19 +502,14 @@ decl: function head with parens
 (haskell
   (declarations
     (function
-      (function_head_parens
-        (function_head_parens
-          (function_head_parens
-            (function_head_parens
-              (function_head_parens
-                (variable))
-              (patterns
-                (variable))))
-          (patterns
-            (variable)
-            (variable)))
-        (patterns
-          (variable)))
+      (variable)
+      (patterns
+        (variable))
+      (patterns
+        (variable)
+        (variable))
+      (patterns
+        (variable))
       (patterns
         (variable)
         (variable))
