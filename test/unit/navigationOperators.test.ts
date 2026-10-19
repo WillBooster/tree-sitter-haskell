@@ -2,9 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+import { currentWasmPath } from '../helpers/generationInputs.js';
 
 await Parser.init();
-const language = await Language.load(path.join(import.meta.dirname, '../../tree-sitter-haskell.wasm'));
+const language = await Language.load(currentWasmPath(path.join(import.meta.dirname, '../..')));
 const tags = fs.readFileSync(path.join(import.meta.dirname, '../../queries/tags.scm'), 'utf8');
 
 test('preserves subtraction after grouped names instead of applying them to negative arguments', () => {

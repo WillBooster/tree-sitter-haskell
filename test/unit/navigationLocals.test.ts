@@ -2,10 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+import { currentWasmPath } from '../helpers/generationInputs.js';
 
 test('retains local references for grouped variable callees without treating qualified or symbolic names as locals', async () => {
   await Parser.init();
-  const language = await Language.load(path.join(import.meta.dirname, '../../tree-sitter-haskell.wasm'));
+  const language = await Language.load(currentWasmPath(path.join(import.meta.dirname, '../..')));
   const parser = new Parser().setLanguage(language);
   const query = new Query(
     language,
