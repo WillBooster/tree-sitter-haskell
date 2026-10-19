@@ -318,6 +318,10 @@
         "named": true
       },
       {
+        "type": "parenthesized_name",
+        "named": true
+      },
+      {
         "type": "prefix_id",
         "named": true
       },
@@ -925,10 +929,6 @@
         "types": [
           {
             "type": "expression",
-            "named": true
-          },
-          {
-            "type": "parenthesized_callee",
             "named": true
           },
           {
@@ -4410,7 +4410,7 @@
     }
   },
   {
-    "type": "parenthesized_callee",
+    "type": "parenthesized_name",
     "named": true,
     "fields": {},
     "children": {

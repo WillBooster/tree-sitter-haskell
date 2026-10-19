@@ -1520,7 +1520,7 @@ type A = a - 1
       (variable)
       (match
         (negation
-          (parens
+          (parenthesized_name
             (variable)))))
     (bind
       (variable)

@@ -121,7 +121,7 @@
     (qualified id: (variable) @name)
     (prefix_id (operator) @name)
     (prefix_id (qualified id: (operator) @name))
-    (parenthesized_callee [
+    (parenthesized_name [
       (variable) @name
       (qualified id: (variable) @name)
       (prefix_id (operator) @name)

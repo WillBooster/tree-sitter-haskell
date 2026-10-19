@@ -283,12 +283,12 @@ module.exports = {
 
   explicit_type: $ => parens($, 'type', field('type', $.type)),
 
-  _callee_name: $ => choice($._vars, parens($, $._callee_name)),
+  _grouped_name: $ => choice($._vars, parens($, $._grouped_name)),
 
-  parenthesized_callee: $ => prec.dynamic(1, parens($, $._callee_name)),
+  parenthesized_name: $ => prec.dynamic(1, parens($, $._grouped_name)),
 
   _exp_apply: $ => prec.left('apply', seq(
-    field('function', choice($.expression, $.parenthesized_callee)),
+    field('function', $.expression),
     field('argument', choice(
       $.expression,
       alias($._at_type, $.type_application),
@@ -360,6 +360,7 @@ module.exports = {
   // ------------------------------------------------------------------------
 
   expression: $ => choice(
+    $.parenthesized_name,
     alias($._exp_infix, $.infix),
     alias($._exp_negation, $.negation),
     alias($._exp_apply, $.apply),

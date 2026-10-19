@@ -87,7 +87,7 @@ For code navigation, use `queries/tags.scm` (or `TAGS_QUERY` in Rust). It indexe
 
 Declaration names and variable/operator callees remain indexed through nested parentheses. Class and instance equations retain their method roles; grouping a value without applying it does not create a call reference. Destructuring bindings, local pattern bindings and constructors (including pattern synonyms) are not indexed.
 
-Declaration-head parentheses are anonymous syntax: the enclosing declaration directly exposes its `name`, parameter groups and infix `head` fields. Parentheses inside parameters and types retain their existing nodes. An applied parenthesized variable, qualified name or operator uses one `parenthesized_callee` node with a direct name child, independent of grouping depth; unapplied values and complex expression callees retain ordinary `parens` nodes. These changes affect public syntax trees.
+Declaration-head parentheses are anonymous syntax: the enclosing declaration directly exposes its `name`, parameter groups and infix `head` fields. Parentheses inside parameters and types retain their existing nodes. A parenthesized variable name or symbolic variable operator, including qualified forms, uses one `parenthesized_name` node with a direct name child, independent of grouping depth. This also applies to unapplied names; only function position creates a call reference or call highlight. Complex expressions retain ordinary `parens` nodes. These changes affect public syntax trees.
 
 In a repository checkout, configure the CLI parser directories to include the grammar, then run `script/tree-sitter tags file.hs` to inspect the tags.
 

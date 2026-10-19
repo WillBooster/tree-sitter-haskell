@@ -450,8 +450,9 @@
 ; Spell checking
 (comment) @spell
 
-(parenthesized_callee
-  [
-    (variable) @function.call
-    (qualified id: (variable) @function.call)
-  ])
+(expression/apply
+  function: (parenthesized_name
+    [
+      (variable) @function.call
+      (qualified id: (variable) @function.call)
+    ]))

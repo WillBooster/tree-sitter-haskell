@@ -4430,7 +4430,7 @@
         }
       ]
     },
-    "_callee_name": {
+    "_grouped_name": {
       "type": "CHOICE",
       "members": [
         {
@@ -4446,7 +4446,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_callee_name"
+              "name": "_grouped_name"
             },
             {
               "type": "SYMBOL",
@@ -4456,7 +4456,7 @@
         }
       ]
     },
-    "parenthesized_callee": {
+    "parenthesized_name": {
       "type": "PREC_DYNAMIC",
       "value": 1,
       "content": {
@@ -4468,7 +4468,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "_callee_name"
+            "name": "_grouped_name"
           },
           {
             "type": "SYMBOL",
@@ -4487,17 +4487,8 @@
             "type": "FIELD",
             "name": "function",
             "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "expression"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "parenthesized_callee"
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "expression"
             }
           },
           {
@@ -4740,6 +4731,10 @@
     "expression": {
       "type": "CHOICE",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "parenthesized_name"
+        },
         {
           "type": "ALIAS",
           "content": {
@@ -12989,17 +12984,17 @@
       "expression"
     ],
     [
-      "_callee_name",
+      "_grouped_name",
       "_function_name",
       "pattern",
       "expression"
     ],
     [
-      "_callee_name",
+      "_grouped_name",
       "expression"
     ],
     [
-      "_callee_name",
+      "_grouped_name",
       "pattern",
       "expression"
     ],
@@ -13162,7 +13157,11 @@
     [
       {
         "type": "SYMBOL",
-        "name": "parenthesized_callee"
+        "name": "_grouped_name"
+      },
+      {
+        "type": "SYMBOL",
+        "name": "parenthesized_name"
       },
       {
         "type": "SYMBOL",

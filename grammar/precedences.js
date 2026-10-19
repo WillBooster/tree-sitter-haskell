@@ -95,7 +95,7 @@ module.exports = {
       'apply',
     ],
 
-    [$.parenthesized_callee, $._exp_parens],
+    [$._grouped_name, $.parenthesized_name, $._exp_parens],
 
   ],
 

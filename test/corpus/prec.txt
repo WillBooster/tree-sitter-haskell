@@ -806,7 +806,7 @@ a = a.(a)
         (infix
           (variable)
           (operator)
-          (parens
+          (parenthesized_name
             (variable)))))))
 
 ================================================================================

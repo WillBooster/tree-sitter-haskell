@@ -2173,7 +2173,7 @@ a = #øøø
       (variable)
       (match
         (apply
-          (parenthesized_callee
+          (parenthesized_name
             (variable))
           (label))))
     (bind
