@@ -1117,3 +1117,51 @@ a :: () => a
       (context
         (unit)
         (variable)))))
+
+================================================================================
+context: first unboxed elements retain following bindings
+================================================================================
+
+tupleValue :: (# A a => a, a #)
+tupleValue = undefined
+sumValue :: (# A a => a | a #)
+sumValue = undefined
+asciiStar :: * ~ k => Proxy k
+asciiStar = undefined
+unicodeStar :: ★ ~ k => Proxy k
+unicodeStar = undefined
+following = 1
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (signature
+      (variable)
+      (unboxed_tuple
+        (context
+          (apply (name) (variable))
+          (variable))
+        (variable)))
+    (bind (variable) (match (variable)))
+    (signature
+      (variable)
+      (unboxed_sum
+        (context
+          (apply (name) (variable))
+          (variable))
+        (variable)))
+    (bind (variable) (match (variable)))
+    (signature
+      (variable)
+      (context
+        (infix (star) (operator) (variable))
+        (apply (name) (variable))))
+    (bind (variable) (match (variable)))
+    (signature
+      (variable)
+      (context
+        (infix (star) (operator) (variable))
+        (apply (name) (variable))))
+    (bind (variable) (match (variable)))
+    (bind (variable) (match (literal (integer))))))
