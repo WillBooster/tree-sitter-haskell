@@ -3379,7 +3379,7 @@ instance A where
           (name))))))
 
 ================================================================================
-layout: comment containing tab exceeding layout indent
+layout: comment tab stops before layout indent
 ================================================================================
 
 a = a
@@ -3399,10 +3399,10 @@ a = a
         (bind
           (variable)
           (match
-            (apply
-              (variable)
-              (comment)
-              (variable))))))))
+            (variable)))
+        (comment)
+        (ERROR
+          (variable))))))
 
 ================================================================================
 layout: typed hole in do before function signature

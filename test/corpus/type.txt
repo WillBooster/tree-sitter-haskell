@@ -1194,3 +1194,79 @@ type A = ∀ -> a
       (name)
       (forall_required
         (variable)))))
+
+================================================================================
+type: qualified linear arrow operator
+================================================================================
+
+type A = (A.A.->.)
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (type_synonym
+      (name)
+      (prefix_id
+        (qualified
+          (module
+            (module_id)
+            (module_id))
+          (operator))))))
+
+================================================================================
+type: operator with linear arrow prefix
+================================================================================
+
+type A = A ->.. A
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (type_synonym
+      (name)
+      (infix
+        (name)
+        (operator)
+        (name)))))
+
+================================================================================
+type: linear function with constrained result
+================================================================================
+
+f :: a ->. Show a => String
+g :: a ⊸ Show a => String
+h :: a -> Show a => String
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (signature
+      (variable)
+      (linear_function
+        (variable)
+        (context
+          (apply
+            (name)
+            (variable))
+          (name))))
+    (signature
+      (variable)
+      (linear_function
+        (variable)
+        (context
+          (apply
+            (name)
+            (variable))
+          (name))))
+    (signature
+      (variable)
+      (function
+        (variable)
+        (context
+          (apply
+            (name)
+            (variable))
+          (name))))))

@@ -13,8 +13,7 @@ Haskell grammar for [tree-sitter](https://github.com/tree-sitter/tree-sitter), f
 to its authors and contributors. This is not an official release of that project.
 
 This fork is based on upstream's version 0.23.1 grammar and generates the parser with the
-[WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parser carries that fork's own ABI number, so it loads only with that fork's runtime, version 2.0.0
-or later; upstream's runtime rejects it.
+[WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parser carries that fork's own ABI number, so it loads only with that fork's runtime, version 6.0.0 or later in the 6.x series; upstream's runtime rejects it.
 [Upstream's README at that version](https://github.com/tree-sitter/tree-sitter-haskell/blob/v0.23.1/README.md) lists
 the supported language extensions and, under "Querying", explains how to query the grammar's supertypes; it is the
 readme that the comments in `grammar.js` refer to.
@@ -23,7 +22,8 @@ readme that the comments in `grammar.js` refer to.
 
 The fork's main differences from upstream 0.23.1 are:
 
-- **Whitespace**: horizontal tabs separate tokens and are accepted before Haddock markers.
+- **Whitespace**: horizontal tabs separate tokens, are accepted before Haddock markers, and advance layout to the next eight-column tab stop.
+- **MultilineStrings**: triple-quoted literals retain their complete source as a single `string` node, including embedded quotes, escapes, and string gaps.
 - **Comment scanning**: empty block comments such as `{--}` terminate at their closing delimiter and preserve following code.
   An ordinary line comment does not absorb a following marked Haddock comment.
   Unmarked continuation lines remain in their preceding Haddock block, including space or tab indentation and LF or CRLF newlines.
@@ -43,7 +43,7 @@ reports an error: the lexers of the WillBooster/tree-sitter generator let charac
 ## Usage
 
 The npm package ships `tree-sitter-haskell.wasm` for
-[@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter) version 2.0.0 or later, which runs in Node.js, Bun, browsers, and Cloudflare Workers. In Node.js and Bun, load the grammar from its path:
+[@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter) version 6.0.0 or later in the 6.x series, which runs in Node.js, Bun, browsers, and Cloudflare Workers. In Node.js and Bun, load the grammar from its path:
 
 ```js
 import { fileURLToPath } from 'node:url';
@@ -89,8 +89,8 @@ fuzzed with:
 
 ```toml
 [dependencies]
-tree-sitter = { package = "willbooster-tree-sitter", version = "2.0.0" }
-tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "1" }
+tree-sitter = { package = "willbooster-tree-sitter", version = "6.0.0" }
+tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "4" }
 ```
 
 ```rust
@@ -128,10 +128,9 @@ and the release build regenerate the parsers before compiling them.
 - the corpus in `test/corpus`, with the native build and with the Wasm build (the first run downloads the WASI SDK);
 - an incremental-parsing check (`test/unit/incremental.test.ts`): `script/fuzz-corpus` runs `tree-sitter fuzz`, which
   edits each corpus case at random, reparses it, undoes the edits, and reparses again. `TREE_SITTER_SEED`,
-  `TREE_SITTER_ITERATIONS`, and `TREE_SITTER_EDITS` run other or more edits. It skips the eleven cases that
-  upstream's own parser also reparses differently from a fresh parse (see `script/fuzz-corpus`);
+  `TREE_SITTER_ITERATIONS`, and `TREE_SITTER_EDITS` run other or more edits;
 - a check that the real-world Haskell files in `examples/`, the checked-in ones and those of the cloned repositories, fail to
-  parse exactly as listed in `script/known-failures.txt`; upstream's prebuilt parser fails on the same files. The first run clones the repositories. The example repositories are pinned to commits in
+  parse exactly as listed in `script/known-failures.txt`. The first run clones the repositories. The example repositories are pinned to commits in
   `script/parse-examples`. After a grammar change or a moved pin alters that list, `script/parse-examples` rewrites it;
   review its diff before committing;
 - a performance check (`test/unit/performance.test.ts`) that recovering from an error on each line takes linear

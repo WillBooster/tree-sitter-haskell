@@ -131,6 +131,7 @@ typedef enum {
   WHERE,
   IN,
   ARROW,
+  LINEAR_ARROW,
   BAR,
   DERIVING,
   COMMENT,
@@ -185,6 +186,7 @@ static const char *sym_names[] = {
   "where",
   "in",
   "arrow",
+  "linear_arrow",
   "bar",
   "deriving",
   "comment",
@@ -330,6 +332,7 @@ typedef enum {
   LHash,
   LBar,
   LArrow,
+  LLArrow,
   LCArrow,
   LTexpCloser,
   LQuoteClose,
@@ -372,6 +375,7 @@ static const char *token_names[] = {
   "hash",
   "bar",
   "arrow",
+  "linear-arrow",
   "ctr",
   "texp-closer",
   "quote-close",
@@ -597,6 +601,7 @@ typedef struct {
   TSLexer *lexer;
   const bool *symbols;
   uint32_t symop;
+  uint32_t lookahead_column;
   State *state;
 #ifdef TREE_SITTER_DEBUG
   Debug debug;
@@ -648,6 +653,8 @@ static uint32_t column(Env *env) {
  */
 static void advance(Env *env) {
   if (not_eof(env)) {
+    if (env->state->lookahead.size == 0)
+      env->lookahead_column = env->lexer->get_display_column(env->lexer, 8);
     array_push(&env->state->lookahead, PEEK);
     env->lexer->advance(env->lexer, false);
   }
@@ -920,12 +927,10 @@ static bool no_lookahead(Env *env) {
   return env->state->lookahead.size == 0;
 }
 
-/**
- * Return the column of the first lookahead character of the current run.
- * This is needed for starting layouts in interior mode, since we don't count positions across interior runs.
- */
 static uint32_t start_column(Env *env) {
-  return column(env) - env->state->lookahead.size;
+  return env->state->lookahead.size == 0
+    ? env->lexer->get_display_column(env->lexer, 8)
+    : env->lookahead_column;
 }
 
 /**
@@ -1581,15 +1586,37 @@ static bool odd_backslashes_before(Env *env, int32_t index) {
   return odd;
 }
 
-/**
- * Advance before the next unescaped double quote.
- */
+static uint32_t take_multiline_string_literal(Env *env);
+static bool is_string_gap_space(int32_t c);
+
 static uint32_t take_string_literal(Env *env) {
+  if (seq(env, "\"\"\"")) return take_multiline_string_literal(env);
   uint32_t end = 1;
   while (true) {
     end = advance_until_char(env, end, '"') + 1;
     if (is_eof(env) || !odd_backslashes_before(env, (int) end - 2)) return end;
   }
+}
+
+static uint32_t take_multiline_string_literal(Env *env) {
+  uint32_t end = 3;
+  while (not_eof(env)) {
+    if (seq_from(env, "\"\"\"", end)) return end + 3;
+    if (char_at(env, end, '\\')) {
+      int32_t escaped = peek(env, ++end);
+      if (is_string_gap_space(escaped)) end = advance_while(env, end, is_string_gap_space);
+      else if (escaped == '^') {
+        int32_t control = peek(env, end + 1);
+        if (control >= '@' && control <= '_') end++;
+      }
+    }
+    end++;
+  }
+  return end;
+}
+
+static bool is_string_gap_space(int32_t c) {
+  return is_space_char(c) || (c >= '\t' && c <= '\r') || c == 0x85 || c == 0x2028 || c == 0x2029;
 }
 
 /**
@@ -1816,13 +1843,6 @@ static Symbol start_layout(Env *env, const StartLayout start, uint32_t indent, c
   return finish(start.sym, desc);
 }
 
-/**
- * The indent of a layout started at an interior token can only be determined by calling `get_column`.
- * This is an expensive operation, but hopefully it is rare enough to not make a substantial dent.
- * Because we might have advanced beyond the layout's start position to check conditions, we need to subtract the length
- * of the lookahead buffer from the current column.
- * Whitespace is skipped, and not added to the buffer, so the resulting position is after whitespace.
- */
 static Symbol start_layout_interior(Env *env, Lexed next) {
   StartLayout start = valid_layout_start(env, next);
   if (start.sort == NoContext) return FAIL;
@@ -1914,6 +1934,12 @@ static Symbol end_layout_indent(Env *env) {
   return FAIL;
 }
 
+static bool pending_layout_semicolon(Env *env) {
+  return is_semicolon_context(env)
+    && !(env->state->newline.no_semi || env->state->newline.skip_semi)
+    && indent_lesseq(env, env->state->newline.indent);
+}
+
 /**
  * An expression layout may be closed by an infix operator when it is not valid at that position:
  *
@@ -1930,6 +1956,7 @@ static Symbol end_layout_indent(Env *env) {
  * It doesn't apply to multi-way if layouts, because those don't use semicolons.
  */
 static Symbol end_layout_infix(Env *env) {
+  if (newline_active(env) && valid(env, SEMICOLON) && pending_layout_semicolon(env)) return FAIL;
   if (!valid(env, VARSYM) && !valid(env, CONSYM)) return end_layout(env, "symop invalid");
   return FAIL;
 }
@@ -2135,8 +2162,9 @@ static Lexed lex_symop(Env *env) {
         else if (opening_token(env, 1)) return LDotOpen;
         else return LSymop;
       case 0x2192: // →
-      case 0x22b8: // ⊸
         return LArrow;
+      case 0x22b8: // ⊸
+        return LLArrow;
       case 0x21d2: // ⇒
         return LCArrow;
       case '=':
@@ -2186,7 +2214,7 @@ static Lexed lex_symop(Env *env) {
   }
   else switch (c1) {
     case '-':
-      if (seq(env, "->.")) return LArrow;
+      if (len == 3 && seq(env, "->.")) return LLArrow;
       break;
     case '.':
       return LDotSymop;
@@ -2526,7 +2554,7 @@ static uint32_t consume_block_comment(Env *env, uint32_t col) {
         break;
       case '\t':
         S_ADVANCE;
-        col += 7;
+        col += 7 - (col - 1) % 8;
         break;
       default:
         S_ADVANCE;
@@ -2691,13 +2719,7 @@ static Symbol resolve_semicolon(Env *env, Lexed next) {
  * - `skip_semi` was set because the previous line ended with an explicit semicolon.
  */
 static Symbol semicolon(Env *env) {
-  if (
-      is_semicolon_context(env)
-      &&
-      !(env->state->newline.no_semi || env->state->newline.skip_semi)
-      &&
-      indent_lesseq(env, env->state->newline.indent)
-     ) {
+  if (pending_layout_semicolon(env)) {
     env->state->newline.no_semi = true;
     return finish(SEMICOLON, "newline");
   }
@@ -2744,6 +2766,9 @@ static Symbol process_token_safe(Env *env, Lexed next) {
     case LUnboxedClose:
       SEQ(token_end_layout_texp(env));
       return end_layout_infix(env);
+    case LLArrow:
+      if (!valid(env, LINEAR_ARROW)) return end_layout_infix(env);
+      break;
     case LArrow:
       if (!valid(env, ARROW)) return token_end_layout_texp(env);
       break;
@@ -2789,6 +2814,9 @@ static Symbol process_token_symop(Env *env, bool whitespace, Lexed next) {
     case LSymopSpecial:
       SEQ(left_section_op(env, symop_lookahead(env)));
       if (valid(env, MINUS) && match_symop(env, "-")) return finish(MINUS, "symop");
+      break;
+    case LLArrow:
+      if (!valid(env, LINEAR_ARROW)) return finish_symop(env, VARSYM);
       break;
     case LUnboxedClose:
     case LHash:
@@ -2921,7 +2949,7 @@ static void newline_lookahead(Env *env, Newline *newline) {
         break;
       case '\t':
         skip_over(env, 0);
-        newline->indent += 8;
+        newline->indent += 8 - newline->indent % 8;
         break;
       default:
         if (is_space_char(peek0(env))) {
@@ -3142,6 +3170,7 @@ static CtrResult ctr_top(Env *env, Lexed next) {
     case LBar:
       return CtrBarFound;
     case LArrow:
+    case LLArrow:
     case LWhere:
     case LDotDot:
     case LSemi:

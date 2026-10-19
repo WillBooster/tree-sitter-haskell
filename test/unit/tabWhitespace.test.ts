@@ -119,3 +119,75 @@ test.each([
     tree.delete();
   }
 });
+
+test.each([
+  'f = do\tx\n\ty\n',
+  'f\t= do\tx\n\t\ty\n',
+  'f = do\n \tx\n        y\n',
+  'f = do {-\t-} x\n                   y\n',
+  'f = ("\t", do x\n              y)\n',
+  'f = do\tx\r\n\ty\r\n',
+])('uses eight-column tab stops for layout in %j', (source) => {
+  let column = 0;
+  const expanded = [...source]
+    .map((character) => {
+      if (character === '\n' || character === '\r' || character === '\f') {
+        column = 0;
+        return character;
+      }
+      const width = character === '\t' ? 8 - (column % 8) : 1;
+      column += width;
+      return character === '\t' ? ' '.repeat(width) : character;
+    })
+    .join('');
+  const reference = parser.parse(expanded)!;
+  const actual = parser.parse(source)!;
+  try {
+    expect(reference.rootNode.hasError).toBe(false);
+    expect(actual.rootNode.hasError).toBe(false);
+    expect(actual.rootNode.toString()).toBe(reference.rootNode.toString());
+  } finally {
+    reference.delete();
+    actual.delete();
+  }
+});
+
+test.each([
+  ['f = (" ", do x\n              y)\n', 6],
+  ['f = do {- -} x\n                   y\n', 9],
+] as const)('updates layout after editing a tab inside an earlier token: %j', (source, index) => {
+  let tree = parser.parse(source)!;
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    const originalStatements = tree.rootNode.descendantsOfType('exp').map((node) => node.text);
+    expect(originalStatements).toHaveLength(1);
+    for (const character of ['\t', ' ']) {
+      tree.edit(
+        new Edit({
+          startIndex: index,
+          oldEndIndex: index + 1,
+          newEndIndex: index + 1,
+          startPosition: { row: 0, column: index },
+          oldEndPosition: { row: 0, column: index + 1 },
+          newEndPosition: { row: 0, column: index + 1 },
+        })
+      );
+      const edited = `${source.slice(0, index)}${character}${source.slice(index + 1)}`;
+      const next = parser.parse(edited, tree)!;
+      tree.delete();
+      tree = next;
+      const fresh = parser.parse(edited)!;
+      try {
+        expect(tree.rootNode.hasError).toBe(false);
+        expect(tree.rootNode.toString()).toBe(fresh.rootNode.toString());
+        expect(tree.rootNode.descendantsOfType('exp').map((node) => node.text)).toEqual(
+          character === '\t' ? ['x', 'y'] : originalStatements
+        );
+      } finally {
+        fresh.delete();
+      }
+    }
+  } finally {
+    tree.delete();
+  }
+});

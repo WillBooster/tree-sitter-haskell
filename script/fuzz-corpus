@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# Runs `tree-sitter fuzz`: it edits each corpus case at random, reparses it incrementally, undoes the edits, and reparses
-# again.
-
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -12,28 +9,7 @@ mkdir -p .tmp/fuzz
 parser=$(mktemp .tmp/fuzz/haskell.XXXXXX)
 trap 'rm -f "$parser"' EXIT
 script/tree-sitter build -o "$parser"
-# With the seed, iteration count, and edit count below, the defaults of this script, the reparse of each excluded case
-# after an edit is made and undone gives a different tree from a fresh parse. Upstream's own 0.23.1 parser fails the same
-# cases with the same settings, on the WillBooster/tree-sitter 1.5.1 CLI and on upstream's CLI 0.27.0, so they say
-# nothing about this package's tables. Other settings edit other places and can fail other cases for the same reason: run upstream's parser with them
-# before taking a new failure for this package's.
-# The CLI matches the pattern against `corpus - <file> - <name>`; the language name it prints before that is not part
-# of the matched text.
 export TREE_SITTER_SEED=${TREE_SITTER_SEED:-1}
 export TREE_SITTER_ITERATIONS=${TREE_SITTER_ITERATIONS:-1000}
 export TREE_SITTER_EDITS=${TREE_SITTER_EDITS:-10}
-excluded=(
-  'decl: guards'
-  'exp: let basic'
-  'exp: multi-way if with two matches in a guard rhs'
-  'layout: do nested'
-  'layout: let with explicit semicolon'
-  'layout: let with multiple explicit semicolons before and after newline'
-  'layout: infix in statement position ends layout'
-  'layout: case in let, single line'
-  'layout: do in case in nested let, single line'
-  'layout: obscure case where eof layout end happens prematurely without no_lookahead check'
-  'Close nested layouts at closing bracket in decl quote'
-)
-script/tree-sitter fuzz --lib-path "$parser" --lang-name haskell \
-  --exclude " - ($(IFS='|'; echo "${excluded[*]}"))\$"
+script/tree-sitter fuzz --lib-path "$parser" --lang-name haskell

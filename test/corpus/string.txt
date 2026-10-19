@@ -60,3 +60,95 @@ a = "a"##
       (match
         (literal
           (string))))))
+
+================================================================================
+string: multiline basic
+================================================================================
+
+a = """
+  first
+  second
+  """
+after = "ordinary"
+
+--------------------------------------------------------------------------------
+
+(haskell (declarations (bind (variable) (match (literal (string)))) (bind (variable) (match (literal (string))))))
+
+================================================================================
+string: multiline escaped delimiter
+================================================================================
+
+a = """"\""" still inside"""
+after = "ordinary"
+
+--------------------------------------------------------------------------------
+
+(haskell (declarations (bind (variable) (match (literal (string)))) (bind (variable) (match (literal (string))))))
+
+================================================================================
+string: multiline quotes before escape
+================================================================================
+
+a = """""\"" still inside"""
+after = "ordinary"
+
+--------------------------------------------------------------------------------
+
+(haskell (declarations (bind (variable) (match (literal (string)))) (bind (variable) (match (literal (string))))))
+
+================================================================================
+string: multiline gap
+================================================================================
+
+a = """first\
+  \second"""
+after = "ordinary"
+
+--------------------------------------------------------------------------------
+
+(haskell (declarations (bind (variable) (match (literal (string)))) (bind (variable) (match (literal (string))))))
+
+================================================================================
+string: multiline arrow inside type string
+================================================================================
+
+value :: Proxy """a " => b"""
+value = undefined
+
+--------------------------------------------------------------------------------
+
+(haskell (declarations (signature (variable) (apply (name) (literal (string)))) (bind (variable) (match (variable)))))
+
+================================================================================
+string: multiline context after type string
+================================================================================
+
+value :: Proxy """a "b""" => Int
+value = undefined
+
+--------------------------------------------------------------------------------
+
+(haskell (declarations (signature (variable) (context (apply (name) (literal (string))) (name))) (bind (variable) (match (variable)))))
+
+================================================================================
+string: multiline closing gap
+================================================================================
+
+value = """first\ \"""
+after = """second"""
+
+--------------------------------------------------------------------------------
+
+(haskell (declarations (bind (variable) (match (literal (string)))) (bind (variable) (match (literal (string))))))
+
+================================================================================
+string: multiline caret controls in context
+================================================================================
+
+value :: Proxy """a\^@\^A\^Z\^[\^\\^]\^^\^_""" => Int
+after = """second"""
+
+--------------------------------------------------------------------------------
+
+(haskell (declarations (signature (variable) (context (apply (name) (literal (string))) (name))) (bind (variable) (match (literal (string))))))
