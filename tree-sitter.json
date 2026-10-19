@@ -8,6 +8,7 @@
       "path": ".",
       "file-types": ["hs", "hs-boot"],
       "highlights": "queries/highlights.scm",
+      "tags": "queries/tags.scm",
       "injection-regex": "^(hs|haskell)$"
     }
   ],

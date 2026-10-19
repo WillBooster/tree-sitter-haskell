@@ -44,6 +44,9 @@ pub const HIGHLIGHTS_QUERY: &str = include_str!("../../queries/highlights.scm");
 /// The syntax highlighting query for languages injected into this one.
 pub const INJECTIONS_QUERY: &str = include_str!("../../queries/injections.scm");
 
+/// The code-navigation tagging query for this language.
+pub const TAGS_QUERY: &str = include_str!("../../queries/tags.scm");
+
 /// The local-variable syntax highlighting query for this language.
 pub const LOCALS_QUERY: &str = include_str!("../../queries/locals.scm");
 
