@@ -3326,7 +3326,8 @@ static Symbol constraint_lookahead(Env *env) {
 // Actions that are executed for interior positions
 // --------------------------------------------------------------------------------------------------------
 
-static Symbol process_token_constraint(Env *env) {
+static Symbol process_token_constraint(Env *env, Lexed next) {
+  if (next == LSymopSpecial || next == LSymop || next == LHash) return FAIL;
   if (
       valid(env, CONTEXT)
       ||
@@ -3346,7 +3347,7 @@ static Symbol interior(Env *env, bool whitespace) {
   SEQ(resolve_semicolon(env, next));
   SEQ(process_token_interior(env, next));
   SEQ(process_token_symop(env, whitespace, next));
-  SEQ(process_token_constraint(env));
+  SEQ(process_token_constraint(env, next));
   SEQ(process_token_splice(env, next));
   return FAIL;
 }
