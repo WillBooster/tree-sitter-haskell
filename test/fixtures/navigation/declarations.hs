@@ -29,3 +29,23 @@ left `combine` right = convert left
 use value = convert (convert value)
 qualified value = Demo.convert value
 operator left right = left <+> right
+
+qualifiedPrefix left right = (Demo.<+>) left right
+qualifiedBacktick left right = left `Demo.combine` right
+
+data family Family a
+class Associated a where
+  data Assoc a
+foreign import ccall "external" external :: Int -> Int
+
+data a :+: b = Pair a b
+newtype a :*: b = Product a
+type a :/: b = (a, b)
+type family a :?: b
+data family a :!: b
+class a :<: b where
+  project :: a -> b
+instance Int :<: Int where
+  project value = value
+class a `Related` b
+instance Int `Related` Int

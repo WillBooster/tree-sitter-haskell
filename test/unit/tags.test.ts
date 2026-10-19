@@ -52,12 +52,26 @@ testCommand(
           { name: 'combine', kind: 'function', role: 'def', row: 26, column: 6 },
           { name: 'convert', kind: 'call', role: 'ref', row: 29, column: 23 },
           { name: '<+>', kind: 'call', role: 'ref', row: 30, column: 27 },
+          { name: '<+>', kind: 'call', role: 'ref', row: 32, column: 35 },
+          { name: 'combine', kind: 'call', role: 'ref', row: 33, column: 42 },
+          { name: 'Family', kind: 'class', role: 'def', row: 35, column: 12 },
+          { name: 'Assoc', kind: 'class', role: 'def', row: 37, column: 7 },
+          { name: 'external', kind: 'function', role: 'def', row: 38, column: 32 },
+          { name: ':+:', kind: 'class', role: 'def', row: 40, column: 7 },
+          { name: ':*:', kind: 'class', role: 'def', row: 41, column: 10 },
+          { name: ':/:', kind: 'class', role: 'def', row: 42, column: 7 },
+          { name: ':?:', kind: 'class', role: 'def', row: 43, column: 14 },
+          { name: ':!:', kind: 'class', role: 'def', row: 44, column: 14 },
+          { name: ':<:', kind: 'interface', role: 'def', row: 45, column: 8 },
+          { name: ':<:', kind: 'implementation', role: 'ref', row: 47, column: 13 },
+          { name: 'Related', kind: 'interface', role: 'def', row: 49, column: 9 },
+          { name: 'Related', kind: 'implementation', role: 'ref', row: 50, column: 14 },
         ])
       );
       expect(
         tags.filter(({ role, name }) => role === 'def' && ['value', 'left', 'right', 'a', 'Int'].includes(name))
       ).toHaveLength(0);
-      expect(tags.filter(({ role, kind }) => role === 'ref' && kind === 'call')).toHaveLength(7);
+      expect(tags.filter(({ role, kind }) => role === 'ref' && kind === 'call')).toHaveLength(9);
       expect(
         tags.filter(({ kind }) => kind === 'function' || kind === 'method').some(({ name }) => name === '->')
       ).toBe(false);
