@@ -3379,7 +3379,7 @@ instance A where
           (name))))))
 
 ================================================================================
-layout: comment containing tab exceeding layout indent
+layout: comment tab stops before layout indent
 ================================================================================
 
 a = a
@@ -3399,10 +3399,10 @@ a = a
         (bind
           (variable)
           (match
-            (apply
-              (variable)
-              (comment)
-              (variable))))))))
+            (variable)))
+        (comment)
+        (ERROR
+          (variable))))))
 
 ================================================================================
 layout: typed hole in do before function signature
@@ -3465,3 +3465,55 @@ foo = do
             (apply
               (typed_hole)
               (variable))))))))
+
+================================================================================
+layout: case with tab
+================================================================================
+
+a = case a of
+  A	-> a
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (case
+          (variable)
+          (alternatives
+            (alternative
+              (constructor)
+              (match
+                (variable)))))))))
+
+================================================================================
+layout: do with tab
+================================================================================
+
+a = do
+  let a = a
+	|| a
+  a
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (do
+          (let
+            (local_binds
+              (bind
+                (variable)
+                (match
+                  (infix
+                    (variable)
+                    (operator)
+                    (variable))))))
+
+          (exp
+            (variable)))))))

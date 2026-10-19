@@ -51,11 +51,9 @@ module.exports = grammar({
   ...inline,
   ...conflicts,
 
-  /**
-   * These rules may occur anywhere in the grammar and don't have to be specified in productions.
-   */
   extras: $ => [
     /\p{Zs}/,
+    /\t/,
     /\n/,
     /\r/,
     $.cpp,

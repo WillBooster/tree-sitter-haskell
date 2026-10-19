@@ -10795,11 +10795,33 @@
             "members": [
               {
                 "type": "PATTERN",
-                "value": "'[^']'"
+                "value": "'[^'\\r\\n\\f]'"
               },
               {
-                "type": "PATTERN",
-                "value": "'\\\\[^ ]*'"
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "'\\"
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "STRING",
+                        "value": "'"
+                      },
+                      {
+                        "type": "PATTERN",
+                        "value": "[^'\\p{White_Space}]+"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "STRING",
+                    "value": "'"
+                  }
+                ]
               }
             ]
           },
@@ -12872,6 +12894,10 @@
     {
       "type": "PATTERN",
       "value": "\\p{Zs}"
+    },
+    {
+      "type": "PATTERN",
+      "value": "\\t"
     },
     {
       "type": "PATTERN",

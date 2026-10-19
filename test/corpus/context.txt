@@ -1126,6 +1126,10 @@ tupleValue :: (# A a => a, a #)
 tupleValue = undefined
 sumValue :: (# A a => a | a #)
 sumValue = undefined
+asciiStar :: * ~ k => Proxy k
+asciiStar = undefined
+unicodeStar :: ★ ~ k => Proxy k
+unicodeStar = undefined
 following = 1
 
 --------------------------------------------------------------------------------
@@ -1147,5 +1151,17 @@ following = 1
           (apply (name) (variable))
           (variable))
         (variable)))
+    (bind (variable) (match (variable)))
+    (signature
+      (variable)
+      (context
+        (infix (star) (operator) (variable))
+        (apply (name) (variable))))
+    (bind (variable) (match (variable)))
+    (signature
+      (variable)
+      (context
+        (infix (star) (operator) (variable))
+        (apply (name) (variable))))
     (bind (variable) (match (variable)))
     (bind (variable) (match (literal (integer))))))
