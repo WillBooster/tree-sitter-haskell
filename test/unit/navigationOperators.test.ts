@@ -84,3 +84,63 @@ test('normalizes grouped name expressions while reserving call tags and highligh
     parser.delete();
   }
 });
+
+test('retains left-associative application when grouped names occupy argument positions', () => {
+  const parser = new Parser().setLanguage(language);
+  const query = new Query(language, tags);
+  const highlights = new Query(
+    language,
+    fs.readFileSync(path.join(import.meta.dirname, '../../queries/highlights.scm'), 'utf8')
+  );
+  try {
+    for (const [callee, grouped, finalArgument] of [
+      ['map', '(helper)', 'xs'],
+      ['f', '(g)', 'h'],
+      ['f', '(Demo.g)', 'h'],
+      ['f', '((<+>))', 'h'],
+      ['f', '(((g)))', 'h'],
+    ] as const) {
+      const source = `result = ${callee} ${grouped} ${finalArgument}\nfollowing = 1\n`;
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(false);
+        const expression = tree.rootNode
+          .childForFieldName('declarations')
+          ?.firstNamedChild?.childForFieldName('match')
+          ?.childForFieldName('expression');
+        expect(expression?.type, source).toBe('apply');
+        expect(expression?.childForFieldName('argument')?.text, source).toBe(finalArgument);
+        const firstApplication = expression?.childForFieldName('function');
+        expect(firstApplication?.type, source).toBe('apply');
+        expect(firstApplication?.childForFieldName('function')?.text, source).toBe(callee);
+        expect(firstApplication?.childForFieldName('argument')?.text, source).toBe(grouped);
+        const calls = query
+          .matches(tree.rootNode)
+          .filter(({ captures }) => captures.some(({ name }) => name === 'reference.call'));
+        expect(
+          calls.flatMap(({ captures }) => captures.filter(({ name }) => name === 'name').map(({ node }) => node.text)),
+          source
+        ).toEqual([callee]);
+        const callHighlights = highlights.captures(tree.rootNode).filter(({ name }) => name === 'function.call');
+        expect(
+          callHighlights.some(({ node }) => node.text === callee),
+          source
+        ).toBe(true);
+        const argumentStart = source.indexOf(grouped);
+        expect(
+          callHighlights.filter(
+            ({ node }) => node.startIndex >= argumentStart && node.endIndex <= argumentStart + grouped.length
+          ),
+          source
+        ).toEqual([]);
+        expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following = 1');
+      } finally {
+        tree.delete();
+      }
+    }
+  } finally {
+    highlights.delete();
+    query.delete();
+    parser.delete();
+  }
+});
