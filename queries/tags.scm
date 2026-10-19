@@ -18,6 +18,8 @@
       (function (infix operator: [(operator) @name (infix_id (variable) @name)]))
       (signature name: [(variable) @name (prefix_id (operator) @name)])
       (signature names: (binding_list name: [(variable) @name (prefix_id (operator) @name)]))
+      (default_signature signature: (signature name: [(variable) @name (prefix_id (operator) @name)]))
+      (default_signature signature: (signature names: (binding_list name: [(variable) @name (prefix_id (operator) @name)])))
       (bind name: [(variable) @name (prefix_id (operator) @name)])
     ] @definition.method)
   (instance_declarations
@@ -25,6 +27,7 @@
       (function name: [(variable) @name (prefix_id (operator) @name)])
       (function (infix operator: [(operator) @name (infix_id (variable) @name)]))
       (signature name: [(variable) @name (prefix_id (operator) @name)])
+      (signature names: (binding_list name: [(variable) @name (prefix_id (operator) @name)]))
       (bind name: [(variable) @name (prefix_id (operator) @name)])
     ] @definition.method)
 ]
@@ -49,6 +52,15 @@
 (class (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)])) @definition.interface
 (instance name: (_) @name) @reference.implementation
 (instance (infix operator: [
+  (constructor_operator) @name
+  (operator) @name
+  (infix_id (name) @name)
+  (qualified id: [(constructor_operator) @name (operator) @name])
+  (infix_id (qualified id: (name) @name))
+])) @reference.implementation
+
+(deriving_instance name: (_) @name) @reference.implementation
+(deriving_instance (infix operator: [
   (constructor_operator) @name
   (operator) @name
   (infix_id (name) @name)

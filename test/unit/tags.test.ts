@@ -25,6 +25,7 @@ testCommand(
   170_000,
   {
     check: (output) => {
+      expect(output).not.toContain('You should add a `tags` entry');
       const tags = [...output.matchAll(/^(.+?)\s+\|\s+(\S+)\s+(def|ref)\s+\((\d+), (\d+)\)/gm)].map(
         ([, name, kind, role, row, column]) => ({
           name: name!.trim(),
@@ -66,6 +67,14 @@ testCommand(
           { name: ':<:', kind: 'implementation', role: 'ref', row: 47, column: 13 },
           { name: 'Related', kind: 'interface', role: 'def', row: 49, column: 9 },
           { name: 'Related', kind: 'implementation', role: 'ref', row: 50, column: 14 },
+          { name: 'single', kind: 'method', role: 'def', row: 53, column: 10 },
+          { name: 'pair', kind: 'method', role: 'def', row: 54, column: 10 },
+          { name: 'other', kind: 'method', role: 'def', row: 54, column: 16 },
+          { name: 'pair', kind: 'method', role: 'def', row: 57, column: 2 },
+          { name: 'other', kind: 'method', role: 'def', row: 57, column: 8 },
+          { name: 'Show', kind: 'implementation', role: 'ref', row: 60, column: 18 },
+          { name: ':<:', kind: 'implementation', role: 'ref', row: 61, column: 22 },
+          { name: 'Related', kind: 'implementation', role: 'ref', row: 62, column: 23 },
         ])
       );
       expect(

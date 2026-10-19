@@ -49,3 +49,15 @@ instance Int :<: Int where
   project value = value
 class a `Related` b
 instance Int `Related` Int
+
+class Defaulted a where
+  default single :: a -> a
+  default pair, other :: a -> a
+  single value = value
+instance Defaulted Int where
+  pair, other :: Int -> Int
+  pair value = value
+  other value = value
+deriving instance Show (Box a)
+deriving instance Int :<: Int
+deriving instance Int `Related` Int
