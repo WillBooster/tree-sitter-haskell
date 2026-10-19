@@ -642,6 +642,8 @@ static uint32_t column(Env *env) {
   return is_eof(env) ? 0 : env->lexer->get_column(env->lexer);
 }
 
+static Symbol valid_layout_start_sym(Env *env);
+
 /**
  * tree-sitter's lexer interface maintains a current position that determines the lookahead character and the range of
  * text that is associated with the symbol selected by the scanner, if `mark_end` is called.
@@ -653,7 +655,7 @@ static uint32_t column(Env *env) {
  */
 static void advance(Env *env) {
   if (not_eof(env)) {
-    if (env->state->lookahead.size == 0)
+    if (env->state->lookahead.size == 0 && valid_layout_start_sym(env) != FAIL)
       env->lookahead_column = env->lexer->get_display_column(env->lexer, 8);
     array_push(&env->state->lookahead, PEEK);
     env->lexer->advance(env->lexer, false);
@@ -1742,9 +1744,6 @@ static Symbol end_brace(Env *env) {
   return FAIL;
 }
 
-/**
- * Return the first valid layout start symbol.
- */
 static Symbol valid_layout_start_sym(Env *env) {
   for (Symbol i = START; i < END; i++) {
     if (valid(env, i)) return i;

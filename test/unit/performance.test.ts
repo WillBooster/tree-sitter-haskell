@@ -32,13 +32,36 @@ test('parses a file with an error on each line in linear time', { timeout: 60_00
   expect(largeFastest / smallFastest).toBeLessThan(18);
 });
 
-function parseCpuTime(source: string): number {
+test.each([' + ', ' {- c -} '])(
+  'parses a long line separated by %j in linear time',
+  { timeout: 60_000 },
+  (separator) => {
+    const source = (size: number): string =>
+      `f = [ ${Array.from({ length: size }, (_, index) => `a${index}`).join(separator)} ]\n`;
+    const small = source(1000);
+    const large = source(4000);
+    const tree = parser.parse(large)!;
+    expect(tree.rootNode.hasError).toBe(false);
+    expect(tree.rootNode.descendantsOfType('variable')).toHaveLength(4001);
+    tree.delete();
+    parseCpuTime(large, false);
+    let smallFastest = Infinity;
+    let largeFastest = Infinity;
+    for (let run = 0; run < 5; run++) {
+      smallFastest = Math.min(smallFastest, parseCpuTime(small, false));
+      largeFastest = Math.min(largeFastest, parseCpuTime(large, false));
+    }
+    expect(largeFastest / smallFastest).toBeLessThan(9);
+  }
+);
+
+function parseCpuTime(source: string, expectedError = true): number {
   const start = process.threadCpuUsage();
   const tree = parser.parse(source);
   const { system, user } = process.threadCpuUsage(start);
   if (!tree) throw new Error('The parser returned no tree');
   const { hasError } = tree.rootNode;
   tree.delete();
-  expect(hasError).toBe(true);
+  expect(hasError).toBe(expectedError);
   return system + user;
 }
