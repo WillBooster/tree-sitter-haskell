@@ -1110,6 +1110,10 @@
         "required": false,
         "types": [
           {
+            "type": "parenthesized_name",
+            "named": true
+          },
+          {
             "type": "prefix_id",
             "named": true
           },
@@ -1429,6 +1433,10 @@
         "multiple": false,
         "required": false,
         "types": [
+          {
+            "type": "parenthesized_name",
+            "named": true
+          },
           {
             "type": "prefix_id",
             "named": true

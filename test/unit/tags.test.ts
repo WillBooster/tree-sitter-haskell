@@ -206,3 +206,33 @@ function readTags(output: string): Tag[] {
     })
   );
 }
+
+testCommand(
+  'indexes parenthesized simple bindings with their module or method role and lexical name range',
+  [
+    'script/tree-sitter',
+    'tags',
+    '--config-path',
+    configPath,
+    '--scope',
+    'source.haskell',
+    'test/fixtures/navigation/parenthesizedBindings.hs',
+  ],
+  170_000,
+  {
+    check: (output) => {
+      const tags = readTags(output);
+      expect(tags).toEqual(
+        expect.arrayContaining([
+          { name: 'a', kind: 'variable', role: 'def', row: 1, column: 1 },
+          { name: 'b', kind: 'variable', role: 'def', row: 2, column: 2 },
+          { name: '<+>', kind: 'variable', role: 'def', row: 3, column: 3 },
+          { name: 'f', kind: 'function', role: 'def', row: 4, column: 1 },
+          { name: 'method', kind: 'method', role: 'def', row: 7, column: 4 },
+          { name: 'method', kind: 'method', role: 'def', row: 9, column: 5 },
+        ])
+      );
+      expect(tags.some(({ name }) => ['x', 'y', 'local'].includes(name))).toBe(false);
+    },
+  }
+);

@@ -2,4 +2,5 @@
 (function name: (variable)) @local.definition
 (pattern/variable) @local.definition
 (expression/variable) @local.reference
-(parenthesized_name (variable) @local.reference)
+(expression/parenthesized_name (variable) @local.reference)
+(bind name: (parenthesized_name (variable) @local.definition))

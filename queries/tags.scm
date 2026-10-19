@@ -9,7 +9,11 @@
   ] @definition.function)
 
 (declarations
-  (bind name: [(variable) @name (prefix_id (operator) @name)]) @definition.variable)
+  (bind name: [
+    (variable) @name
+    (prefix_id (operator) @name)
+    (parenthesized_name [(variable) @name (prefix_id (operator) @name)])
+  ]) @definition.variable)
 
 [
   (class_declarations
@@ -20,7 +24,11 @@
       (signature names: (binding_list name: [(variable) @name (prefix_id (operator) @name)]))
       (default_signature signature: (signature name: [(variable) @name (prefix_id (operator) @name)]))
       (default_signature signature: (signature names: (binding_list name: [(variable) @name (prefix_id (operator) @name)])))
-      (bind name: [(variable) @name (prefix_id (operator) @name)])
+      (bind name: [
+        (variable) @name
+        (prefix_id (operator) @name)
+        (parenthesized_name [(variable) @name (prefix_id (operator) @name)])
+      ])
     ] @definition.method)
   (instance_declarations
     [
@@ -28,7 +36,11 @@
       (function head: (infix operator: [(operator) @name (infix_id (variable) @name)]))
       (signature name: [(variable) @name (prefix_id (operator) @name)])
       (signature names: (binding_list name: [(variable) @name (prefix_id (operator) @name)]))
-      (bind name: [(variable) @name (prefix_id (operator) @name)])
+      (bind name: [
+        (variable) @name
+        (prefix_id (operator) @name)
+        (parenthesized_name [(variable) @name (prefix_id (operator) @name)])
+      ])
     ] @definition.method)
 ]
 

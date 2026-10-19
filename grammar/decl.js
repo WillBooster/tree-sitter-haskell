@@ -106,6 +106,8 @@ module.exports = {
     $._bind_matches,
   ),
 
+  _binding_name_parens: $ => parens($, choice($._var, $._binding_name_parens)),
+
   /**
    * The `implicit_variable` here is for:
    * g = let ?par = Impy 5 in f
@@ -114,6 +116,7 @@ module.exports = {
     choice(
       field('pattern', $._pat),
       field('name', $._var),
+      field('name', alias($._binding_name_parens, $.parenthesized_name)),
       field('implicit', $.implicit_variable),
     ),
     $._bind_matches,
