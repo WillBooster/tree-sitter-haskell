@@ -24,6 +24,7 @@ test('scanner diagnostics preserve long-line trees and incremental edits', () =>
     const optimizedLibrary = path.join(workspace, 'optimized.dylib');
     run(['build', '-0', '-o', debugLibrary]);
     run(['build', '-o', optimizedLibrary]);
+    run(['test', '--lib-path', debugLibrary, '--lang-name', 'haskell']);
     for (const length of [64, 256, 512, 2048]) {
       const input = path.join(workspace, 'input.hs');
       const source = `value = "${'x'.repeat(length)}"\nfollowing = 1\n`;
