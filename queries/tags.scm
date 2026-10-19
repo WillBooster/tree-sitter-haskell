@@ -33,28 +33,63 @@
 ]
 
 [
-  (type_synonym name: (_) @name)
-  (type_family name: (_) @name)
-  (data_family name: (_) @name)
+  (type_synonym name: [
+    (name) @name
+    (qualified id: (name) @name)
+    (prefix_id [(operator) @name (constructor_operator) @name])
+    (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
+  ])
+  (type_family name: [
+    (name) @name
+    (qualified id: (name) @name)
+    (prefix_id [(operator) @name (constructor_operator) @name])
+    (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
+  ])
+  (data_family name: [
+    (name) @name
+    (qualified id: (name) @name)
+    (prefix_id [(operator) @name (constructor_operator) @name])
+    (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
+  ])
 ] @definition.class
 
 [
   (type_synonym (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]) "=")
-  (type_family (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
-  (data_family (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+  (type_family . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+  (data_family . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
 ] @definition.class
 
 (declarations
   [
-    (data_type name: (_) @name)
-    (newtype name: (_) @name)
-    (data_type (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
-    (newtype (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+    (data_type name: [
+    (name) @name
+    (qualified id: (name) @name)
+    (prefix_id [(operator) @name (constructor_operator) @name])
+    (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
+  ])
+    (newtype name: [
+    (name) @name
+    (qualified id: (name) @name)
+    (prefix_id [(operator) @name (constructor_operator) @name])
+    (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
+  ])
+    (data_type . (context)? . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+    (newtype . (context)? . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
   ] @definition.class)
 
-(class name: (_) @name) @definition.interface
+(class name: [
+    (name) @name
+    (qualified id: (name) @name)
+    (prefix_id [(operator) @name (constructor_operator) @name])
+    (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
+  ]) @definition.interface
 (class (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)])) @definition.interface
-(instance name: (_) @name) @reference.implementation
+(instance name: [
+    (name) @name
+    (qualified id: (name) @name)
+    (prefix_id [(operator) @name (constructor_operator) @name])
+    (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
+  ]) @reference.implementation
 (instance (infix operator: [
   (constructor_operator) @name
   (operator) @name
@@ -63,7 +98,12 @@
   (infix_id (qualified id: (name) @name))
 ])) @reference.implementation
 
-(deriving_instance name: (_) @name) @reference.implementation
+(deriving_instance name: [
+    (name) @name
+    (qualified id: (name) @name)
+    (prefix_id [(operator) @name (constructor_operator) @name])
+    (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
+  ]) @reference.implementation
 (deriving_instance (infix operator: [
   (constructor_operator) @name
   (operator) @name

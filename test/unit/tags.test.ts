@@ -81,14 +81,33 @@ testCommand(
           { name: 'convert', kind: 'call', role: 'ref', row: 73, column: 37 },
           { name: '<+>', kind: 'call', role: 'ref', row: 74, column: 37 },
           { name: '<+>', kind: 'call', role: 'ref', row: 75, column: 51 },
+          { name: 'KData', kind: 'class', role: 'def', row: 79, column: 5 },
+          { name: 'KNewtype', kind: 'class', role: 'def', row: 80, column: 8 },
+          { name: 'KType', kind: 'class', role: 'def', row: 81, column: 12 },
+          { name: 'KFamily', kind: 'class', role: 'def', row: 82, column: 12 },
+          { name: ':&:', kind: 'class', role: 'def', row: 83, column: 7 },
+          { name: ':^:', kind: 'class', role: 'def', row: 84, column: 15 },
+          { name: ':~:', kind: 'class', role: 'def', row: 85, column: 18 },
+          { name: ':$:', kind: 'class', role: 'def', row: 86, column: 6 },
+          { name: ':=:', kind: 'interface', role: 'def', row: 87, column: 7 },
+          { name: ':=:', kind: 'implementation', role: 'ref', row: 88, column: 10 },
+          { name: 'Printable', kind: 'implementation', role: 'ref', row: 89, column: 14 },
+          { name: 'Printable', kind: 'implementation', role: 'ref', row: 90, column: 23 },
+          { name: ':%>', kind: 'class', role: 'def', row: 91, column: 9 },
+          { name: '%%', kind: 'class', role: 'def', row: 92, column: 6 },
+          { name: '>>>', kind: 'class', role: 'def', row: 93, column: 13 },
+          { name: ':#:', kind: 'class', role: 'def', row: 94, column: 13 },
         ])
       );
       expect(
         tags.filter(({ role, name }) => role === 'def' && ['value', 'left', 'right', 'a', 'Int'].includes(name))
       ).toHaveLength(0);
       expect(tags.filter(({ role, kind }) => role === 'ref' && kind === 'call')).toHaveLength(13);
-      expect(tags.filter(({ role, kind, row }) => role === 'def' && kind === 'class' && row >= 64)).toHaveLength(2);
-      expect(tags.filter(({ role, row }) => role === 'ref' && row >= 76)).toHaveLength(0);
+      expect(
+        tags.filter(({ role, kind, row }) => role === 'def' && kind === 'class' && row >= 64 && row <= 70)
+      ).toHaveLength(2);
+      expect(tags.filter(({ role, row }) => role === 'ref' && row >= 76 && row <= 77)).toHaveLength(0);
+      expect(tags.filter(({ role, row }) => role === 'def' && row >= 79 && row <= 85)).toHaveLength(7);
       expect(
         tags.filter(({ kind }) => kind === 'function' || kind === 'method').some(({ name }) => name === '->')
       ).toBe(false);

@@ -76,3 +76,20 @@ parenthesizedOperator left right = ((<+>)) left right
 qualifiedParenthesizedOperator left right = ((Demo.<+>)) left right
 unusedParenthesized = (convert)
 unusedQualifiedParenthesized = (Demo.convert)
+
+data KData :: a :+: b where
+newtype KNewtype :: a :*: b where
+type family KType a :: a :/: b
+data family KFamily a :: a :!: b
+data a :&: b :: a :/: b where
+data Eq a => a :^: b :: a :/: b where
+newtype Eq a => a :~: b :: a :/: b where
+data (:$:) a b = PrefixPair a b
+class (:=:) a b
+instance (:=:) Int Int
+instance Demo.Printable Int
+deriving instance Demo.Printable Int
+newtype (:%>) a b = PrefixWrap a
+type (%%) a b = (a, b)
+type family (>>>) a b
+data family (:#:) a
