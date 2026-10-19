@@ -41,16 +41,19 @@ module.exports = {
     // qualified names
     // ------------------------------------------------
 
+    // Shift a tight dot before reducing a qualified constructor or module.
     [
       'qualifying-module',
       'qualified-id',
     ],
 
+    // Prefer a qualified variable over record-field projection on a constructor.
     [
       'qualifying-module',
       'con',
     ],
 
+    // Prefer a qualified type name over an infix dot operator.
     [
       'qualifying-module',
       'type-name',

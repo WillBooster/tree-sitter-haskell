@@ -290,6 +290,7 @@ module.exports = {
     field('right_operand', $.type_param),
   )),
 
+  // Declaration heads permit variable binders; instance heads below permit full type patterns.
   _type_head: $ => choice(
     seq($._type_head_params, optional(field('patterns', $.type_params))),
     field('head', alias($._type_head_infix, $.infix)),
