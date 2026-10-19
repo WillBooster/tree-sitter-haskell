@@ -601,6 +601,7 @@ typedef struct {
   TSLexer *lexer;
   const bool *symbols;
   uint32_t symop;
+  uint32_t lookahead_column;
   State *state;
 #ifdef TREE_SITTER_DEBUG
   Debug debug;
@@ -633,13 +634,13 @@ static bool is_eof(Env *env) { return env->lexer->eof(env->lexer); }
 
 static bool not_eof(Env *env) { return !(is_eof(env)); }
 
-/**
- * The parser's position in the current line.
- * Note: This is expensive to use.
- */
+#ifdef TREE_SITTER_DEBUG
 static uint32_t column(Env *env) {
   return is_eof(env) ? 0 : env->lexer->get_column(env->lexer);
 }
+#endif
+
+static Symbol valid_layout_start_sym(Env *env);
 
 /**
  * tree-sitter's lexer interface maintains a current position that determines the lookahead character and the range of
@@ -652,6 +653,8 @@ static uint32_t column(Env *env) {
  */
 static void advance(Env *env) {
   if (not_eof(env)) {
+    if (env->state->lookahead.size == 0 && valid_layout_start_sym(env) != FAIL)
+      env->lookahead_column = env->lexer->get_display_column(env->lexer, 8);
     array_push(&env->state->lookahead, PEEK);
     env->lexer->advance(env->lexer, false);
   }
@@ -924,12 +927,10 @@ static bool no_lookahead(Env *env) {
   return env->state->lookahead.size == 0;
 }
 
-/**
- * Return the column of the first lookahead character of the current run.
- * This is needed for starting layouts in interior mode, since we don't count positions across interior runs.
- */
 static uint32_t start_column(Env *env) {
-  return column(env) - env->state->lookahead.size;
+  return env->state->lookahead.size == 0
+    ? env->lexer->get_display_column(env->lexer, 8)
+    : env->lookahead_column;
 }
 
 /**
@@ -1430,6 +1431,10 @@ static void take_line(Env *env) {
   while (not_eof(env) && !is_newline(PEEK)) S_ADVANCE;
 }
 
+static bool is_space_char_or_tab(int32_t c) {
+  return c == '\t' || is_space_char(c);
+}
+
 static bool is_space_or_tab(int32_t c) {
   return c == ' ' || c == '\t';
 }
@@ -1458,9 +1463,9 @@ static void take_line_escaped_newline(Env *env) {
  * Return whether any characters were skipped.
  */
 static bool skip_space(Env *env) {
-  if (!is_space_char(PEEK)) return false;
+  if (!is_space_char_or_tab(PEEK)) return false;
   S_SKIP;
-  while(is_space_char(PEEK)) S_SKIP;
+  while(is_space_char_or_tab(PEEK)) S_SKIP;
   return true;
 }
 
@@ -1501,7 +1506,7 @@ static Space skip_whitespace(Env *env) {
  * return the index of the next character.
  */
 static uint32_t take_space_from(Env *env, uint32_t start) {
-  return advance_while(env, start, is_space_char);
+  return advance_while(env, start, is_space_char_or_tab);
 }
 
 /**
@@ -1737,9 +1742,6 @@ static Symbol end_brace(Env *env) {
   return FAIL;
 }
 
-/**
- * Return the first valid layout start symbol.
- */
 static Symbol valid_layout_start_sym(Env *env) {
   for (Symbol i = START; i < END; i++) {
     if (valid(env, i)) return i;
@@ -1838,13 +1840,6 @@ static Symbol start_layout(Env *env, const StartLayout start, uint32_t indent, c
   return finish(start.sym, desc);
 }
 
-/**
- * The indent of a layout started at an interior token can only be determined by calling `get_column`.
- * This is an expensive operation, but hopefully it is rare enough to not make a substantial dent.
- * Because we might have advanced beyond the layout's start position to check conditions, we need to subtract the length
- * of the lookahead buffer from the current column.
- * Whitespace is skipped, and not added to the buffer, so the resulting position is after whitespace.
- */
 static Symbol start_layout_interior(Env *env, Lexed next) {
   StartLayout start = valid_layout_start(env, next);
   if (start.sort == NoContext) return FAIL;
@@ -2505,7 +2500,7 @@ static Symbol comment_type(Env *env) {
   while (not_eof(env)) {
     int32_t c = peek(env, i++);
     if (c == '|' || c == '^') return HADDOCK;
-    else if (!is_space_char(c)) break;
+    else if (!is_space_char_or_tab(c)) break;
   }
   return COMMENT;
 }
@@ -2556,7 +2551,7 @@ static uint32_t consume_block_comment(Env *env, uint32_t col) {
         break;
       case '\t':
         S_ADVANCE;
-        col += 7;
+        col += 7 - (col - 1) % 8;
         break;
       default:
         S_ADVANCE;
@@ -2951,7 +2946,7 @@ static void newline_lookahead(Env *env, Newline *newline) {
         break;
       case '\t':
         skip_over(env, 0);
-        newline->indent += 8;
+        newline->indent += 8 - newline->indent % 8;
         break;
       default:
         if (is_space_char(peek0(env))) {

@@ -827,6 +827,16 @@
     "type": "annotated",
     "named": true,
     "fields": {
+      "bind": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "variable",
+            "named": true
+          }
+        ]
+      },
       "kind": {
         "multiple": false,
         "required": true,
@@ -840,10 +850,18 @@
     },
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
-          "type": "type_param",
+          "type": "invisible",
+          "named": true
+        },
+        {
+          "type": "parens",
+          "named": true
+        },
+        {
+          "type": "wildcard",
           "named": true
         }
       ]
@@ -3341,17 +3359,36 @@
   {
     "type": "inferred",
     "named": true,
-    "fields": {},
+    "fields": {
+      "bind": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "variable",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "annotated",
           "named": true
         },
         {
-          "type": "type_param",
+          "type": "invisible",
+          "named": true
+        },
+        {
+          "type": "parens",
+          "named": true
+        },
+        {
+          "type": "wildcard",
           "named": true
         }
       ]
@@ -3361,6 +3398,16 @@
     "type": "infix",
     "named": true,
     "fields": {
+      "bind": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "variable",
+            "named": true
+          }
+        ]
+      },
       "left_operand": {
         "multiple": false,
         "required": true,
@@ -4330,6 +4377,16 @@
     "type": "parens",
     "named": true,
     "fields": {
+      "bind": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "variable",
+            "named": true
+          }
+        ]
+      },
       "expression": {
         "multiple": false,
         "required": false,
@@ -4444,7 +4501,15 @@
           "named": true
         },
         {
-          "type": "type_param",
+          "type": "invisible",
+          "named": true
+        },
+        {
+          "type": "parens",
+          "named": true
+        },
+        {
+          "type": "wildcard",
           "named": true
         }
       ]
@@ -4793,17 +4858,36 @@
   {
     "type": "quantified_variables",
     "named": true,
-    "fields": {},
+    "fields": {
+      "bind": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "variable",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "inferred",
           "named": true
         },
         {
-          "type": "type_param",
+          "type": "invisible",
+          "named": true
+        },
+        {
+          "type": "parens",
+          "named": true
+        },
+        {
+          "type": "wildcard",
           "named": true
         }
       ]
@@ -4998,7 +5082,7 @@
     "named": true,
     "fields": {
       "arrow": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
           {
@@ -5723,13 +5807,32 @@
   {
     "type": "type_params",
     "named": true,
-    "fields": {},
+    "fields": {
+      "bind": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "variable",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
-          "type": "type_param",
+          "type": "invisible",
+          "named": true
+        },
+        {
+          "type": "parens",
+          "named": true
+        },
+        {
+          "type": "wildcard",
           "named": true
         }
       ]
