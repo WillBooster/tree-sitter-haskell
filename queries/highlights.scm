@@ -450,6 +450,9 @@
 ; Spell checking
 (comment) @spell
 
+; ----------------------------------------------------------------------------
+; Calls through grouped names
+
 (expression/apply
   function: (parenthesized_name
     [
