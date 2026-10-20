@@ -377,7 +377,11 @@
 
 (type/star) @type
 
-(variable) @type
+[
+  (type/variable)
+  (constraint/variable)
+  (type_param/variable)
+] @type
 
 (constructor) @constructor
 
