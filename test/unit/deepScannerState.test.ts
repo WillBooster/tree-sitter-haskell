@@ -18,10 +18,11 @@ const examples = [
 await Parser.init();
 const language = await Language.load(currentWasmPath(root));
 
-test('preserves deep constructor patterns and later declarations through Wasm edits and undo', () => {
-  const parser = new Parser().setLanguage(language);
-  try {
-    for (const { label, source: initialSource } of examples) {
+test.each(examples)(
+  'preserves $label and later declarations through Wasm edits and undo',
+  ({ label, source: initialSource }) => {
+    const parser = new Parser().setLanguage(language);
+    try {
       let source = initialSource;
       let tree = parser.parse(source)!;
       try {
@@ -67,11 +68,11 @@ test('preserves deep constructor patterns and later declarations through Wasm ed
       } finally {
         tree.delete();
       }
+    } finally {
+      parser.delete();
     }
-  } finally {
-    parser.delete();
   }
-});
+);
 
 test('preserves deep patterns and following-name ranges in optimized and debug native builds', () => {
   const workspace = fs.mkdtempSync(path.join(root, '.tmp/deep-scanner-'));

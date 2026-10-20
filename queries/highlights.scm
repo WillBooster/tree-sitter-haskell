@@ -1,11 +1,8 @@
-; ----------------------------------------------------------------------------
-; Parameters and variables
 ; NOTE: These are at the top, so that they have low priority,
 ; and don't override destructured parameters
 (variable) @variable
 
 (pattern/wildcard) @variable
-
 
 (decl/function
   patterns: (patterns
@@ -19,8 +16,6 @@
   (infix
     (pattern) @variable.parameter))
 
-; ----------------------------------------------------------------------------
-; Literals and comments
 (integer) @number
 
 (negation) @number
@@ -32,14 +27,12 @@
 
 (string) @string
 
-(unit) @string.special.symbol ; unit, as in ()
+(unit) @string.special.symbol
 
 (comment) @comment
 
 ((haddock) @comment.documentation)
 
-; ----------------------------------------------------------------------------
-; Punctuation
 [
   "("
   ")"
@@ -54,11 +47,8 @@
   ";"
 ] @punctuation.delimiter
 
-; ----------------------------------------------------------------------------
-; Keywords, operators, includes
 [
   "forall"
-  ; "∀" ; utf-8 is not cross-platform safe
 ] @keyword.repeat
 
 (pragma) @keyword.directive
@@ -97,12 +87,6 @@
   "@"
 ] @operator
 
-; TODO broken, also huh?
-; ((qualified_module
-;   (module) @constructor)
-;   .
-;   (module))
-
 (module
   (module_id) @module)
 
@@ -131,8 +115,6 @@
   "infixr"
 ] @keyword
 
-; ----------------------------------------------------------------------------
-; Functions and variables
 [
   (decl/function name: (variable) @function)
   (decl/bind name: (variable) @function)
@@ -143,8 +125,6 @@
 (decl/bind
   name: (variable) @variable)
 
-; Consider signatures (and accompanying functions)
-; with only one value on the rhs as variables
 (decl/signature
   name: (variable) @variable
   type: (type))
@@ -160,7 +140,6 @@
     match: (_)
   (#eq? @_name @variable))
 
-; but consider a type that involves 'IO' a decl/function
 (decl/signature
   name: (variable) @function
   type: (type/apply
@@ -190,7 +169,6 @@
   (match
     expression: (expression/lambda)))
 
-; view patterns
 (view_pattern
   [
     (expression/variable) @function.call
@@ -198,7 +176,6 @@
       (variable) @function.call)
   ])
 
-; consider infix functions as operators
 (infix_id
   [
     (variable) @operator
@@ -206,8 +183,6 @@
       (variable) @operator)
   ])
 
-; decl/function calls with an infix operator
-; e.g. func <$> a <*> b
 (infix
   [
     (variable) @function.call
@@ -218,7 +193,6 @@
   .
   (operator))
 
-; infix operators applied to variables
 ((expression/variable) @variable
   .
   (operator))
@@ -231,7 +205,6 @@
       (variable) @variable)
   ])
 
-; decl/function calls with infix operators
 ([
     (expression/variable) @function.call
     (expression/qualified
@@ -241,12 +214,11 @@
   (operator) @_op
   (#any-of? @_op "$" "<$>" ">>=" "=<<"))
 
-; right hand side of infix operator
 ((infix
   [
     (operator)
     (infix_id (variable))
-  ] ; infix or `func`
+  ]
   .
   [
     (variable) @function.call
@@ -257,7 +229,6 @@
   (operator) @_op
   (#any-of? @_op "$" "<$>" "=<<"))
 
-; decl/function composition, arrows, monadic composition (lhs)
 (
   [
     (expression/variable) @function
@@ -268,12 +239,11 @@
   (operator) @_op
   (#any-of? @_op "." ">>>" "***" ">=>" "<=<"))
 
-; right hand side of infix operator
 ((infix
   [
     (operator)
     (infix_id (variable))
-  ] ; infix or `func`
+  ]
   .
   [
     (variable) @function
@@ -284,7 +254,6 @@
   (operator) @_op
   (#any-of? @_op "." ">>>" "***" ">=>" "<=<"))
 
-; function composition, arrows, monadic composition (rhs)
 ((operator) @_op
   .
   [
@@ -294,7 +263,6 @@
   ]
   (#any-of? @_op "." ">>>" "***" ">=>" "<=<"))
 
-; function defined in terms of a function composition
 (decl/function
   name: (variable) @function
   (match
@@ -309,8 +277,6 @@
       (variable) @function.call)
   ])
 
-; function compositions, in parentheses, applied
-; lhs
 (apply
   .
   (expression/parens
@@ -323,7 +289,6 @@
       .
       (operator))))
 
-; rhs
 (apply
   .
   (expression/parens
@@ -336,7 +301,6 @@
           (variable) @function.call)
       ])))
 
-; variables being passed to a function call
 (apply
   (_)
   .
@@ -346,19 +310,14 @@
       (variable) @variable)
   ])
 
-; main is always a function
-; (this prevents `main = undefined` from being highlighted as a variable)
 (decl/bind
   name: (variable) @function
   (#eq? @function "main"))
 
-; scoped function types (func :: a -> b)
 (signature
   pattern: (pattern/variable) @function
   type: (quantified_type))
 
-; signatures that have a function type
-; + binds that follow them
 (decl/signature
   name: (variable) @function
   type: (quantified_type))
@@ -371,8 +330,6 @@
     (variable) @function)
   (#eq? @function @_name))
 
-; ----------------------------------------------------------------------------
-; Types
 (name) @type
 
 (type/star) @type
@@ -388,16 +345,12 @@
 
 (constructor) @constructor
 
-; True or False
 ((constructor) @boolean
   (#any-of? @boolean "True" "False"))
 
-; otherwise (= True)
 ((variable) @boolean
   (#eq? @boolean "otherwise"))
 
-; ----------------------------------------------------------------------------
-; Quasi-quotes
 (quoter) @function.call
 
 (quasiquote
@@ -415,33 +368,11 @@
   (#eq? @_name "qq")
   (quasiquote_body) @string)
 
-; namespaced quasi-quoter
 (quasiquote
   (_
     (module) @module
     .
     (variable) @function.call))
-
-; Highlighting of quasiquote_body for other languages is handled by injections.scm
-; ----------------------------------------------------------------------------
-; Exceptions/error handling
-((variable) @keyword.exception
-  (#any-of? @keyword.exception
-    "error" "undefined" "try" "tryJust" "tryAny" "catch" "catches" "catchJust" "handle" "handleJust"
-    "throw" "throwIO" "throwTo" "throwError" "ioError" "mask" "mask_" "uninterruptibleMask"
-    "uninterruptibleMask_" "bracket" "bracket_" "bracketOnErrorSource" "finally" "fail"
-    "onException" "expectationFailure"))
-
-; ----------------------------------------------------------------------------
-; Debugging
-((variable) @keyword.debug
-  (#any-of? @keyword.debug
-    "trace" "traceId" "traceShow" "traceShowId" "traceWith" "traceShowWith" "traceStack" "traceIO"
-    "traceM" "traceShowM" "traceEvent" "traceEventWith" "traceEventIO" "flushEventLog" "traceMarker"
-    "traceMarkerIO"))
-
-; ----------------------------------------------------------------------------
-; Fields
 
 (field_name
   (variable) @variable.member)
@@ -452,13 +383,7 @@
   (children
     (variable) @variable.member))
 
-
-; ----------------------------------------------------------------------------
-; Spell checking
 (comment) @spell
-
-; ----------------------------------------------------------------------------
-; Calls through grouped names
 
 (expression/apply
   function: (parenthesized_name
