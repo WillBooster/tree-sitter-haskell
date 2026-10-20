@@ -3274,7 +3274,6 @@ void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char 
         .sort = tag & ContextSortMask,
         .indent = (tag & ContextIndent) ? deserialize_uint(&cursor, end) : 0,
       };
-      array_reserve(&state->contexts, state->contexts.size + count);
       for (uint32_t i = 0; i < count; i++) array_push(&state->contexts, context);
     }
   }
