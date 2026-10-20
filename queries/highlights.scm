@@ -377,7 +377,14 @@
 
 (type/star) @type
 
-(variable) @type
+[
+  (type/variable)
+  (constraint/variable)
+  (type_param/variable)
+] @type
+
+(fundep (variable) @type)
+(type_family_injectivity (variable) @type)
 
 (constructor) @constructor
 
