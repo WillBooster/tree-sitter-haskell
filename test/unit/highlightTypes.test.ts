@@ -18,6 +18,8 @@ test.each([
   'type family Invisible @k (a :: k)',
   'data Box a = Box a',
   'class Named a',
+  'class C a b | a -> b',
+  'type family F a = r | r -> a',
 ])('highlights type variables and binders without coloring value names as types: %s', (declaration) => {
   const source = `${declaration}\nvalue a = let local = a in local\n`;
   const parser = new Parser().setLanguage(language);
@@ -29,7 +31,7 @@ test.each([
       .captures(tree.rootNode)
       .filter(({ name, node }) => name === 'type' && node.type === 'variable')
       .map(({ node }) => [node.startIndex, node.endIndex]);
-    const expected = [...declaration.matchAll(/\b[ack]\b/g)].map(({ index }) => [index, index + 1]);
+    const expected = [...declaration.matchAll(/\b[abckr]\b/g)].map(({ index }) => [index, index + 1]);
     expect(actual, source).toEqual(expected);
     const parameter = source.indexOf('value a') + 'value '.length;
     expect(
