@@ -3256,10 +3256,12 @@ void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char 
     const char *cursor = buffer;
     const char *end = buffer + length;
     uint32_t flags = deserialize_uint(&cursor, end);
+    uint32_t newline_end = deserialize_uint(&cursor, end);
+    uint32_t newline_indent = deserialize_uint(&cursor, end);
     state->newline = (Newline) {
       .state = flags & 3,
-      .end = deserialize_uint(&cursor, end),
-      .indent = deserialize_uint(&cursor, end),
+      .end = newline_end,
+      .indent = newline_indent,
       .eof = flags & 4,
       .no_semi = flags & 8,
       .skip_semi = flags & 16,
