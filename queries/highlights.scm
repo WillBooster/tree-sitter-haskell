@@ -310,7 +310,6 @@
       (variable) @variable)
   ])
 
-; Prefer function highlighting for main over the undefined-value heuristic.
 (decl/bind
   name: (variable) @function
   (#eq? @function "main"))
