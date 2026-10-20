@@ -3,6 +3,14 @@ import path from 'node:path';
 import { afterAll, expect } from 'vitest';
 import { testCommand } from './run.js';
 
+interface Tag {
+  name: string;
+  kind: string;
+  role: string;
+  row: number;
+  column: number;
+}
+
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 fs.mkdirSync(path.join(repositoryRoot, '.tmp'), { recursive: true });
 const workspace = fs.mkdtempSync(path.join(repositoryRoot, '.tmp/navigation-'));
@@ -26,15 +34,7 @@ testCommand(
   {
     check: (output) => {
       expect(output).not.toContain('You should add a `tags` entry');
-      const tags = [...output.matchAll(/^(.+?)\s+\|\s+(\S+)\s+(def|ref)\s+\((\d+), (\d+)\)/gm)].map(
-        ([, name, kind, role, row, column]) => ({
-          name: name!.trim(),
-          kind,
-          role,
-          row: Number(row),
-          column: Number(column),
-        })
-      );
+      const tags = readTags(output);
       expect(tags).toEqual(
         expect.arrayContaining([
           { name: 'Demo.Navigation', kind: 'module', role: 'def', row: 1, column: 7 },
@@ -122,6 +122,117 @@ testCommand(
       expect(
         tags.filter(({ kind }) => kind === 'function' || kind === 'method').some(({ name }) => name === '->')
       ).toBe(false);
+    },
+  }
+);
+
+testCommand(
+  'retains declaration roles and applied names through nested parentheses',
+  [
+    'script/tree-sitter',
+    'tags',
+    '--config-path',
+    configPath,
+    '--scope',
+    'source.haskell',
+    'test/fixtures/navigation/parentheses.hs',
+  ],
+  170_000,
+  {
+    check: (output) => {
+      expect(output).not.toContain('You should add a `tags` entry');
+      const tags = readTags(output);
+      expect(tags).toEqual(
+        expect.arrayContaining([
+          { name: 'f', kind: 'function', role: 'def', row: 1, column: 1 },
+          { name: 'g', kind: 'function', role: 'def', row: 2, column: 2 },
+          { name: 'deep', kind: 'function', role: 'def', row: 3, column: 5 },
+          { name: 'method', kind: 'method', role: 'def', row: 5, column: 3 },
+          { name: 'method', kind: 'method', role: 'def', row: 7, column: 4 },
+          { name: 'Box', kind: 'class', role: 'def', row: 8, column: 7 },
+          { name: 'Alias', kind: 'class', role: 'def', row: 9, column: 7 },
+          { name: 'Related', kind: 'interface', role: 'def', row: 10, column: 8 },
+          { name: 'Related', kind: 'implementation', role: 'ref', row: 11, column: 11 },
+          { name: 'f', kind: 'call', role: 'ref', row: 12, column: 17 },
+          { name: 'f', kind: 'call', role: 'ref', row: 13, column: 26 },
+          { name: '<+>', kind: 'call', role: 'ref', row: 14, column: 22 },
+          { name: '<+>', kind: 'call', role: 'ref', row: 15, column: 36 },
+          { name: '<+>', kind: 'function', role: 'def', row: 19, column: 7 },
+          { name: 'combine', kind: 'function', role: 'def', row: 20, column: 8 },
+          { name: '<~>', kind: 'method', role: 'def', row: 22, column: 9 },
+          { name: 'methodInfix', kind: 'method', role: 'def', row: 24, column: 10 },
+          { name: ':+:', kind: 'class', role: 'def', row: 25, column: 9 },
+          { name: 'Wrap', kind: 'class', role: 'def', row: 26, column: 10 },
+          { name: ':/:', kind: 'class', role: 'def', row: 27, column: 9 },
+          { name: 'Family', kind: 'class', role: 'def', row: 28, column: 14 },
+          { name: 'DataFamily', kind: 'class', role: 'def', row: 29, column: 14 },
+          { name: ':<:', kind: 'interface', role: 'def', row: 30, column: 10 },
+          { name: ':<:', kind: 'implementation', role: 'ref', row: 31, column: 15 },
+          { name: 'Related', kind: 'implementation', role: 'ref', row: 32, column: 20 },
+          { name: 'following', kind: 'variable', role: 'def', row: 39, column: 0 },
+          { name: 'Kinded', kind: 'implementation', role: 'ref', row: 40, column: 11 },
+          { name: 'Related', kind: 'implementation', role: 'ref', row: 41, column: 20 },
+          { name: 'f', kind: 'call', role: 'ref', row: 42, column: 6 },
+          { name: 'f', kind: 'call', role: 'ref', row: 43, column: 5 },
+          { name: 'f', kind: 'call', role: 'ref', row: 44, column: 6 },
+          { name: 'f', kind: 'call', role: 'ref', row: 45, column: 7 },
+          { name: 'f', kind: 'call', role: 'ref', row: 46, column: 12 },
+          { name: '<+>', kind: 'call', role: 'ref', row: 47, column: 8 },
+          { name: '<+>', kind: 'call', role: 'ref', row: 48, column: 13 },
+          { name: 'f', kind: 'call', role: 'ref', row: 49, column: 8 },
+          { name: 'f', kind: 'call', role: 'ref', row: 50, column: 8 },
+        ])
+      );
+      expect(tags.filter(({ kind }) => kind === 'call')).toHaveLength(13);
+      expect(tags.filter(({ row }) => row >= 40 && row <= 41)).toHaveLength(2);
+      expect(tags.filter(({ kind, row }) => kind === 'function' && [5, 7, 22, 24].includes(row))).toHaveLength(0);
+      expect(
+        tags.filter(({ name }) =>
+          ['hidden', 'argument', 'extra', 'first', 'second', 'bound', 'a', 'b', 'c'].includes(name)
+        )
+      ).toHaveLength(0);
+    },
+  }
+);
+
+function readTags(output: string): Tag[] {
+  return [...output.matchAll(/^(.+?)\s+\|\s+(\S+)\s+(def|ref)\s+\((\d+), (\d+)\)/gm)].map(
+    ([, name, kind, role, row, column]) => ({
+      name: name!.trim(),
+      kind: kind!,
+      role: role!,
+      row: Number(row),
+      column: Number(column),
+    })
+  );
+}
+
+testCommand(
+  'indexes parenthesized simple bindings with their module or method role and lexical name range',
+  [
+    'script/tree-sitter',
+    'tags',
+    '--config-path',
+    configPath,
+    '--scope',
+    'source.haskell',
+    'test/fixtures/navigation/parenthesizedBindings.hs',
+  ],
+  170_000,
+  {
+    check: (output) => {
+      const tags = readTags(output);
+      expect(tags).toEqual(
+        expect.arrayContaining([
+          { name: 'a', kind: 'variable', role: 'def', row: 1, column: 1 },
+          { name: 'b', kind: 'variable', role: 'def', row: 2, column: 2 },
+          { name: '<+>', kind: 'variable', role: 'def', row: 3, column: 3 },
+          { name: 'f', kind: 'function', role: 'def', row: 4, column: 1 },
+          { name: 'method', kind: 'method', role: 'def', row: 7, column: 4 },
+          { name: 'method', kind: 'method', role: 'def', row: 9, column: 5 },
+        ])
+      );
+      expect(tags.some(({ name }) => ['x', 'y', 'local'].includes(name))).toBe(false);
     },
   }
 );

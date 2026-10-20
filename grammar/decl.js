@@ -68,7 +68,7 @@ module.exports = {
 
   _function_name: $ => field('name', $._var),
 
-  function_head_parens: $ => parens(
+  _function_head_parens: $ => parens(
     $,
     choice(
       $._function_head,
@@ -78,7 +78,7 @@ module.exports = {
 
   _function_head_patterns: $ => choice(
     $._function_name,
-    field('parens', $.function_head_parens),
+    $._function_head_parens,
   ),
 
   /**
@@ -98,13 +98,15 @@ module.exports = {
 
   _function_head: $ => choice(
     seq($._function_head_patterns, field('patterns', $.patterns)),
-    alias($._function_head_infix, $.infix),
+    field('head', alias($._function_head_infix, $.infix)),
   ),
 
   function: $ => seq(
     $._function_head,
     $._bind_matches,
   ),
+
+  _binding_name_parens: $ => parens($, choice($._var, $._binding_name_parens)),
 
   /**
    * The `implicit_variable` here is for:
@@ -114,14 +116,12 @@ module.exports = {
     choice(
       field('pattern', $._pat),
       field('name', $._var),
+      field('name', alias($._binding_name_parens, $.parenthesized_name)),
       field('implicit', $.implicit_variable),
     ),
     $._bind_matches,
   )),
 
-  /**
-   * This is a supertype.
-   */
   decl: $ => choice(
     $.signature,
     $.function,

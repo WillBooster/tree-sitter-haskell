@@ -652,11 +652,10 @@ type (A a a) = A
 (haskell
   (declarations
     (type_synonym
-      (parens
-        (name)
-        (type_params
-          (variable)
-          (variable)))
+      (name)
+      (type_params
+        (variable)
+        (variable))
       (name))))
 
 ================================================================================

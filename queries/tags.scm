@@ -3,32 +3,44 @@
 (declarations
   [
     (function name: [(variable) @name (prefix_id (operator) @name)])
-    (function (infix operator: [(operator) @name (infix_id (variable) @name)]))
+    (function head: (infix operator: [(operator) @name (infix_id (variable) @name)]))
     (signature name: [(variable) @name (prefix_id (operator) @name)])
     (signature names: (binding_list name: [(variable) @name (prefix_id (operator) @name)]))
   ] @definition.function)
 
 (declarations
-  (bind name: [(variable) @name (prefix_id (operator) @name)]) @definition.variable)
+  (bind name: [
+    (variable) @name
+    (prefix_id (operator) @name)
+    (parenthesized_name [(variable) @name (prefix_id (operator) @name)])
+  ]) @definition.variable)
 
 [
   (class_declarations
     [
       (function name: [(variable) @name (prefix_id (operator) @name)])
-      (function (infix operator: [(operator) @name (infix_id (variable) @name)]))
+      (function head: (infix operator: [(operator) @name (infix_id (variable) @name)]))
       (signature name: [(variable) @name (prefix_id (operator) @name)])
       (signature names: (binding_list name: [(variable) @name (prefix_id (operator) @name)]))
       (default_signature signature: (signature name: [(variable) @name (prefix_id (operator) @name)]))
       (default_signature signature: (signature names: (binding_list name: [(variable) @name (prefix_id (operator) @name)])))
-      (bind name: [(variable) @name (prefix_id (operator) @name)])
+      (bind name: [
+        (variable) @name
+        (prefix_id (operator) @name)
+        (parenthesized_name [(variable) @name (prefix_id (operator) @name)])
+      ])
     ] @definition.method)
   (instance_declarations
     [
       (function name: [(variable) @name (prefix_id (operator) @name)])
-      (function (infix operator: [(operator) @name (infix_id (variable) @name)]))
+      (function head: (infix operator: [(operator) @name (infix_id (variable) @name)]))
       (signature name: [(variable) @name (prefix_id (operator) @name)])
       (signature names: (binding_list name: [(variable) @name (prefix_id (operator) @name)]))
-      (bind name: [(variable) @name (prefix_id (operator) @name)])
+      (bind name: [
+        (variable) @name
+        (prefix_id (operator) @name)
+        (parenthesized_name [(variable) @name (prefix_id (operator) @name)])
+      ])
     ] @definition.method)
 ]
 
@@ -54,9 +66,9 @@
 ] @definition.class
 
 [
-  (type_synonym (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]) "=")
-  (type_family . [(cpp) (comment) (haddock) (pragma)]* . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
-  (data_family . [(cpp) (comment) (haddock) (pragma)]* . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+  (type_synonym head: (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+  (type_family head: (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+  (data_family head: (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
 ] @definition.class
 
 (declarations
@@ -73,10 +85,8 @@
     (prefix_id [(operator) @name (constructor_operator) @name])
     (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
   ])
-    (data_type . [(cpp) (comment) (haddock) (pragma)]* . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
-    (data_type . [(cpp) (comment) (haddock) (pragma)]* . (context) . [(cpp) (comment) (haddock) (pragma)]* . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
-    (newtype . [(cpp) (comment) (haddock) (pragma)]* . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
-    (newtype . [(cpp) (comment) (haddock) (pragma)]* . (context) . [(cpp) (comment) (haddock) (pragma)]* . (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+    (data_type head: (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
+    (newtype head: (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)]))
   ] @definition.class)
 
 (class name: [
@@ -85,14 +95,14 @@
     (prefix_id [(operator) @name (constructor_operator) @name])
     (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
   ]) @definition.interface
-(class (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)])) @definition.interface
+(class head: (infix operator: [(constructor_operator) @name (operator) @name (infix_id (name) @name)])) @definition.interface
 (instance name: [
     (name) @name
     (qualified id: (name) @name)
     (prefix_id [(operator) @name (constructor_operator) @name])
     (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
   ]) @reference.implementation
-(instance (infix operator: [
+(instance head: (infix operator: [
   (constructor_operator) @name
   (operator) @name
   (infix_id (name) @name)
@@ -106,7 +116,7 @@
     (prefix_id [(operator) @name (constructor_operator) @name])
     (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
   ]) @reference.implementation
-(deriving_instance (infix operator: [
+(deriving_instance head: (infix operator: [
   (constructor_operator) @name
   (operator) @name
   (infix_id (name) @name)
@@ -123,7 +133,7 @@
     (qualified id: (variable) @name)
     (prefix_id (operator) @name)
     (prefix_id (qualified id: (operator) @name))
-    (parens expression: [
+    (parenthesized_name [
       (variable) @name
       (qualified id: (variable) @name)
       (prefix_id (operator) @name)

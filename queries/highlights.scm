@@ -449,3 +449,13 @@
 ; ----------------------------------------------------------------------------
 ; Spell checking
 (comment) @spell
+
+; ----------------------------------------------------------------------------
+; Calls through grouped names
+
+(expression/apply
+  function: (parenthesized_name
+    [
+      (variable) @function.call
+      (qualified id: (variable) @function.call)
+    ]))

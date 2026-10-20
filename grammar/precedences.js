@@ -41,25 +41,19 @@ module.exports = {
     // qualified names
     // ------------------------------------------------
 
-    /**
-     * Prioritize shifting over a tight infix dot over reducing to a qualified constructor or module.
-     */
+    // Shift a tight dot before reducing a qualified constructor or module.
     [
       'qualifying-module',
       'qualified-id',
     ],
 
-    /**
-     * Prioritize qualified variables over record field projection on constructors.
-     */
+    // Prefer a qualified variable over record-field projection on a constructor.
     [
       'qualifying-module',
       'con',
     ],
 
-    /**
-     * Prioritize qualified names over the infix operator dot in types.
-     */
+    // Prefer a qualified type name over an infix dot operator.
     [
       'qualifying-module',
       'type-name',
@@ -103,6 +97,8 @@ module.exports = {
       'patterns',
       'apply',
     ],
+
+    [$._grouped_name, $.parenthesized_name, $._exp_parens],
 
   ],
 

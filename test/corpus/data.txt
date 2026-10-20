@@ -792,11 +792,10 @@ data (a :+: a) a a = A
 (haskell
   (declarations
     (data_type
-      (parens
-        (infix
-          (variable)
-          (constructor_operator)
-          (variable)))
+      (infix
+        (variable)
+        (constructor_operator)
+        (variable))
       (type_params
         (variable)
         (variable))
@@ -816,16 +815,15 @@ data (((a)) :+: (a :: a)) a (a :: a) = A
 (haskell
   (declarations
     (data_type
-      (parens
-        (infix
+      (infix
+        (parens
           (parens
-            (parens
-              (variable)))
-          (constructor_operator)
-          (parens
-            (annotated
-              (variable)
-              (variable)))))
+            (variable)))
+        (constructor_operator)
+        (parens
+          (annotated
+            (variable)
+            (variable))))
       (type_params
         (variable)
         (parens
@@ -1172,10 +1170,9 @@ data (A a) a = A
 (haskell
   (declarations
     (data_type
-      (parens
-        (name)
-        (type_params
-          (variable)))
+      (name)
+      (type_params
+        (variable))
       (type_params
         (variable))
       (data_constructors
