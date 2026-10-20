@@ -3202,10 +3202,18 @@ static bool scan(Env *env) {
 // API
 // --------------------------------------------------------------------------------------------------------
 
-typedef struct {
-  unsigned contexts;
-  Newline newline;
-} Persist;
+enum {
+  ContextRepeat = 1 << 4,
+  ContextIndent = 1 << 5,
+  ContextSortMask = ContextRepeat - 1,
+};
+
+_Static_assert(NoContext <= ContextSortMask, "Context sorts must fit in the serialized tag");
+_Static_assert(NResume < 4, "Newline states must fit in the serialized flags");
+
+static bool serialize_uint(char *buffer, unsigned *length, uint32_t value);
+static uint32_t deserialize_uint(const char **cursor, const char *end);
+static uint32_t context_run_length(const Contexts *contexts, uint32_t start);
 
 void *tree_sitter_haskell_external_scanner_create() {
   State *state = ts_calloc(1, sizeof(State));
@@ -3221,32 +3229,54 @@ bool tree_sitter_haskell_external_scanner_scan(void *payload, TSLexer *lexer, co
 
 unsigned tree_sitter_haskell_external_scanner_serialize(void *payload, char *buffer) {
   State *state = (State *) payload;
-  Persist persist = {.contexts = state->contexts.size, .newline = state->newline};
-  unsigned contexts_size = persist.contexts * sizeof(Context);
-  memcpy(buffer, &persist, sizeof(Persist));
-  unsigned to_copy = sizeof(Persist) + contexts_size;
-  if (to_copy > TREE_SITTER_SERIALIZATION_BUFFER_SIZE) return 0;
-  memcpy(buffer + sizeof(Persist), state->contexts.contents, contexts_size);
-  return to_copy;
+  Newline newline = state->newline;
+  unsigned length = 0;
+  uint32_t flags = newline.state | (newline.eof << 2) | (newline.no_semi << 3)
+    | (newline.skip_semi << 4) | (newline.unsafe << 5);
+  if (!serialize_uint(buffer, &length, flags)
+      || !serialize_uint(buffer, &length, newline.end)
+      || !serialize_uint(buffer, &length, newline.indent)) return 0;
+  for (uint32_t i = 0; i < state->contexts.size;) {
+    Context context = *array_get(&state->contexts, i);
+    uint32_t count = context_run_length(&state->contexts, i);
+    uint32_t tag = context.sort | (count > 1 ? ContextRepeat : 0) | (context.indent > 0 ? ContextIndent : 0);
+    if (!serialize_uint(buffer, &length, tag)
+        || (count > 1 && !serialize_uint(buffer, &length, count - 1))
+        || (context.indent > 0 && !serialize_uint(buffer, &length, context.indent))) return 0;
+    i += count;
+  }
+  return length;
 }
 
 void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
   State *state = (State *) payload;
-  Persist p;
-  Persist *persist;
-  if (length > 0)
-    persist = (Persist *) buffer;
-  else {
-    p = (Persist) {.contexts = 0};
-    persist = &p;
-    persist->newline.state = NResume;
+  state->contexts.size = 0;
+  state->newline = (Newline) {.state = NResume};
+  if (length > 0) {
+    const char *cursor = buffer;
+    const char *end = buffer + length;
+    uint32_t flags = deserialize_uint(&cursor, end);
+    uint32_t newline_end = deserialize_uint(&cursor, end);
+    uint32_t newline_indent = deserialize_uint(&cursor, end);
+    state->newline = (Newline) {
+      .state = flags & 3,
+      .end = newline_end,
+      .indent = newline_indent,
+      .eof = flags & 4,
+      .no_semi = flags & 8,
+      .skip_semi = flags & 16,
+      .unsafe = flags & 32,
+    };
+    while (cursor < end) {
+      uint32_t tag = deserialize_uint(&cursor, end);
+      uint32_t count = (tag & ContextRepeat) ? deserialize_uint(&cursor, end) + 1 : 1;
+      Context context = {
+        .sort = tag & ContextSortMask,
+        .indent = (tag & ContextIndent) ? deserialize_uint(&cursor, end) : 0,
+      };
+      for (uint32_t i = 0; i < count; i++) array_push(&state->contexts, context);
+    }
   }
-  unsigned contexts_size = persist->contexts * sizeof(Context);
-  state->newline = persist->newline;
-  array_reserve(&state->contexts, persist->contexts);
-  state->contexts.size = persist->contexts;
-  if (length > 0)
-    memcpy(state->contexts.contents, buffer + sizeof(Persist), contexts_size);
   state->lookahead.size = 0;
   state->lookahead.offset = 0;
   array_reserve(&state->lookahead, 8);
@@ -3257,4 +3287,38 @@ void tree_sitter_haskell_external_scanner_destroy(void *payload) {
   array_delete(&state->contexts);
   array_delete(&state->lookahead);
   ts_free(state);
+}
+
+static bool serialize_uint(char *buffer, unsigned *length, uint32_t value) {
+  do {
+    if (*length == TREE_SITTER_SERIALIZATION_BUFFER_SIZE) return false;
+    uint8_t byte = value & 127;
+    value >>= 7;
+    buffer[(*length)++] = byte | (value ? 128 : 0);
+  } while (value);
+  return true;
+}
+
+static uint32_t deserialize_uint(const char **cursor, const char *end) {
+  uint32_t value = 0;
+  unsigned shift = 0;
+  uint8_t byte;
+  do {
+    assert(*cursor < end && shift < 32);
+    byte = (uint8_t) *(*cursor)++;
+    value |= (uint32_t) (byte & 127) << shift;
+    shift += 7;
+  } while (byte & 128);
+  return value;
+}
+
+static uint32_t context_run_length(const Contexts *contexts, uint32_t start) {
+  Context context = *array_get(contexts, start);
+  uint32_t end = start + 1;
+  while (end < contexts->size) {
+    Context next = *array_get(contexts, end);
+    if (next.sort != context.sort || next.indent != context.indent) break;
+    end++;
+  }
+  return end - start;
 }
