@@ -10741,7 +10741,7 @@
         }
       ]
     },
-    "calling_convention": {
+    "_foreign_calling_keyword": {
       "type": "TOKEN",
       "content": {
         "type": "CHOICE",
@@ -10765,15 +10765,11 @@
           {
             "type": "STRING",
             "value": "javascript"
-          },
-          {
-            "type": "PATTERN",
-            "value": "[A-Z_]+"
           }
         ]
       }
     },
-    "safety": {
+    "_foreign_safety_keyword": {
       "type": "TOKEN",
       "content": {
         "type": "CHOICE",
@@ -10792,6 +10788,146 @@
           }
         ]
       }
+    },
+    "_foreign_macro": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": -1,
+        "content": {
+          "type": "PATTERN",
+          "value": "[A-Z][A-Za-z_0-9]*"
+        }
+      }
+    },
+    "_foreign_underscore_identifier": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "_[A-Za-z_0-9]+"
+      }
+    },
+    "_foreign_calling_convention": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "_"
+          },
+          "named": true,
+          "value": "calling_convention"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_foreign_calling_keyword"
+          },
+          "named": true,
+          "value": "calling_convention"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_foreign_macro"
+          },
+          "named": true,
+          "value": "calling_convention"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_foreign_underscore_identifier"
+          },
+          "named": true,
+          "value": "calling_convention"
+        }
+      ]
+    },
+    "_foreign_safety": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "_"
+          },
+          "named": true,
+          "value": "safety"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_foreign_safety_keyword"
+          },
+          "named": true,
+          "value": "safety"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_foreign_macro"
+          },
+          "named": true,
+          "value": "safety"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_foreign_underscore_identifier"
+          },
+          "named": true,
+          "value": "safety"
+        }
+      ]
+    },
+    "_foreign_underscore_signature": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_foreign_underscore_identifier"
+            },
+            "named": true,
+            "value": "variable"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_type_annotation"
+        }
+      ]
+    },
+    "_foreign_signature": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "signature"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_foreign_underscore_signature"
+          },
+          "named": true,
+          "value": "signature"
+        }
+      ]
     },
     "entity": {
       "type": "SYMBOL",
@@ -10813,7 +10949,7 @@
           "name": "calling_convention",
           "content": {
             "type": "SYMBOL",
-            "name": "calling_convention"
+            "name": "_foreign_calling_convention"
           }
         },
         {
@@ -10824,7 +10960,7 @@
               "name": "safety",
               "content": {
                 "type": "SYMBOL",
-                "name": "safety"
+                "name": "_foreign_safety"
               }
             },
             {
@@ -10853,7 +10989,7 @@
           "name": "signature",
           "content": {
             "type": "SYMBOL",
-            "name": "signature"
+            "name": "_foreign_signature"
           }
         }
       ]
@@ -10874,7 +11010,7 @@
           "name": "calling_convention",
           "content": {
             "type": "SYMBOL",
-            "name": "calling_convention"
+            "name": "_foreign_calling_convention"
           }
         },
         {
@@ -10898,7 +11034,7 @@
           "name": "signature",
           "content": {
             "type": "SYMBOL",
-            "name": "signature"
+            "name": "_foreign_signature"
           }
         }
       ]
