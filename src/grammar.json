@@ -11937,7 +11937,7 @@
                         },
                         {
                           "type": "PATTERN",
-                          "value": "\\\\\\n\\s*\\\\"
+                          "value": "\\\\\\p{White_Space}+\\\\"
                         }
                       ]
                     }
@@ -13525,12 +13525,46 @@
             "value": "#"
           },
           {
-            "type": "PATTERN",
-            "value": "[_\\p{Ll}\\p{Lo}]"
-          },
-          {
-            "type": "PATTERN",
-            "value": "[\\pL\\p{Mn}\\pN_']*"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "PATTERN",
+                "value": "[\\pL\\p{Mn}\\pN_']+"
+              },
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "\""
+                  },
+                  {
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "PATTERN",
+                          "value": "[^\\p{C}\\p{Zl}\\p{Zp}\\\\\"]"
+                        },
+                        {
+                          "type": "PATTERN",
+                          "value": "\\\\(?:[abfnrtv\\\\\"'&]|\\^[@-_]|[0-9]+|o[0-7]+|x[0-9a-fA-F]+|NUL|SOH|STX|ETX|EOT|ENQ|ACK|BEL|BS|HT|LF|VT|FF|CR|SO|SI|DLE|DC[1-4]|NAK|SYN|ETB|CAN|EM|SUB|ESC|FS|GS|RS|US|SP|DEL)"
+                        },
+                        {
+                          "type": "PATTERN",
+                          "value": "\\\\\\p{White_Space}+\\\\"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "STRING",
+                    "value": "\""
+                  }
+                ]
+              }
+            ]
           }
         ]
       }

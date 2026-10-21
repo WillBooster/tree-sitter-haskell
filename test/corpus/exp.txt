@@ -3227,3 +3227,57 @@ i = (case a of b -> c ⊸ d)
                     (variable)
                     (operator)
                     (variable)))))))))))
+
+================================================================================
+exp: unrestricted and quoted labels
+================================================================================
+
+a = [#Foo, #3, #17a23b, #2_3, #do, #type, #f'a', #'a', #', #''notTHSplice, #привет, #こんにちは, #"", #"Hello, World!", #"\"", #"continued\
+  \line", #"3.14", #"..."]
+a = (++) #hello#world
+a = (++) #"hello"#"world"
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (list
+          (label)
+          (label)
+          (label)
+          (label)
+          (label)
+          (label)
+          (label)
+          (label)
+          (label)
+          (label)
+          (label)
+          (label)
+          (label)
+          (label)
+          (label)
+          (label)
+          (label)
+          (label))))
+    (bind
+      (variable)
+      (match
+        (apply
+          (apply
+            (prefix_id
+              (operator))
+            (label))
+          (label))))
+    (bind
+      (variable)
+      (match
+        (apply
+          (apply
+            (prefix_id
+              (operator))
+            (label))
+          (label))))))

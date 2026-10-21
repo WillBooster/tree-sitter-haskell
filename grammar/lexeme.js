@@ -1,3 +1,5 @@
+const { quoted_string } = require('./util.js')
+
 const id_char = /[\pL\p{Mn}\pN_']*/
 
 const varid_start_char = /[_\p{Ll}\p{Lo}]/
@@ -12,7 +14,10 @@ module.exports = {
 
   name: _ => token(seq(conid_start_char, id_char, /#*/)),
 
-  label: _ => token(seq('#', varid_start_char, id_char)),
+  label: _ => token(seq('#', choice(/[\pL\p{Mn}\pN_']+/, quoted_string(
+    /[^\p{C}\p{Zl}\p{Zp}\\"]/,
+    /\\(?:[abfnrtv\\"'&]|\^[@-_]|[0-9]+|o[0-7]+|x[0-9a-fA-F]+|NUL|SOH|STX|ETX|EOT|ENQ|ACK|BEL|BS|HT|LF|VT|FF|CR|SO|SI|DLE|DC[1-4]|NAK|SYN|ETB|CAN|EM|SUB|ESC|FS|GS|RS|US|SP|DEL)/,
+  )))),
 
   _carrow: _ => choice('=>', '⇒'),
   _arrow: _ => choice('->', '→'),
