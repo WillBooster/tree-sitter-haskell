@@ -1005,8 +1005,8 @@ static bool is_newline(int32_t c) {
 
 static bool varid_start_char(const int32_t c) { return c == '_' || is_varid_start_char(c); }
 
-// TODO This should be combined with is_inner_id_char and made more explicit about when which char can occur.
-// For example, lex_symop uses this to decide about prefix dot being a field selector, where single quotes aren't valid.
+static bool identifier_start_char(const int32_t c) { return varid_start_char(c) || is_conid_start_char(c); }
+
 static bool is_id_char(const int32_t c) {
   return c == '_' || c == '\'' || is_identifier_char(c);
 }
@@ -1906,6 +1906,9 @@ static Lexed lex_splice(int32_t c) {
   return varid_start_char(c) || c == '(' ? LDollar : LSymop;
 }
 
+static Lexed lex_single_symop(Env *env, int32_t c1);
+static Lexed lex_double_symop(Env *env, int32_t c1);
+
 /**
  * Lex special occurrences of symbolic operator characters, or declare a valid operator.
  *
@@ -1928,89 +1931,84 @@ static Lexed lex_symop(Env *env) {
   uint32_t len = symop_lookahead(env);
   if (len == 0) return LNothing;
   int32_t c1 = unsafe_peek(env, 0);
-  if (len == 1) {
-    switch (c1) {
-      case '?':
-        // A `?` can be the head of an implicit parameter, if followed by a varid.
-        return varid_start_char(peek1(env)) ? LNothing : LSymop;
-      case '#':
-        return char1(env, ')') ? LUnboxedClose : LHash;
-      case '|':
-        return char1(env, ']') ? LQuoteClose : LBar;
-      case '!':
-        return lex_prefix(env, LBang);
-      case '~':
-        return lex_prefix(env, LTilde);
-      case '@':
-        return lex_prefix(env, LAt);
-      case '%':
-        return lex_prefix(env, LPercent);
-      case '$':
-        return lex_splice(peek1(env));
-      case '.':
-        if (is_id_char(peek1(env))) return LDotId;
-        else if (opening_token(env, 1)) return LDotOpen;
-        else return LSymop;
-      case 0x2192: // →
-        return LArrow;
-      case 0x22b8: // ⊸
-        return LLArrow;
-      case 0x21d2: // ⇒
-        return LCArrow;
-      case '=':
-      case 0x27e7: // ⟧
-      case 0x2988: // ⦈
-        return LTexpCloser;
-      case '*':
-      case '-':
-        return LSymopSpecial;
-      case '\\':
-      case 0x2190: // ←
-      case 0x2200: // ∀
-      case 0x2237: // ∷
-      case 0x2605: // ★
-      case 0x27e6: // ⟦
-      case 0x2919: // ⤙
-      case 0x291a: // ⤚
-      case 0x291b: // ⤛
-      case 0x291c: // ⤜
-      case 0x2987: // ⦇
-        return LNothing;
-    }
-  }
-  else if (len == 2) {
-    if (seq(env, "->")) return LArrow;
-    if (seq(env, "=>")) return LCArrow;
-    int32_t c2 = unsafe_peek(env, 1);
-    switch (c1) {
-      case '$':
-        if (c2 == '$') return lex_splice(peek2(env));
-        break;
-      case '|':
-        if (c2 == '|' && char2(env, ']')) return LQuoteClose;
-        break;
-      case '.':
-        if (c2 == '.') return LDotDot;
-        else return LDotSymop;
-        break;
-      case '#':
-        // Unboxed unit `(##)` and unboxed sum with missing space `(#| Int #)`
-        if (c2 == '#' || c2 == '|') return LSymopSpecial;
-        break;
-      default:
-        if (!valid_symop_two_chars(c1, c2)) return LNothing;
-        break;
-    }
-  }
-  else switch (c1) {
-    case '-':
-      if (len == 3 && seq(env, "->.")) return LLArrow;
-      break;
+  if (len == 1) return lex_single_symop(env, c1);
+  if (len == 2) return lex_double_symop(env, c1);
+  if (c1 == '.') return LDotSymop;
+  if (c1 == '-' && len == 3 && seq(env, "->.")) return LLArrow;
+  return LSymop;
+}
+
+static Lexed lex_single_symop(Env *env, int32_t c1) {
+  switch (c1) {
+    case '?':
+      // A `?` can be the head of an implicit parameter, if followed by a varid.
+      return varid_start_char(peek1(env)) ? LNothing : LSymop;
+    case '#':
+      return char1(env, ')') ? LUnboxedClose : LHash;
+    case '|':
+      return char1(env, ']') ? LQuoteClose : LBar;
+    case '!':
+      return lex_prefix(env, LBang);
+    case '~':
+      return lex_prefix(env, LTilde);
+    case '@':
+      return lex_prefix(env, LAt);
+    case '%':
+      return lex_prefix(env, LPercent);
+    case '$':
+      return lex_splice(peek1(env));
     case '.':
-      return LDotSymop;
+      if (identifier_start_char(peek1(env))) return LDotId;
+      else if (opening_token(env, 1)) return LDotOpen;
+      else return LSymop;
+    case 0x2192: // →
+      return LArrow;
+    case 0x22b8: // ⊸
+      return LLArrow;
+    case 0x21d2: // ⇒
+      return LCArrow;
+    case '=':
+    case 0x27e7: // ⟧
+    case 0x2988: // ⦈
+      return LTexpCloser;
+    case '*':
+    case '-':
+      return LSymopSpecial;
+    case '\\':
+    case 0x2190: // ←
+    case 0x2200: // ∀
+    case 0x2237: // ∷
+    case 0x2605: // ★
+    case 0x27e6: // ⟦
+    case 0x2919: // ⤙
+    case 0x291a: // ⤚
+    case 0x291b: // ⤛
+    case 0x291c: // ⤜
+    case 0x2987: // ⦇
+      return LNothing;
   }
   return LSymop;
 }
+
+
+static Lexed lex_double_symop(Env *env, int32_t c1) {
+  if (seq(env, "->")) return LArrow;
+  if (seq(env, "=>")) return LCArrow;
+  int32_t c2 = unsafe_peek(env, 1);
+  switch (c1) {
+    case '$':
+      return c2 == '$' ? lex_splice(peek2(env)) : LSymop;
+    case '|':
+      return c2 == '|' && char2(env, ']') ? LQuoteClose : LSymop;
+    case '.':
+      return c2 == '.' ? LDotDot : LDotSymop;
+    case '#':
+      return c2 == '#' || c2 == '|' ? LSymopSpecial : LSymop;
+    default:
+      return valid_symop_two_chars(c1, c2) ? LSymop : LNothing;
+  }
+}
+
 
 /**
  * If the next character after whitespace starting from `start` is a closing parenthesis, finish with `LEFT_SECTION_OP`.
