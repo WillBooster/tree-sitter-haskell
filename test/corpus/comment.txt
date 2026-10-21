@@ -10,7 +10,8 @@ comment: line
 --------------------------------------------------------------------------------
 
 (haskell
-  (comment))
+  (comment
+    (content)))
 
 ================================================================================
 comment: multi
@@ -26,13 +27,15 @@ f = a
 --------------------------------------------------------------------------------
 
 (haskell
-  (comment)
+  (comment
+    (content))
   (declarations
     (bind
       (variable)
       (match
         (variable)))
-    (comment)))
+    (comment
+      (content))))
 
 ================================================================================
 comment: hash inside
@@ -43,7 +46,8 @@ comment: hash inside
 --------------------------------------------------------------------------------
 
 (haskell
-  (comment))
+  (comment
+    (content)))
 
 ================================================================================
 comment: newline termination
@@ -54,7 +58,8 @@ comment: newline termination
 --------------------------------------------------------------------------------
 
 (haskell
-  (comment))
+  (comment
+    (content)))
 
 ================================================================================
 comment: nested
@@ -73,7 +78,8 @@ a = a
 --------------------------------------------------------------------------------
 
 (haskell
-  (comment)
+  (comment
+    (content))
   (declarations
     (bind
       (variable)
@@ -91,8 +97,10 @@ comment: unicode symbol
 --------------------------------------------------------------------------------
 
 (haskell
-  (comment)
-  (comment))
+  (comment
+    (content))
+  (comment
+    (content)))
 
 ================================================================================
 comment: repeated minus before multiline end
@@ -112,8 +120,10 @@ a
   (header
     (module
       (module_id)))
-  (comment)
-  (comment))
+  (comment
+    (content))
+  (comment
+    (content)))
 
 ================================================================================
 comment: double brace before nested begin
@@ -129,7 +139,8 @@ module A where
   (header
     (module
       (module_id)))
-  (comment))
+  (comment
+    (content)))
 
 ================================================================================
 comment: terminated by eof
@@ -151,7 +162,8 @@ aaa
       (variable)
       (match
         (variable)))
-    (comment)))
+    (ERROR
+      (content))))
 
 ================================================================================
 comment: end of line
@@ -167,7 +179,8 @@ a = a -- a
       (variable)
       (match
         (variable)))
-    (comment)))
+    (comment
+      (content))))
 
 ================================================================================
 comment: escaped heralds
@@ -181,7 +194,8 @@ comment: escaped heralds
 --------------------------------------------------------------------------------
 
 (haskell
-  (comment))
+  (comment
+    (content)))
 
 ================================================================================
 comment: multiple braces
@@ -195,7 +209,8 @@ comment: multiple braces
 --------------------------------------------------------------------------------
 
 (haskell
-  (comment))
+  (comment
+    (content)))
 
 ================================================================================
 comment: symop char after first space
@@ -214,12 +229,14 @@ a = a
       (variable)
       (match
         (variable)))
-    (comment)
+    (comment
+      (content))
     (bind
       (variable)
       (match
         (variable)))
-    (comment)))
+    (comment
+      (content))))
 
 ================================================================================
 comment: haddock
@@ -249,15 +266,19 @@ data A
           (prefix
             (constructor)
             (name)
-            (haddock)
+            (haddock
+              (content))
             (name)))))
-    (haddock)
-    (haddock)
+    (haddock
+      (content))
+    (haddock
+      (content))
     (bind
       (variable)
       (match
         (variable)))
-    (haddock)
+    (haddock
+      (content))
     (data_type
       (name))))
 
@@ -273,8 +294,10 @@ f :: Int
 --------------------------------------------------------------------------------
 
 (haskell
-  (comment)
-  (haddock)
+  (comment
+    (content))
+  (haddock
+    (content))
   (declarations
     (signature
       (variable)
@@ -299,11 +322,14 @@ f ::
   (declarations
     (signature
       (variable)
-      (comment)
-      (haddock)
+      (comment
+        (content))
+      (haddock
+        (content))
       (function
         (name)
-        (haddock)
+        (haddock
+          (content))
         (name)))))
 
 ================================================================================
@@ -323,8 +349,10 @@ f = do
       (variable)
       (match
         (do
-          (comment)
-          (comment)
+          (comment
+            (content))
+          (comment
+            (content))
           (exp
             (variable)))))))
 
@@ -339,7 +367,8 @@ f :: Int
 --------------------------------------------------------------------------------
 
 (haskell
-  (haddock)
+  (haddock
+    (content))
   (declarations
     (signature
       (variable)
@@ -361,27 +390,32 @@ d = 4
 --------------------------------------------------------------------------------
 
 (haskell
-  (comment)
+  (comment
+    (content))
   (declarations
     (bind
       (variable)
       (match
         (literal
           (integer))))
-    (comment)
+    (comment
+      (content))
     (bind
       (variable)
       (match
-        (comment)
+        (comment
+          (content))
         (literal
           (integer))))
-    (comment)
+    (comment
+      (content))
     (bind
       (variable)
       (match
         (literal
           (integer))))
-    (comment)
+    (comment
+      (content))
     (bind
       (variable)
       (match

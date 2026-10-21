@@ -13,7 +13,7 @@ Haskell grammar for [tree-sitter](https://github.com/tree-sitter/tree-sitter), f
 to its authors and contributors. This is not an official release of that project.
 
 This fork is based on upstream's version 0.23.1 grammar and generates the parser with the
-[WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parser carries that fork's own ABI number, so it loads only with that fork's runtime, version 7.0.5 or later in the 7.x series; upstream's runtime rejects it.
+[WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parser carries that fork's own ABI number, so it loads only with that fork's runtime, version 7.0.7 or later in the 7.x series; upstream's runtime rejects it.
 [Upstream's README at that version](https://github.com/tree-sitter/tree-sitter-haskell/blob/v0.23.1/README.md) lists
 the supported language extensions and, under "Querying", explains how to query the grammar's supertypes; it is the
 readme that the comments in `grammar.js` refer to.
@@ -24,7 +24,8 @@ The fork's main differences from upstream 0.23.1 are:
 
 - **Whitespace**: horizontal tabs separate tokens, are accepted before Haddock markers, and advance layout to the next eight-column tab stop.
 - **MultilineStrings**: triple-quoted literals retain their complete source as a single `string` node, including embedded quotes, escapes, and string gaps.
-- **Comment scanning**: empty block comments such as `{--}` terminate at their closing delimiter and preserve following code.
+- **Comment scanning**: comments and Haddock nodes expose a named `content` child, preserving body whitespace and excluding outer delimiters. Ordinary comment injection captures this child.
+  Empty block comments such as `{--}` terminate at their closing delimiter and preserve following code.
   An ordinary line comment does not absorb a following marked Haddock comment.
   Unmarked continuation lines remain in their preceding Haddock block, including space or tab indentation and LF or CRLF newlines.
   First-column ordinary comments combine with LF line endings.
@@ -39,7 +40,7 @@ reports an error: the lexers of the WillBooster/tree-sitter generator let charac
 ## Usage
 
 The npm package ships `tree-sitter-haskell.wasm` for
-[@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter) version 7.0.5 or later in the 7.x series, which runs in Node.js, Bun, browsers, and Cloudflare Workers. In Node.js and Bun, load the grammar from its path:
+[@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter) version 7.0.7 or later in the 7.x series, which runs in Node.js, Bun, browsers, and Cloudflare Workers. In Node.js and Bun, load the grammar from its path:
 
 ```js
 import { fileURLToPath } from 'node:url';
@@ -97,7 +98,7 @@ fuzzed with:
 
 ```toml
 [dependencies]
-tree-sitter = { package = "willbooster-tree-sitter", version = "7.0.5" }
+tree-sitter = { package = "willbooster-tree-sitter", version = "7.0.7" }
 tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "8" }
 ```
 

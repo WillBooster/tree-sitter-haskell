@@ -98,8 +98,11 @@ module.exports = {
     // Detect and emit text nodes for comments and CPP.
     // In particular, #else branches of CPP conditionals a fully contained in the resulting node, since their nonlinear
     // nature means they cannot be parsed.
-    $.comment,
-    $.haddock,
+    $._cond_comment_block,
+    $._cond_haddock_block,
+    $._cond_comment_line,
+    $._cond_haddock_line,
+    $.content,
     $.cpp,
     $.pragma,
 

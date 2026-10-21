@@ -1,5 +1,6 @@
 const
   class_ = require('./grammar/class.js'),
+  comment = require('./grammar/comment.js'),
   conflicts = require('./grammar/conflicts.js'),
   context = require('./grammar/context.js'),
   data = require('./grammar/data.js'),
@@ -29,6 +30,7 @@ module.exports = grammar({
     ),
 
     ...general,
+    ...comment,
     ...type,
     ...context,
     ...exp,
