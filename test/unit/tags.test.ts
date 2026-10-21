@@ -262,6 +262,8 @@ testCommand(
       ).toEqual([
         'first',
         'second',
+        '<+>',
+        'prefixElement',
         'extracted',
         'headValue',
         'tailValues',
@@ -280,6 +282,7 @@ testCommand(
         'withComprehension',
         'listFirst',
         'listSecond',
+        '<*>',
       ]);
     },
   }

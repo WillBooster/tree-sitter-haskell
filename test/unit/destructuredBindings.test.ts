@@ -42,6 +42,8 @@ test('indexes module pattern names at their lexical ranges without tagging local
     expect(actual).toEqual([
       ['first', 5, 1, 6],
       ['second', 5, 8, 14],
+      ['<+>', 5, 17, 20],
+      ['prefixElement', 5, 27, 40],
       ['extracted', 6, 5, 14],
       ['headValue', 7, 1, 10],
       ['tailValues', 7, 11, 21],
@@ -60,6 +62,33 @@ test('indexes module pattern names at their lexical ranges without tagging local
       ['withComprehension', 27, 0, 17],
       ['listFirst', 28, 1, 10],
       ['listSecond', 28, 12, 22],
+      ['<*>', 41, 6, 9],
+    ]);
+  } finally {
+    tree.delete();
+    parser.delete();
+  }
+});
+
+test('keeps existing simple operator bindings uniquely indexed alongside tuple bindings', () => {
+  const source = fs.readFileSync(path.join(root, 'test/fixtures/navigation/parenthesizedBindings.hs'), 'utf8');
+  const parser = new Parser().setLanguage(language);
+  const tree = parser.parse(source)!;
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    const actual = tags
+      .matches(tree.rootNode)
+      .filter(({ captures }) => captures.some(({ name }) => name === 'definition.variable'))
+      .flatMap(({ captures }) => captures.filter(({ name }) => name === 'name'))
+      .map(({ node }) => [node.text, node.startPosition.row, node.startPosition.column, node.endPosition.column]);
+    expect(actual).toEqual([
+      ['a', 1, 1, 2],
+      ['b', 2, 2, 3],
+      ['<+>', 3, 3, 6],
+      ['x', 5, 1, 2],
+      ['y', 5, 4, 5],
+      ['result', 10, 0, 6],
+      ['following', 11, 0, 9],
     ]);
   } finally {
     tree.delete();

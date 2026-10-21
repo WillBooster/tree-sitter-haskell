@@ -16,6 +16,7 @@
   ]) @definition.variable)
 
 (binding_pattern/variable) @name @definition.variable
+(binding_pattern/prefix_id (operator) @name) @definition.variable
 (binding_pattern/as bind: (variable) @name) @definition.variable
 
 (binding_field_pattern/field_pattern
