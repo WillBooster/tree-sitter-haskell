@@ -2,9 +2,9 @@
 ; and don't override destructured parameters
 (variable) @variable
 
-(pattern/wildcard) @variable
+[(pattern/wildcard) (binding_pattern/wildcard)] @variable
 
-(decl/function
+(function
   patterns: (patterns
     (_) @variable.parameter))
 
@@ -12,7 +12,7 @@
   (_)+ @variable.parameter
   "->")
 
-(decl/function
+(function
   (infix
     (pattern) @variable.parameter))
 
@@ -116,55 +116,58 @@
 ] @keyword
 
 [
-  (decl/function name: (variable) @function)
-  (decl/bind name: (variable) @function)
-  (decl/signature name: (variable) @function)
-  (decl/signature names: (binding_list (variable) @function))
+  (function name: (variable) @function)
+  (bind name: (variable) @function)
+  (signature name: (variable) @function)
+  (signature names: (binding_list (variable) @function))
 ]
 
-(decl/bind
+(bind
   name: (variable) @variable)
 
-(decl/signature
+(signature
   name: (variable) @variable
   type: (type))
 
-((decl/signature
+((signature
   name: (variable) @_name
   type: (type))
   .
   [
-    (decl/function name: (variable) @variable)
-    (decl/bind name: (variable) @variable)
+    (function name: (variable) @variable)
+    (bind name: (variable) @variable)
   ]
     match: (_)
   (#eq? @_name @variable))
 
-(decl/signature
+(signature
   name: (variable) @function
   type: (type/apply
     constructor: (name) @_type)
   (#eq? @_type "IO"))
 
-((decl/signature
+((signature
   name: (variable) @_name
   type: (type/apply
     constructor: (name) @_type)
   (#eq? @_type "IO"))
   .
   [
-    (decl/function name: (variable) @function)
-    (decl/bind name: (variable) @function)
+    (function name: (variable) @function)
+    (bind name: (variable) @function)
   ]
     match: (_)
   (#eq? @_name @function))
 
-((decl/signature) @function
+([
+  (signature name: (_))
+  (signature names: (_))
+] @function
   .
-  (decl/function
+  (function
     name: (variable) @function))
 
-(decl/bind
+(bind
   name: (variable) @function
   (match
     expression: (expression/lambda)))
@@ -263,7 +266,7 @@
   ]
   (#any-of? @_op "." ">>>" "***" ">=>" "<=<"))
 
-(decl/function
+(function
   name: (variable) @function
   (match
     expression: (infix
@@ -310,23 +313,23 @@
       (variable) @variable)
   ])
 
-(decl/bind
+(bind
   name: (variable) @function
   (#eq? @function "main"))
 
 (signature
-  pattern: (pattern/variable) @function
+  pattern: [(pattern/variable) (binding_pattern/variable)] @function
   type: (quantified_type))
 
-(decl/signature
+(signature
   name: (variable) @function
   type: (quantified_type))
 
-((decl/signature
+((signature
   name: (variable) @_name
   type: (quantified_type))
   .
-  (decl/bind
+  (bind
     (variable) @function)
   (#eq? @function @_name))
 

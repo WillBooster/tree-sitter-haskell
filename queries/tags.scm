@@ -15,6 +15,14 @@
     (parenthesized_name [(variable) @name (prefix_id (operator) @name)])
   ]) @definition.variable)
 
+(binding_pattern/variable) @name @definition.variable
+(binding_pattern/prefix_id (operator) @name) @definition.variable
+(binding_pattern/as bind: (variable) @name) @definition.variable
+
+(binding_field_pattern/field_pattern
+  !pattern
+  field: [(field_name) @name (qualified id: (field_name) @name)]) @definition.variable
+
 [
   (class_declarations
     [
