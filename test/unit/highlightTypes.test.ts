@@ -1,13 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
-import { expect, test } from 'vitest';
+import { afterAll, beforeAll, expect, test } from 'vitest';
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 const root = path.join(import.meta.dirname, '../..');
 await Parser.init();
 const language = await Language.load(currentWasmPath(root));
-const highlights = fs.readFileSync(path.join(root, 'queries/highlights.scm'), 'utf8');
+let query: Query;
+beforeAll(() => {
+  query = new Query(language, fs.readFileSync(path.join(root, 'queries/highlights.scm'), 'utf8'));
+}, 180_000);
+afterAll(() => query.delete());
 
 test.each([
   'f :: forall a. a -> a',
@@ -23,7 +27,6 @@ test.each([
 ])('highlights type variables and binders without coloring value names as types: %s', (declaration) => {
   const source = `${declaration}\nvalue a = let local = a in local\n`;
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, highlights);
   const tree = parser.parse(source)!;
   try {
     expect(tree.rootNode.hasError, source).toBe(false);
@@ -41,7 +44,6 @@ test.each([
     ).toBe(true);
   } finally {
     tree.delete();
-    query.delete();
     parser.delete();
   }
 });
