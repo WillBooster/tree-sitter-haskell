@@ -17,7 +17,8 @@ const resources = await Promise.all(
         .map((file) => new Query(language, fs.readFileSync(path.join(root, directory, file), 'utf8')))
     );
     const injections = new Query(language, fs.readFileSync(path.join(root, 'queries/injections.scm'), 'utf8'));
-    return { name, language, queries, injections };
+    const highlights = queries.find((query) => query.captureNames.includes('comment.documentation'))!;
+    return { name, language, queries, injections, highlights };
   })
 );
 afterAll(() => {
@@ -27,7 +28,7 @@ afterAll(() => {
   }
 });
 
-for (const { name, language, queries, injections } of resources) {
+for (const { name, language, queries, injections, highlights } of resources) {
   test(`${name} exposes exact comment bodies without losing whitespace, nesting or following bindings`, () => {
     const examples = [
       ['{-  body  -}', 'comment', '  body  '],
@@ -56,6 +57,22 @@ for (const { name, language, queries, injections } of resources) {
             expect(nodes.map((node) => [node.type, node.text])).toEqual([[kind, comment]]);
             const content = nodes[0]!.namedChildren;
             expect(content.map((node) => [node.type, node.text])).toEqual([['content', body]]);
+            expect(
+              highlights
+                .captures(tree.rootNode)
+                .filter(
+                  ({ name, node }) =>
+                    name !== 'spell' && node.startIndex >= nodes[0]!.startIndex && node.endIndex <= nodes[0]!.endIndex
+                )
+                .map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
+            ).toEqual([
+              [
+                kind === 'haddock' ? 'comment.documentation' : 'comment',
+                comment,
+                source.indexOf(comment),
+                source.indexOf(comment) + comment.length,
+              ],
+            ]);
             const start = source.indexOf(comment) + comment.length - body.length - (comment.startsWith('{-') ? 2 : 0);
             expect([content[0]!.startIndex, content[0]!.endIndex]).toEqual([start, start + body!.length]);
             expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
@@ -77,7 +94,7 @@ for (const { name, language, queries, injections } of resources) {
     }
   });
 
-  test(`${name} keeps symbolic dash operators and pragmas distinct from comments`, () => {
+  test(`${name} keeps Haskell operators distinct from comment markers`, () => {
     const parser = new Parser().setLanguage(language);
     try {
       for (const operator of ['---+', '--|', '--^', '--⊕', '------>']) {
@@ -98,6 +115,20 @@ for (const { name, language, queries, injections } of resources) {
         } finally {
           tree.delete();
         }
+      }
+      const hash = name === 'hsc' ? '##' : '#';
+      const source = `-- | Docs\ndata Flag = Off | On\nguarded x | x > 0 = [y | y <- [x]]\nunboxed = (${hash} 1 | ${hash})\n`;
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError).toBe(false);
+        expect(
+          highlights
+            .captures(tree.rootNode)
+            .filter(({ name, node }) => name === 'operator' && node.text === '|')
+            .map(({ node }) => [node.startIndex, node.endIndex])
+        ).toEqual(['| On', '| x', '| y', '| #'].map((marker) => [source.indexOf(marker), source.indexOf(marker) + 1]));
+      } finally {
+        tree.delete();
       }
     } finally {
       parser.delete();
@@ -128,59 +159,57 @@ for (const { name, language, queries, injections } of resources) {
   });
 
   for (const depth of [0, 32, 256]) {
-    test(`${name} restores comment modes at depth ${depth} through marker, nesting and whitespace edits`, () => {
+    test.each([
+      ['nesting', 'nested', '{- nested -}'],
+      ['body whitespace', '  outer', '\t outer'],
+      ['doubled herald', '-- | Docs', '-- ||Docs'],
+      ['line ending', '\r\n\t-- continued', '\n  -- continued'],
+      ['documentation marker', '{-  outer', '{- | outer'],
+      ['following binding', 'following', 'afterwards'],
+    ] as const)(`${name} restores %s at depth ${depth} through an edit and undo`, (_label, target, replacement) => {
       const parser = new Parser().setLanguage(language);
       let source = `before = 0\nvalue = (${'let { x = ('.repeat(depth)}{-  outer {- nested -} tail -} 0${') } in x'.repeat(depth)})\n-- | Docs\r\n\t-- continued\r\nfollowing = 1\n`;
       let tree = parser.parse(source)!;
       try {
-        for (const [target, replacement] of [
-          ['nested', '{- nested -}'],
-          ['  outer', '\t outer'],
-          ['-- | Docs', '-- ||Docs'],
-          ['\r\n\t-- continued', '\n  -- continued'],
-          ['{-  outer', '{- | outer'],
-          ['following', 'afterwards'],
+        const original = source;
+        for (const [from, to] of [
+          [target, replacement],
+          [replacement, target],
         ] as const) {
-          const original = source;
-          for (const [from, to] of [
-            [target, replacement],
-            [replacement, target],
-          ] as const) {
-            const start = source.indexOf(from);
-            expect(start).toBeGreaterThanOrEqual(0);
-            const oldSource = source;
-            source = source.slice(0, start) + to + source.slice(start + from.length);
-            tree.edit(
-              new Edit({
-                startIndex: start,
-                oldEndIndex: start + from.length,
-                newEndIndex: start + to.length,
-                startPosition: positionAt(oldSource, start),
-                oldEndPosition: positionAt(oldSource, start + from.length),
-                newEndPosition: positionAt(source, start + to.length),
-              })
-            );
-            const previous = tree;
-            tree = parser.parse(source, previous)!;
-            previous.delete();
-            const fresh = parser.parse(source)!;
-            try {
-              expect(tree.rootNode.hasError).toBe(false);
-              expect(metadata(tree.rootNode)).toEqual(metadata(fresh.rootNode));
-              for (const query of queries)
-                expect(captures(query, tree.rootNode)).toEqual(captures(query, fresh.rootNode));
-              expect(
-                tree.rootNode
-                  .childForFieldName('declarations')!
-                  .namedChildren.filter((node) => node.type === 'bind')
-                  .map((node) => node.childForFieldName('name')?.text)
-              ).toEqual(['before', 'value', source.includes('afterwards') ? 'afterwards' : 'following']);
-            } finally {
-              fresh.delete();
-            }
+          const start = source.indexOf(from);
+          expect(start).toBeGreaterThanOrEqual(0);
+          const oldSource = source;
+          source = source.slice(0, start) + to + source.slice(start + from.length);
+          tree.edit(
+            new Edit({
+              startIndex: start,
+              oldEndIndex: start + from.length,
+              newEndIndex: start + to.length,
+              startPosition: positionAt(oldSource, start),
+              oldEndPosition: positionAt(oldSource, start + from.length),
+              newEndPosition: positionAt(source, start + to.length),
+            })
+          );
+          const previous = tree;
+          tree = parser.parse(source, previous)!;
+          previous.delete();
+          const fresh = parser.parse(source)!;
+          try {
+            expect(tree.rootNode.hasError).toBe(false);
+            expect(metadata(tree.rootNode)).toEqual(metadata(fresh.rootNode));
+            for (const query of queries)
+              expect(captures(query, tree.rootNode)).toEqual(captures(query, fresh.rootNode));
+            expect(
+              tree.rootNode
+                .childForFieldName('declarations')!
+                .namedChildren.filter((node) => node.type === 'bind')
+                .map((node) => node.childForFieldName('name')?.text)
+            ).toEqual(['before', 'value', source.includes('afterwards') ? 'afterwards' : 'following']);
+          } finally {
+            fresh.delete();
           }
-          expect(source).toBe(original);
         }
+        expect(source).toBe(original);
       } finally {
         tree.delete();
         parser.delete();

@@ -6,8 +6,8 @@ module.exports = {
   ),
 
   haddock: $ => choice(
-    seq('{-', $._cond_haddock_block, choice('|', '^'), $.content, '-}'),
-    seq(alias(/--+/, '--'), $._cond_haddock_line, choice('|', '^'), $.content),
+    seq('{-', $._cond_haddock_block, alias(choice('|', '^'), 'haddock_marker'), $.content, '-}'),
+    seq(alias(/--+/, '--'), $._cond_haddock_line, alias(choice('|', '^'), 'haddock_marker'), $.content),
   ),
 
 }

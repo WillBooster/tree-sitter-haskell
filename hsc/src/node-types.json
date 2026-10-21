@@ -6631,10 +6631,6 @@
     "named": false
   },
   {
-    "type": "^",
-    "named": false
-  },
-  {
     "type": "_",
     "named": false
   },
@@ -6741,6 +6737,10 @@
   },
   {
     "type": "group",
+    "named": false
+  },
+  {
+    "type": "haddock_marker",
     "named": false
   },
   {
