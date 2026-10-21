@@ -14,6 +14,7 @@ typedef struct {
 static void hsc_consume_args(Env *env, bool line);
 static bool hsc_cpp_boundary(Env *env);
 static void hsc_skip_text(Env *env);
+static uint32_t hsc_char_end(Env *env);
 static bool hsc_text_id_char(int32_t c);
 static void hsc_quoted(HscCursor *cursor, int32_t quote);
 static void hsc_block_comment(HscCursor *cursor);
@@ -96,7 +97,7 @@ static bool hsc_cpp_boundary(Env *env) {
 static void hsc_skip_text(Env *env) {
   int32_t c = peek0(env);
   if (c == '"') advance_over(env, take_string_literal(env) - 1);
-  else if (c == '\'') advance_over(env, take_char_literal(env) - 1);
+  else if (c == '\'') advance_over(env, hsc_char_end(env));
   else if (c == '{' && char1(env, '-')) {
     advance_over(env, 1);
     consume_block_comment(env, 0);
@@ -104,6 +105,11 @@ static void hsc_skip_text(Env *env) {
   else if (symop_char(c)) advance_before(env, advance_while(env, 0, symop_char));
   else if (hsc_text_id_char(c)) advance_before(env, advance_while(env, 0, hsc_text_id_char));
   else advance_over(env, 0);
+}
+
+static uint32_t hsc_char_end(Env *env) {
+  if (char1(env, '\\')) return advance_until_char(env, 3, '\'');
+  return char_at(env, 2, '\'') ? 2 : 0;
 }
 
 static bool hsc_text_id_char(int32_t c) { return c != '#' && is_id_char(c); }

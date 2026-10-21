@@ -192,6 +192,12 @@ for (const [fixture, target, replacements, names] of [
     ['#{elif 0}', '#{else}\n', '#{else}'],
     ['value', 'nested', 'quoted', 'line', 'following'],
   ],
+  [
+    'hscCharacterBoundaries.hsc',
+    String.raw`'\n'`,
+    [String.raw`'\t'`, String.raw`'\''`, String.raw`'\n'`],
+    ['newline', 'quote', 'slash', 'named', 'control', 'following'],
+  ],
 ] as const) {
   test(`retains ${fixture} boundaries through edits and undo`, () => {
     const parser = new Parser().setLanguage(language);
