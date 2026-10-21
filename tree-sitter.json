@@ -10,6 +10,17 @@
       "highlights": "queries/highlights.scm",
       "tags": "queries/tags.scm",
       "injection-regex": "^(hs|haskell)$"
+    },
+    {
+      "name": "hsc",
+      "camelcase": "Hsc",
+      "scope": "source.hsc",
+      "path": "hsc",
+      "file-types": ["hsc"],
+      "highlights": ["queries/highlights.scm", "hsc/queries/highlights.scm"],
+      "tags": "queries/tags.scm",
+      "injection-regex": "^hsc$",
+      "injections": ["queries/injections.scm", "hsc/queries/injections.scm"]
     }
   ],
   "metadata": {

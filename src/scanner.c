@@ -108,7 +108,7 @@
 // --------------------------------------------------------------------------------------------------------
 
 /**
- * This enum mirrors the symbols in `externals` in `grammar/externals.js`.
+ * These indices match the external arrays in `grammar/externals.js` and `hsc/grammar.js`.
  * tree-sitter passes an array of booleans to the scanner whose entries are `true` if the symbol at the corresponding
  * index is valid at the current parser position.
  */
@@ -164,6 +164,12 @@ typedef enum {
   CONSYM,
   UNBOXED_LABEL_START,
   SIZED_INTEGER,
+#ifdef HSC_EXT
+  HSC_START_BRACE,
+  HSC_HASH,
+  HSC_ARGS_NESTED,
+  HSC_ARGS_NEWLINE,
+#endif
   UPDATE,
 } Symbol;
 
@@ -221,6 +227,12 @@ static const char *sym_names[] = {
   "consym",
   "unboxed_label_start",
   "sized_integer",
+#ifdef HSC_EXT
+  "hsc_start_brace",
+  "hsc_hash",
+  "hsc_args_nested",
+  "hsc_args_newline",
+#endif
   "update",
 };
 
@@ -251,6 +263,9 @@ typedef enum {
   MultiWayIfLayout,
   Braces,
   TExp,
+#ifdef HSC_EXT
+  HscBraces,
+#endif
   ModuleHeader,
   NoContext,
 } ContextSort;
@@ -266,6 +281,9 @@ static char const *context_names[] = {
   "quote",
   "braces",
   "texp",
+#ifdef HSC_EXT
+  "hsc-braces",
+#endif
   "module_header",
   "none",
 };
@@ -324,6 +342,9 @@ typedef enum {
   LSemi,
   LCppElse,
   LCpp,
+#ifdef HSC_EXT
+  LHscHash,
+#endif
 } Lexed;
 
 #ifdef TREE_SITTER_DEBUG
@@ -367,6 +388,9 @@ static const char *token_names[] = {
   "semi",
   "cpp-else",
   "cpp",
+#ifdef HSC_EXT
+  "hsc-hash",
+#endif
 };
 
 #endif
@@ -982,6 +1006,9 @@ static Symbol context_end_sym(ContextSort s) {
     case TExp:
       return END_TEXP;
     case Braces:
+#ifdef HSC_EXT
+    case HscBraces:
+#endif
       return END_BRACE;
     default:
       return s < Braces ? END : FAIL;
@@ -1052,6 +1079,9 @@ static bool symop_char(const int32_t c) {
  * This consumes the entire symop, since the field denotes the length of the string and therefore the last (failing)
  * peek is _beyond_ the end, consuming the last valid char.
  */
+#ifdef HSC_EXT
+static uint32_t symop_lookahead(Env *env);
+#else
 static uint32_t symop_lookahead(Env *env) {
   if (env->symop == 0) {
     env->symop = advance_while(env, 0, symop_char);
@@ -1060,6 +1090,8 @@ static uint32_t symop_lookahead(Env *env) {
   }
   return env->symop;
 }
+
+#endif
 
 static bool is_symop(Env *env) {
   return symop_lookahead(env) > 0;
@@ -1235,6 +1267,7 @@ static bool is_space_or_tab(int32_t c) {
   return c == ' ' || c == '\t';
 }
 
+#ifndef HSC_EXT
 /**
  * Advance until the next newline or EOF, used to consume the body of a cpp directive.
  * Escaped newlines are treated as line continuations, which allow spaces and tabs between backslash and newline.
@@ -1253,6 +1286,8 @@ static void take_line_escaped_newline(Env *env) {
     else return;
   }
 }
+
+#endif
 
 /**
  * Skip the lexer until the following character is neither space nor tab.
@@ -1301,9 +1336,11 @@ static Space skip_whitespace(Env *env) {
  * Advance the lexer until the following character is neither space nor tab, starting at position `offset + start`, and
  * return the index of the next character.
  */
+#ifndef HSC_EXT
 static uint32_t take_space_from(Env *env, uint32_t start) {
   return advance_while(env, start, is_space_char_or_tab);
 }
+#endif
 
 /**
  * Ensure that the character after a keyword like `module` is not a character that would change its meaning to be an
@@ -1315,9 +1352,11 @@ static bool token_end(int32_t c) { return !is_inner_id_char(c); }
  * Check if lookahead contains the string `s` starting at position `offset + start`, followed by a non-id character.
  * See `seq`.
  */
+#ifndef HSC_EXT
 static bool token_from(Env *env, const char *restrict s, uint32_t start) {
   return seq_from(env, s, start) && token_end(peek(env, start + (uint32_t) strlen(s)));
 }
+#endif
 
 /**
  * `token_from` at the current offset.
@@ -1330,12 +1369,14 @@ static bool token(Env *env, const char *restrict s) {
  * Check if lookahead contains any of the strings in `tokens` starting at position `offset + start`, followed by a
  * non-id character.
  */
+#ifndef HSC_EXT
 static bool any_token_from(Env *env, size_t n, const char * tokens[], uint32_t start) {
   for (size_t i = 0; i < n; i++) {
     if (token_from(env, tokens[i], start)) return true;
   }
   return false;
 }
+#endif
 
 static bool match_symop(Env *env, const char *restrict target) {
   return symop_lookahead(env) == strlen(target) && seq(env, target);
@@ -1447,9 +1488,11 @@ static const char *cpp_tokens_start[3] = {
   "ifndef",
 };
 
+#ifndef HSC_EXT
 static bool cpp_cond_start(Env *env, uint32_t start) {
   return any_token_from(env, 3, cpp_tokens_start, start);
 }
+#endif
 
 static const char *cpp_tokens_else[4] = {
   "else",
@@ -1458,13 +1501,17 @@ static const char *cpp_tokens_else[4] = {
   "elifndef",
 };
 
+#ifndef HSC_EXT
 static bool cpp_cond_else(Env *env, uint32_t start) {
   return any_token_from(env, 4, cpp_tokens_else, start);
 }
+#endif
 
+#ifndef HSC_EXT
 static bool cpp_cond_end(Env *env, uint32_t start) { return token_from(env, "endif", start); }
+#endif
 
-static const char *cpp_tokens_other[7] = {
+static const char *cpp_tokens_other[] = {
   "define",
   "undef",
   "include",
@@ -1472,11 +1519,16 @@ static const char *cpp_tokens_other[7] = {
   "error",
   "warning",
   "line",
+#ifdef HSC_EXT
+  "let",
+  "def",
+#endif
 };
 
+#ifndef HSC_EXT
 static bool cpp_directive_other(Env *env, uint32_t start) {
   return
-    any_token_from(env, 7, cpp_tokens_other, start)
+    any_token_from(env, sizeof(cpp_tokens_other) / sizeof(cpp_tokens_other[0]), cpp_tokens_other, start)
     ||
     // A hash followed by nothing but whitespace is CPP.
     // If non-whitespace follows whitespace, it is a parse error, unless we're in a brace layout; then it is a varsym.
@@ -1487,12 +1539,17 @@ static bool cpp_directive_other(Env *env, uint32_t start) {
     (char1(env, '!') && uninitialized(env))
     ;
 }
+#endif
 
-/**
- * If the first character at `offset` is a hash, skip space and try all tokens that start a CPP directive.
- * Return the matching variant of the enum `CppDirective`.
- */
+#ifdef HSC_EXT
+static CppDirective hsc_cpp_directive(Env *env);
+static void hsc_take_cpp(Env *env);
+#endif
+
 static CppDirective cpp_directive(Env *env) {
+#ifdef HSC_EXT
+  return hsc_cpp_directive(env);
+#else
   if (!char0(env, '#')) return CppNothing;
   uint32_t start = take_space_from(env, 1);
   if (cpp_cond_start(env, start)) return CppStart;
@@ -1500,6 +1557,7 @@ static CppDirective cpp_directive(Env *env) {
   else if (cpp_cond_end(env, start)) return CppEnd;
   else if (cpp_directive_other(env, start)) return CppOther;
   else return CppNothing;
+#endif
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -1531,7 +1589,11 @@ static Symbol start_brace(Env *env) {
  * See `start_brace`.
  */
 static Symbol end_brace(Env *env) {
-  if (valid(env, END_BRACE) && current_context(env) == Braces) {
+  if (valid(env, END_BRACE) && (current_context(env) == Braces
+#ifdef HSC_EXT
+      || current_context(env) == HscBraces
+#endif
+      )) {
     pop(env);
     return finish(END_BRACE, "end_brace");
   }
@@ -1913,6 +1975,10 @@ static Lexed lex_splice(int32_t c) {
 static Lexed lex_single_symop(Env *env, int32_t c1);
 static Lexed lex_double_symop(Env *env, int32_t c1);
 
+#ifdef HSC_EXT
+static Lexed lex_hsc_hash(Env *env);
+#endif
+
 /**
  * Lex special occurrences of symbolic operator characters, or declare a valid operator.
  *
@@ -1932,6 +1998,9 @@ static Lexed lex_double_symop(Env *env, int32_t c1);
  *   This is not a regular tight op since it needs to allow symops and conid.
  */
 static Lexed lex_symop(Env *env) {
+#ifdef HSC_EXT
+  if (peek0(env) == '#') return lex_hsc_hash(env);
+#endif
   uint32_t len = symop_lookahead(env);
   if (len == 0) return LNothing;
   int32_t c1 = unsafe_peek(env, 0);
@@ -2187,13 +2256,17 @@ static Lexed lex_cpp(Env *env) {
 /**
  * Lex pragmas, comments and CPP.
  */
-static Lexed lex_extras(Env *env, bool bol) {
+static Lexed lex_extras(Env *env, bool allow_cpp) {
   switch (peek0(env)) {
     case '{':
       if (char1(env, '-')) return char2(env, '#') ? LPragma : LBlockComment;
       break;
     case '#':
-      if (bol) return lex_cpp(env);
+#ifdef HSC_EXT
+      if (allow_cpp || !char1(env, '#')) return lex_cpp(env);
+#else
+      if (allow_cpp) return lex_cpp(env);
+#endif
       break;
     case '-':
       if (line_comment_herald(env)) return LLineComment;
@@ -2210,8 +2283,8 @@ static Lexed lex_extras(Env *env, bool bol) {
  */
 static Lexed lex(Env *env, bool bol) {
   SEQ(lex_extras(env, bol));
-  if (symop_char(peek0(env))) SEQ(lex_symop(env));
-  else switch (peek0(env)) {
+  if (symop_char(peek0(env))) return lex_symop(env);
+  switch (peek0(env)) {
     case 'w':
       return try_end_token(env, "where", LWhere);
     case 'i':
@@ -2251,11 +2324,15 @@ static Lexed lex(Env *env, bool bol) {
 // CPP
 // --------------------------------------------------------------------------------------------------------
 
-/**
- * This tests for `#endif` directly after taking a line, so it only matches it at the first column.
- * Int finishes right before the `#endif`, so that pragma is parsed by `cpp_consume` in the next round.
- */
+#ifdef HSC_EXT
+static void hsc_skip_cpp_else(Env *env, bool emit);
+#endif
+
 static Symbol cpp_else(Env *env, bool emit) {
+#ifdef HSC_EXT
+  hsc_skip_cpp_else(env, emit);
+  return emit ? finish(CPP, "hsc cpp-else") : FAIL;
+#else
   uint32_t nesting = 1;
   do {
     take_line_escaped_newline(env);
@@ -2276,11 +2353,22 @@ static Symbol cpp_else(Env *env, bool emit) {
   while (not_eof(env) && nesting > 0);
   if (emit) return finish(CPP, "cpp-else");
   else return FAIL;
+#endif
 }
 
+static void take_cpp_line(Env *env);
+
 static Symbol cpp_line(Env *env) {
-  take_line_escaped_newline(env);
+  take_cpp_line(env);
   return finish_marked(env, CPP, "cpp");
+}
+
+static void take_cpp_line(Env *env) {
+#ifdef HSC_EXT
+  hsc_take_cpp(env);
+#else
+  take_line_escaped_newline(env);
+#endif
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -2568,6 +2656,9 @@ static Symbol process_token_safe(Env *env, Lexed next) {
  * Process a `Lexed` token if it results in a symbolic operator.
  */
 static Symbol process_token_symop(Env *env, bool whitespace, Lexed next) {
+#ifdef HSC_EXT
+  if (next == LHscHash) return finish_if_valid(env, HSC_HASH, "hsc hash");
+#endif
   switch (next) {
     case LDotDot:
       SEQ(finish_if_valid(env, DOTDOT, "symop"));
@@ -2629,6 +2720,9 @@ static Symbol process_token_splice(Env *env, Lexed next) {
 static Symbol process_token_interior(Env *env, Lexed next) {
   switch (next) {
     case LBraceClose:
+#ifdef HSC_EXT
+      if (current_context(env) == HscBraces) return FAIL;
+#endif
       SEQ(end_layout_brace(env));
       return token_end_layout_texp(env);
     // Skip layout start
@@ -2763,10 +2857,10 @@ static void newline_lookahead(Env *env, Newline *newline) {
             break;
           case LCppElse:
             cpp_else(env, false);
-            take_line_escaped_newline(env);
+            take_cpp_line(env);
             break;
           case LCpp:
-            take_line_escaped_newline(env);
+            take_cpp_line(env);
             break;
           default:
             return;
@@ -3138,10 +3232,19 @@ static bool constraint_lookahead_valid(Env *env) {
 // Initial actions
 // --------------------------------------------------------------------------------------------------------
 
-/**
- * These are conditioned only on symbols and don't advance, except for `qq_body`, which cannot fail.
- */
+#ifdef HSC_EXT
+static Symbol hsc_args(Env *env, Symbol sym, bool line);
+#endif
+
 static Symbol pre_ws_commands(Env *env) {
+#ifdef HSC_EXT
+  if (valid(env, HSC_START_BRACE)) {
+    push_context(env, HscBraces, 0);
+    return finish(HSC_START_BRACE, "hsc brace");
+  }
+  if (valid(env, HSC_ARGS_NESTED)) return hsc_args(env, HSC_ARGS_NESTED, false);
+  if (valid(env, HSC_ARGS_NEWLINE)) return hsc_args(env, HSC_ARGS_NEWLINE, true);
+#endif
   SEQ(texp_context(env));
   SEQ(start_brace(env));
   SEQ(end_brace(env));
@@ -3251,6 +3354,9 @@ static Symbol scan_main(Env *env) {
   MARK("main");
   SEQ(pre_ws_commands(env));
   bool whitespace = skip_space(env);
+#ifdef HSC_EXT
+  if (PEEK == '#' && valid(env, HSC_HASH)) MARK("hsc hash boundary");
+#endif
   if (valid(env, UNBOXED_LABEL_START) && char0(env, '(')) return unboxed_label_start(env, whitespace);
   if (is_newline(PEEK)) return newline_start(env);
   else if (not_eof(env)) return interior(env, whitespace);
@@ -3269,6 +3375,10 @@ static Symbol sized_integer(Env *env) {
   }
   if (!last_digit || lexer->lookahead != '#') return FAIL;
   lexer->advance(lexer, false);
+#ifdef HSC_EXT
+  if (lexer->lookahead != '#') return FAIL;
+  lexer->advance(lexer, false);
+#endif
   if (!primitive_integer_type(lexer)) return FAIL;
   return finish_marked(env, SIZED_INTEGER, "sized integer");
 }
@@ -3311,6 +3421,10 @@ static Symbol unboxed_label_start(Env *env, bool whitespace) {
   MARK("unboxed label start");
   if (char1(env, '#')) {
     int32_t next = peek2(env);
+#ifdef HSC_EXT
+    if (next != '#') return interior(env, whitespace);
+    next = peek(env, 3);
+#endif
     if ((is_id_char(next) && !varid_start_char(next)) || next == '"') {
       return parenthesized_label(env) ? FAIL : UNBOXED_LABEL_START;
     }

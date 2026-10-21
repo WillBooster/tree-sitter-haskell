@@ -8036,7 +8036,7 @@
               "name": "name",
               "content": {
                 "type": "SYMBOL",
-                "name": "_con"
+                "name": "_decl_con"
               }
             },
             {
@@ -8314,7 +8314,7 @@
           "name": "name",
           "content": {
             "type": "SYMBOL",
-            "name": "_con"
+            "name": "_decl_con"
           }
         },
         {
@@ -8379,7 +8379,7 @@
           "name": "name",
           "content": {
             "type": "SYMBOL",
-            "name": "_constructor"
+            "name": "_decl_constructor"
           }
         },
         {
@@ -8738,7 +8738,7 @@
           "name": "name",
           "content": {
             "type": "SYMBOL",
-            "name": "_con"
+            "name": "_decl_con"
           }
         },
         {
@@ -12654,6 +12654,10 @@
       "named": true,
       "value": "constructor"
     },
+    "_decl_constructor": {
+      "type": "SYMBOL",
+      "name": "_constructor"
+    },
     "_qualified_constructor": {
       "type": "PREC",
       "value": "qualified-id",
@@ -12718,6 +12722,10 @@
           "name": "_pconsym"
         }
       ]
+    },
+    "_decl_con": {
+      "type": "SYMBOL",
+      "name": "_con"
     },
     "_qcon": {
       "type": "CHOICE",

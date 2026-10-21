@@ -28,10 +28,31 @@ use tree_sitter_language::LanguageFn;
 
 unsafe extern "C" {
     fn tree_sitter_haskell() -> *const ();
+    fn tree_sitter_hsc() -> *const ();
 }
 
 /// The tree-sitter [`LanguageFn`] for this grammar.
 pub const LANGUAGE: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_haskell) };
+
+/// The hsc2hs dialect for `.hsc` files, including C directives and doubled hash escapes.
+pub const HSC_LANGUAGE: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_hsc) };
+
+/// The node schema of the hsc2hs dialect.
+pub const HSC_NODE_TYPES: &str = include_str!("../../hsc/src/node-types.json");
+
+/// Haskell and hsc2hs directive highlighting.
+pub const HSC_HIGHLIGHTS_QUERY: &str = concat!(
+    include_str!("../../queries/highlights.scm"),
+    "\n",
+    include_str!("../../hsc/queries/highlights.scm")
+);
+
+/// Haskell injections and C argument bodies in hsc2hs directives.
+pub const HSC_INJECTIONS_QUERY: &str = concat!(
+    include_str!("../../queries/injections.scm"),
+    "\n",
+    include_str!("../../hsc/queries/injections.scm")
+);
 
 /// The content of the [`node-types.json`] file for this grammar.
 ///
@@ -53,10 +74,47 @@ pub const LOCALS_QUERY: &str = include_str!("../../queries/locals.scm");
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_can_load_grammar() {
+    fn parses_both_published_language_entry_points() {
         let mut parser = tree_sitter::Parser::new();
-        parser
-            .set_language(&super::LANGUAGE.into())
-            .expect("Error loading Haskell parser");
+        parser.set_language(&super::LANGUAGE.into()).unwrap();
+        let ordinary = parser.parse("main = putStrLn \"Hello\"\n", None).unwrap();
+        assert!(!ordinary.root_node().has_error());
+
+        parser.set_language(&super::HSC_LANGUAGE.into()).unwrap();
+        let source = "value = #{const (1 + sizeof(\"}\"))}\nfollowing = 1\n";
+        let tree = parser.parse(source, None).unwrap();
+        assert!(!tree.root_node().has_error());
+        let mut pending = vec![tree.root_node()];
+        let mut directives = Vec::new();
+        let mut bindings = Vec::new();
+        while let Some(node) = pending.pop() {
+            if node.kind() == "hsc" {
+                let name = node.child_by_field_name("name").unwrap();
+                let body = node.child_by_field_name("body").unwrap();
+                directives.push((
+                    name.utf8_text(source.as_bytes()).unwrap(),
+                    body.utf8_text(source.as_bytes()).unwrap(),
+                ));
+            }
+            if node.kind() == "bind" {
+                bindings.push(
+                    node.child_by_field_name("name")
+                        .unwrap()
+                        .utf8_text(source.as_bytes())
+                        .unwrap(),
+                );
+            }
+            pending.extend(node.named_children(&mut node.walk()));
+        }
+        assert_eq!(directives, [("const", " (1 + sizeof(\"}\"))")]);
+        assert_eq!(bindings, ["following", "value"]);
+        for query in [
+            super::HSC_HIGHLIGHTS_QUERY,
+            super::HSC_INJECTIONS_QUERY,
+            super::TAGS_QUERY,
+            super::LOCALS_QUERY,
+        ] {
+            tree_sitter::Query::new(&super::HSC_LANGUAGE.into(), query).unwrap();
+        }
     }
 }
