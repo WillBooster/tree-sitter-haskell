@@ -107,7 +107,9 @@ static void hsc_skip_text(Env *env) {
   else if (c == '{' && char1(env, '-')) {
     advance_over(env, 1);
     consume_block_comment(env, 0);
-  } else if (c == '-' && hsc_text_comment(env)) take_line(env);
+  } else if (c == '-' && hsc_text_comment(env)) {
+    while (not_eof(env) && PEEK != '\n') S_ADVANCE;
+  }
   else if (hsc_text_symbol(c)) advance_before(env, advance_while(env, 0, hsc_text_symbol));
   else if (hsc_text_id_char(c)) advance_before(env, advance_while(env, 0, hsc_text_id_char));
   else advance_over(env, 0);
@@ -138,7 +140,7 @@ static void hsc_consume_args(Env *env, bool line) {
   hsc_splices(&cursor);
   while (cursor.backslash || not_eof(env)) {
     int32_t c = hsc_current(&cursor);
-    if (is_newline(c) && line && depth == 0) return;
+    if (c == '\n' && line && depth == 0) return;
     switch (c) {
       case '(': case '[': case '{':
         depth++;
@@ -183,7 +185,7 @@ static void hsc_block_comment(HscCursor *cursor) {
 }
 
 static void hsc_line_comment(HscCursor *cursor) {
-  while ((cursor->backslash || not_eof(cursor->env)) && !is_newline(hsc_current(cursor))) hsc_advance(cursor);
+  while ((cursor->backslash || not_eof(cursor->env)) && hsc_current(cursor) != '\n') hsc_advance(cursor);
 }
 
 static uint32_t hsc_cpp_start(Env *env, bool *braced) {

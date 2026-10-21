@@ -1921,3 +1921,68 @@ following = 5
       (match
         (literal
           (integer))))))
+
+================================================================================
+hsc: LF-only text and C argument boundaries
+:language(hsc)
+================================================================================
+
+module HscWhitespaceBoundaries where
+textCR = #{if 1} 1 #{else} --comment#{endif}
+ignoredtextCR = 11
+#{endif}
+textFF = #{if 1} 1 #{else} --comment#{endif}
+ignoredtextFF = 11
+#{endif}
+argCR = #const 2+3
+argFF = #const 4+5
+commentFF = #{const 6 // ignored} +999
+}
+following = 7
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (header
+    (module
+      (module_id)))
+  (declarations
+    (bind
+      (variable)
+      (match
+        (cpp)
+        (literal
+          (integer))))
+    (cpp)
+    (cpp)
+    (bind
+      (variable)
+      (match
+        (cpp)
+        (literal
+          (integer))))
+    (cpp)
+    (cpp)
+    (bind
+      (variable)
+      (match
+        (hsc
+          (hsc_directive_name)
+          (hsc_args))))
+    (bind
+      (variable)
+      (match
+        (hsc
+          (hsc_directive_name)
+          (hsc_args))))
+    (bind
+      (variable)
+      (match
+        (hsc
+          (hsc_directive_name)
+          (hsc_args))))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))))

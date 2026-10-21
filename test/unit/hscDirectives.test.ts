@@ -200,6 +200,12 @@ for (const [fixture, target, replacements, names] of [
   ],
   ['hscConditionalText.hsc', ':', ['⋆', ';', ':'], ['colon', 'unicode', 'following']],
   [
+    'hscWhitespaceBoundaries.hsc',
+    '\r',
+    ['\f', '\v', '\r'],
+    ['textCR', 'textFF', 'argCR', 'argFF', 'commentFF', 'following'],
+  ],
+  [
     'hscCommentBoundaries.hsc',
     '⊕',
     [':', '⋆', '⊕'],
@@ -218,6 +224,13 @@ for (const [fixture, target, replacements, names] of [
       expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
         names
       );
+      if (fixture === 'hscWhitespaceBoundaries.hsc') {
+        expect(tree.rootNode.descendantsOfType('hsc_args').map((node) => node.text.trim())).toEqual([
+          '2\r+3',
+          '4\f+5',
+          '6 // ignored\f} +999',
+        ]);
+      }
       if (fixture === 'hscHashOperators.hsc') {
         expect(
           tree.rootNode.descendantsOfType('infix').map((node) => node.childForFieldName('operator')?.text)
