@@ -13896,39 +13896,42 @@
       ]
     },
     "_unboxed_open": {
-      "type": "ALIAS",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "_paren_open"
-          },
-          {
-            "type": "CHOICE",
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_unboxed_label_start"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SEQ",
             "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_paren_open"
+              },
               {
                 "type": "IMMEDIATE_TOKEN",
                 "content": {
                   "type": "STRING",
                   "value": "#"
                 }
-              },
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_unboxed_hash"
-                },
-                "named": false,
-                "value": "(#"
               }
             ]
-          }
-        ]
-      },
-      "named": false,
-      "value": "(#"
+          },
+          "named": false,
+          "value": "(#"
+        }
+      ]
     },
     "_unboxed_close": {
       "type": "SEQ",
@@ -14494,7 +14497,7 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_unboxed_hash"
+      "name": "_unboxed_label_start"
     },
     {
       "type": "PATTERN",

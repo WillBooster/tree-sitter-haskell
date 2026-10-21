@@ -213,38 +213,53 @@ test('keeps unspaced unboxed delimiters ahead of label-like first elements', () 
   }
 });
 
-test('preserves unboxed element roles through label, constructor and literal edits', () => {
+test('preserves unboxed and label roles through spelling and physical-adjacency edits', () => {
   const parser = new Parser().setLanguage(language);
-  const prefix = 'value = (#',
-    suffix = ', right #)\nfollowing = 1\n';
-  let element = 'left';
-  let tree = parser.parse(prefix + element + suffix)!;
+  const prefix = 'value = ',
+    suffix = '\nfollowing = 1\n';
+  const examples = [
+    { expression: '(#left, right #)', labels: [], unboxed: true },
+    { expression: '(#Bar, right #)', labels: [], unboxed: true },
+    { expression: '(#1, right #)', labels: [], unboxed: true },
+    { expression: '(#"a", right #)', labels: [], unboxed: true },
+    { expression: "(#'c', right #)", labels: [], unboxed: true },
+    { expression: '(##Foo, right #)', labels: ['#Foo'], unboxed: true },
+    { expression: '( #Foo)', labels: ['#Foo'], unboxed: false },
+    { expression: '({- comment -}#Foo)', labels: ['#Foo'], unboxed: false },
+    { expression: '(#left, right #)', labels: [], unboxed: true },
+  ];
+  let expression = examples[0]!.expression;
+  let source = prefix + expression + suffix;
+  let tree = parser.parse(source)!;
   try {
-    for (const next of ['Bar', '1', '"a"', "'c'", '#Foo', 'left']) {
+    for (const example of examples) {
+      const next = example.expression;
+      const updated = prefix + next + suffix;
       tree.edit(
         new Edit({
           startIndex: prefix.length,
-          oldEndIndex: prefix.length + element.length,
+          oldEndIndex: prefix.length + expression.length,
           newEndIndex: prefix.length + next.length,
-          startPosition: { row: 0, column: prefix.length },
-          oldEndPosition: { row: 0, column: prefix.length + element.length },
-          newEndPosition: { row: 0, column: prefix.length + next.length },
+          startPosition: point(source, prefix.length),
+          oldEndPosition: point(source, prefix.length + expression.length),
+          newEndPosition: point(updated, prefix.length + next.length),
         })
       );
-      const source = prefix + next + suffix,
-        previous = tree;
-      tree = parser.parse(source, previous)!;
+      const previous = tree;
+      tree = parser.parse(updated, previous)!;
       previous.delete();
-      const fresh = parser.parse(source)!;
+      const fresh = parser.parse(updated)!;
       try {
-        expect(tree.rootNode.hasError).toBe(false);
+        expect(tree.rootNode.hasError, next).toBe(false);
         expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-        expect(tree.rootNode.descendantsOfType('unboxed_tuple').map((node) => node.text)).toEqual([
-          `(#${next}, right #)`,
-        ]);
+        expect(tree.rootNode.descendantsOfType('unboxed_tuple').map((node) => node.text)).toEqual(
+          example.unboxed ? [next] : []
+        );
         expect(
           tree.rootNode.descendantsOfType('label').map((node) => [node.text, node.startIndex, node.endIndex])
-        ).toEqual(next === '#Foo' ? [[next, prefix.length, prefix.length + next.length]] : []);
+        ).toEqual(
+          example.labels.map((label) => [label, updated.indexOf(label), updated.indexOf(label) + label.length])
+        );
         for (const query of queries) {
           const captures = (node: Node): unknown =>
             query.captures(node).map(({ name, node }) => [name, snapshot(node)]);
@@ -254,7 +269,69 @@ test('preserves unboxed element roles through label, constructor and literal edi
       } finally {
         fresh.delete();
       }
-      element = next;
+      expression = next;
+      source = updated;
+    }
+  } finally {
+    tree.delete();
+    parser.delete();
+  }
+});
+
+test('keeps parenthesized labels after whitespace, comments and CPP through incremental edits', () => {
+  const expressions = [
+    '( #foo)',
+    '({- comment -}#foo)',
+    '( {- comment -}#Foo)',
+    '({- outer {- inner -} -}#"quoted")',
+    '(-- comment\n #Foo)',
+    '(\n#if FLAG\n#Foo\n#endif\n)',
+    '( #foo)',
+  ];
+  const parser = new Parser().setLanguage(language);
+  const prefix = 'value = ',
+    suffix = '\nfollowing = 1\n';
+  let expression = expressions[0]!;
+  let source = prefix + expression + suffix;
+  let tree = parser.parse(source)!;
+  try {
+    for (const next of expressions) {
+      const updated = prefix + next + suffix;
+      tree.edit(
+        new Edit({
+          startIndex: prefix.length,
+          oldEndIndex: prefix.length + expression.length,
+          newEndIndex: prefix.length + next.length,
+          startPosition: point(source, prefix.length),
+          oldEndPosition: point(source, prefix.length + expression.length),
+          newEndPosition: point(updated, prefix.length + next.length),
+        })
+      );
+      const previous = tree;
+      tree = parser.parse(updated, previous)!;
+      previous.delete();
+      const fresh = parser.parse(updated)!;
+      try {
+        expect(tree.rootNode.hasError, next).toBe(false);
+        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
+        const labels = [...next.matchAll(/#(?:foo|Foo|"quoted")/g)];
+        expect(
+          tree.rootNode.descendantsOfType('label').map((node) => [node.text, node.startIndex, node.endIndex])
+        ).toEqual(
+          labels.map((match) => [match[0], prefix.length + match.index, prefix.length + match.index + match[0].length])
+        );
+        expect(tree.rootNode.descendantsOfType('unboxed_tuple')).toHaveLength(0);
+        expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
+        for (const query of queries) {
+          const captures = (node: Node): unknown =>
+            query.captures(node).map(({ name, node }) => [name, snapshot(node)]);
+          expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
+        }
+      } finally {
+        fresh.delete();
+      }
+      expression = next;
+      source = updated;
     }
   } finally {
     tree.delete();
