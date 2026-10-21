@@ -12,6 +12,9 @@ typedef struct {
 } HscCursor;
 
 static void hsc_consume_args(Env *env, bool line);
+static bool hsc_cpp_boundary(Env *env);
+static void hsc_skip_text(Env *env);
+static bool hsc_text_id_char(int32_t c);
 static void hsc_quoted(HscCursor *cursor, int32_t quote);
 static void hsc_block_comment(HscCursor *cursor);
 static void hsc_line_comment(HscCursor *cursor);
@@ -39,14 +42,11 @@ static uint32_t symop_lookahead(Env *env) {
 
 static Lexed lex_hsc_hash(Env *env) {
   if (!char1(env, '#')) return LHscHash;
-  switch (peek2(env)) {
-    case ')': return LUnboxedClose;
-    case '|': return LSymopSpecial;
-    case '#':
-      if (char_at(env, 3, '#')) return LSymopSpecial;
-      break;
-  }
-  return LHash;
+  uint32_t len = symop_lookahead(env);
+  if (len == 2) return char2(env, ')') ? LUnboxedClose : LHash;
+  if ((len == 3 && char2(env, '|')) ||
+      (len == 4 && char2(env, '#') && char_at(env, 3, '#'))) return LSymopSpecial;
+  return LSymop;
 }
 
 static CppDirective hsc_cpp_directive(Env *env) {
@@ -70,6 +70,43 @@ static void hsc_take_cpp(Env *env) {
   hsc_consume_args(env, !braced);
   if (braced && PEEK == '}') S_ADVANCE;
 }
+
+static void hsc_skip_cpp_else(Env *env, bool emit) {
+  uint32_t nesting = 1;
+  hsc_take_cpp(env);
+  reset_lookahead(env);
+  while (not_eof(env)) {
+    if (emit) MARK("hsc cpp_else");
+    if (hsc_cpp_boundary(env)) {
+      CppDirective directive = hsc_cpp_directive(env);
+      if (directive == CppEnd && --nesting == 0) return;
+      if (directive == CppStart) nesting++;
+      hsc_take_cpp(env);
+    } else hsc_skip_text(env);
+    reset_lookahead(env);
+  }
+  if (emit) MARK("hsc cpp-else eof");
+}
+
+static bool hsc_cpp_boundary(Env *env) {
+  bool bol = env->lexer->get_display_column(env->lexer, 8) == 0;
+  return PEEK == '#' && (!symop_char(peek1(env)) || (char1(env, '#') && bol));
+}
+
+static void hsc_skip_text(Env *env) {
+  int32_t c = peek0(env);
+  if (c == '"') advance_over(env, take_string_literal(env) - 1);
+  else if (c == '\'') advance_over(env, take_char_literal(env) - 1);
+  else if (c == '{' && char1(env, '-')) {
+    advance_over(env, 1);
+    consume_block_comment(env, 0);
+  } else if (c == '-' && line_comment_herald(env)) take_line(env);
+  else if (symop_char(c)) advance_before(env, advance_while(env, 0, symop_char));
+  else if (hsc_text_id_char(c)) advance_before(env, advance_while(env, 0, hsc_text_id_char));
+  else advance_over(env, 0);
+}
+
+static bool hsc_text_id_char(int32_t c) { return c != '#' && is_id_char(c); }
 
 static Symbol hsc_args(Env *env, Symbol sym, bool line) {
   hsc_consume_args(env, line);

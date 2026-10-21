@@ -127,6 +127,85 @@ test('keeps arbitrary nested C arguments separate from Haskell layout through ed
   parser.delete();
 });
 
+for (const [fixture, target, replacements, names] of [
+  [
+    'hscHashOperators.hsc',
+    '##+',
+    ['##|+', '####+', '##+'],
+    ['(##+)', '(##|+)', '(####+)', '(+##)', 'value', 'barValue', 'doubleValue', 'tailValue', 'following'],
+  ],
+  [
+    'hscInlineConditionals.hsc',
+    '#{else}',
+    ['#{elif 0}', '#{else}\n', '#{else}'],
+    ['value', 'nested', 'quoted', 'line', 'following'],
+  ],
+] as const) {
+  test(`retains ${fixture} boundaries through edits and undo`, () => {
+    const parser = new Parser().setLanguage(language);
+    let source = fs.readFileSync(path.join(root, 'test/fixtures', fixture), 'utf8');
+    const original = source;
+    let tree = parser.parse(source)!;
+    const start = source.indexOf(target);
+    let length = target.length;
+    try {
+      expect(tree.rootNode.hasError).toBe(false);
+      expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
+        names
+      );
+      if (fixture === 'hscHashOperators.hsc') {
+        expect(
+          tree.rootNode.descendantsOfType('infix').map((node) => node.childForFieldName('operator')?.text)
+        ).toEqual(['##+', '##|+', '####+', '+##']);
+      }
+      for (const replacement of replacements) {
+        const prefix = source.slice(0, start).split('\n');
+        const point = { row: prefix.length - 1, column: prefix.at(-1)!.length };
+        const lines = replacement.split('\n');
+        const oldLines = source.slice(start, start + length).split('\n');
+        tree.edit(
+          new Edit({
+            startIndex: start,
+            oldEndIndex: start + length,
+            newEndIndex: start + replacement.length,
+            startPosition: point,
+            oldEndPosition: {
+              row: point.row + oldLines.length - 1,
+              column: oldLines.length === 1 ? point.column + length : oldLines.at(-1)!.length,
+            },
+            newEndPosition: {
+              row: point.row + lines.length - 1,
+              column: lines.length === 1 ? point.column + replacement.length : lines.at(-1)!.length,
+            },
+          })
+        );
+        source = source.slice(0, start) + replacement + source.slice(start + length);
+        const next = parser.parse(source, tree)!;
+        tree.delete();
+        tree = next;
+        const fresh = parser.parse(source)!;
+        try {
+          expect(tree.rootNode.hasError).toBe(false);
+          expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
+          expect(metadata(tree.rootNode)).toEqual(metadata(fresh.rootNode));
+          for (const query of queries) {
+            const captures = (node: Node): (string | number)[][] =>
+              query.captures(node).map(({ name, node: value }) => [name, value.type, value.startIndex, value.endIndex]);
+            expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
+          }
+        } finally {
+          fresh.delete();
+        }
+        length = replacement.length;
+      }
+      expect(source).toBe(original);
+    } finally {
+      tree.delete();
+      parser.delete();
+    }
+  });
+}
+
 function metadata(node: Node): unknown {
   return [
     node.type,

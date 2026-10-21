@@ -2321,11 +2321,15 @@ static Lexed lex(Env *env, bool bol) {
 // CPP
 // --------------------------------------------------------------------------------------------------------
 
-/**
- * This tests for `#endif` directly after taking a line, so it only matches it at the first column.
- * Int finishes right before the `#endif`, so that pragma is parsed by `cpp_consume` in the next round.
- */
+#ifdef HSC_EXT
+static void hsc_skip_cpp_else(Env *env, bool emit);
+#endif
+
 static Symbol cpp_else(Env *env, bool emit) {
+#ifdef HSC_EXT
+  hsc_skip_cpp_else(env, emit);
+  return emit ? finish(CPP, "hsc cpp-else") : FAIL;
+#else
   uint32_t nesting = 1;
   do {
     take_line_escaped_newline(env);
@@ -2346,6 +2350,7 @@ static Symbol cpp_else(Env *env, bool emit) {
   while (not_eof(env) && nesting > 0);
   if (emit) return finish(CPP, "cpp-else");
   else return FAIL;
+#endif
 }
 
 static void take_cpp_line(Env *env);
@@ -2849,7 +2854,7 @@ static void newline_lookahead(Env *env, Newline *newline) {
             break;
           case LCppElse:
             cpp_else(env, false);
-            take_line_escaped_newline(env);
+            take_cpp_line(env);
             break;
           case LCpp:
             take_cpp_line(env);
