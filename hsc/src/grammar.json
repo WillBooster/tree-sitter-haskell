@@ -14509,27 +14509,109 @@
     }
   ],
   "conflicts": [
-    ["_function_name", "pattern"],
-    ["_function_name", "pattern", "binding_pattern"],
-    ["_function_name", "pattern", "expression"],
-    ["_function_name", "pattern", "binding_pattern", "expression"],
-    ["_grouped_name", "expression"],
-    ["_grouped_name", "pattern", "expression"],
-    ["_grouped_name", "binding_pattern", "expression"],
-    ["_grouped_name", "pattern", "binding_pattern", "expression"],
-    ["_grouped_name", "expression", "pattern", "_function_name", "_binding_name_parens"],
-    ["_grouped_name", "expression", "pattern", "binding_pattern", "_function_name", "_binding_name_parens"],
-    ["pattern", "_function_name", "_binding_name_parens"],
-    ["pattern", "_binding_name_parens"],
-    ["_grouped_name", "expression", "pattern", "_binding_name_parens"],
-    ["pattern", "expression"],
-    ["binding_pattern", "expression"],
-    ["pattern", "binding_pattern", "expression"],
-    ["pattern", "binding_pattern"],
-    ["signature", "pattern"],
-    ["signature", "binding_pattern"],
-    ["_operator_hash_head", "_unboxed_open"],
-    ["_foreign_safety", "entity"]
+    [
+      "_function_name",
+      "pattern"
+    ],
+    [
+      "_function_name",
+      "pattern",
+      "binding_pattern"
+    ],
+    [
+      "_function_name",
+      "pattern",
+      "expression"
+    ],
+    [
+      "_function_name",
+      "pattern",
+      "binding_pattern",
+      "expression"
+    ],
+    [
+      "_grouped_name",
+      "expression"
+    ],
+    [
+      "_grouped_name",
+      "pattern",
+      "expression"
+    ],
+    [
+      "_grouped_name",
+      "binding_pattern",
+      "expression"
+    ],
+    [
+      "_grouped_name",
+      "pattern",
+      "binding_pattern",
+      "expression"
+    ],
+    [
+      "_grouped_name",
+      "expression",
+      "pattern",
+      "_function_name",
+      "_binding_name_parens"
+    ],
+    [
+      "_grouped_name",
+      "expression",
+      "pattern",
+      "binding_pattern",
+      "_function_name",
+      "_binding_name_parens"
+    ],
+    [
+      "pattern",
+      "_function_name",
+      "_binding_name_parens"
+    ],
+    [
+      "pattern",
+      "_binding_name_parens"
+    ],
+    [
+      "_grouped_name",
+      "expression",
+      "pattern",
+      "_binding_name_parens"
+    ],
+    [
+      "pattern",
+      "expression"
+    ],
+    [
+      "binding_pattern",
+      "expression"
+    ],
+    [
+      "pattern",
+      "binding_pattern",
+      "expression"
+    ],
+    [
+      "pattern",
+      "binding_pattern"
+    ],
+    [
+      "signature",
+      "pattern"
+    ],
+    [
+      "signature",
+      "binding_pattern"
+    ],
+    [
+      "_operator_hash_head",
+      "_unboxed_open"
+    ],
+    [
+      "_foreign_safety",
+      "entity"
+    ]
   ],
   "precedences": [
     [
