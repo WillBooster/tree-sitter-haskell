@@ -1,0 +1,12 @@
+====================
+Unicode range interiors in record fields and qualified names
+====================
+
+value = record.日本語
+selector = (.한국어)
+qualified = Demo.𠀁
+following = 1
+
+---
+
+(haskell (declarations (bind (variable) (match (projection (variable) (field_name (variable))))) (bind (variable) (match (projection_selector (variable)))) (bind (variable) (match (qualified (module (module_id)) (variable)))) (bind (variable) (match (literal (integer))))))
