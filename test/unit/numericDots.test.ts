@@ -8,30 +8,32 @@ const root = path.join(import.meta.dirname, '../..');
 await Parser.init();
 const language = await Language.load(currentWasmPath(root));
 
-test('keeps dot operators before numeric operands in applications and right sections', () => {
+test('keeps dot operators before numeric and quoted operands in applications and right sections', () => {
   const parser = new Parser().setLanguage(language);
   const query = new Query(language, '(operator) @operator');
   try {
-    for (const number of ['0', '14', '0xF', '0b10', '0o7', '1_000', '1e3', '1.25']) {
+    for (const operandText of ['0', '14', '0xF', '0b10', '0o7', '1_000', '1e3', '1.25', "'True"]) {
       for (const left of ['left', '#foo', '(left)', '[left]', '']) {
-        const expression = left ? `${left}.${number}` : `(.${number})`;
-        const source = `value = ${expression}\nfollowing = 1\n`;
-        const tree = parser.parse(source)!;
-        try {
-          expect(tree.rootNode.hasError, source).toBe(false);
-          expect(tree.rootNode.descendantsOfType(left ? 'infix' : 'right_section'), source).toHaveLength(1);
-          expect(query.captures(tree.rootNode).map(({ node }) => [node.text, node.startIndex, node.endIndex])).toEqual([
-            ['.', source.indexOf('.'), source.indexOf('.') + 1],
-          ]);
-          const operand = tree.rootNode
-            .descendantsOfType(left ? 'infix' : 'right_section')[0]!
-            .childForFieldName('right_operand')!;
-          expect(operand.text).toBe(number);
-          expect(operand.startIndex).toBe(source.indexOf(number));
-          expect(tree.rootNode.descendantsOfType('projection')).toHaveLength(0);
-          expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
-        } finally {
-          tree.delete();
+        for (const whitespace of ['', ' ', '\t']) {
+          const expression = left ? `${left}${whitespace}.${operandText}` : `(${whitespace}.${operandText})`;
+          const source = `value = ${expression}\nfollowing = 1\n`;
+          const tree = parser.parse(source)!;
+          try {
+            expect(tree.rootNode.hasError, source).toBe(false);
+            expect(tree.rootNode.descendantsOfType(left ? 'infix' : 'right_section'), source).toHaveLength(1);
+            expect(
+              query.captures(tree.rootNode).map(({ node }) => [node.text, node.startIndex, node.endIndex])
+            ).toEqual([['.', source.indexOf('.'), source.indexOf('.') + 1]]);
+            const operand = tree.rootNode
+              .descendantsOfType(left ? 'infix' : 'right_section')[0]!
+              .childForFieldName('right_operand')!;
+            expect(operand.text).toBe(operandText);
+            expect(operand.startIndex).toBe(source.indexOf(operandText));
+            expect(tree.rootNode.descendantsOfType('projection')).toHaveLength(0);
+            expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
+          } finally {
+            tree.delete();
+          }
         }
       }
     }
@@ -75,7 +77,17 @@ test('reparses dots when record fields become numeric operands or quoted names',
   let expression = 'left.field';
   let tree = parser.parse(prefix + expression + suffix)!;
   try {
-    for (const replacement of ['left.14', "left.'True", 'Data.Maybe.Just', '(.14)', '#foo.14', 'left.field']) {
+    for (const replacement of [
+      'left.14',
+      'left .14',
+      "left .'True",
+      "( .'True)",
+      'Data.Maybe.Just',
+      '(.14)',
+      '( .14)',
+      '#foo.14',
+      'left.field',
+    ]) {
       tree.edit(
         new Edit({
           startIndex: prefix.length,

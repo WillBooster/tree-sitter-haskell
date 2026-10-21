@@ -4,6 +4,9 @@ Dot operators before numeric literals and quoted names
 
 numeric = left.14
 section = (.14)
+spacedSection = ( .14)
+spacedNumeric = left .14
+spacedQuoted = ( .'True)
 label = #foo.14
 quoted = left.'True
 projection = left.field
@@ -12,4 +15,4 @@ following = 1
 
 ---
 
-(haskell (declarations (bind (variable) (match (infix (variable) (operator) (literal (integer))))) (bind (variable) (match (right_section (operator) (literal (integer))))) (bind (variable) (match (infix (label) (operator) (literal (integer))))) (bind (variable) (match (infix (variable) (operator) (th_quoted_name (constructor))))) (bind (variable) (match (projection (variable) (field_name (variable))))) (bind (variable) (match (qualified (module (module_id) (module_id)) (constructor)))) (bind (variable) (match (literal (integer))))))
+(haskell (declarations (bind (variable) (match (infix (variable) (operator) (literal (integer))))) (bind (variable) (match (right_section (operator) (literal (integer))))) (bind (variable) (match (right_section (operator) (literal (integer))))) (bind (variable) (match (infix (variable) (operator) (literal (integer))))) (bind (variable) (match (right_section (operator) (th_quoted_name (constructor))))) (bind (variable) (match (infix (label) (operator) (literal (integer))))) (bind (variable) (match (infix (variable) (operator) (th_quoted_name (constructor))))) (bind (variable) (match (projection (variable) (field_name (variable))))) (bind (variable) (match (qualified (module (module_id) (module_id)) (constructor)))) (bind (variable) (match (literal (integer))))))

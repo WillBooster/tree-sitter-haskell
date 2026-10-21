@@ -1959,7 +1959,7 @@ static Lexed lex_single_symop(Env *env, int32_t c1) {
       return lex_splice(peek1(env));
     case '.':
       if (identifier_start_char(peek1(env))) return LDotId;
-      else if (opening_token(env, 1)) return LDotOpen;
+      else if (opening_token(env, 1) && !is_id_char(peek1(env))) return LDotOpen;
       else return LSymop;
     case 0x2192: // →
       return LArrow;
