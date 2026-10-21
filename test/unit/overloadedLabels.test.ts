@@ -216,7 +216,7 @@ test('keeps unspaced unboxed delimiters ahead of label-like first elements', () 
 test('preserves unboxed and label roles through spelling and physical-adjacency edits', () => {
   const parser = new Parser().setLanguage(language);
   const prefix = 'value = ',
-    suffix = '\nfollowing = 1\n';
+    suffix = '\nfollowing = 1\nafter = 2\n';
   const examples = [
     { expression: '(# left, right #)', labels: [], unboxed: true },
     { expression: '(#Bar, right #)', labels: [], unboxed: true },
@@ -224,6 +224,18 @@ test('preserves unboxed and label roles through spelling and physical-adjacency 
     { expression: '(#"a", right #)', labels: [], unboxed: true },
     { expression: "(#'c', right #)", labels: [], unboxed: true },
     { expression: '(##Foo, right #)', labels: ['#Foo'], unboxed: true },
+    { expression: '(#Foo)', labels: ['#Foo'], unboxed: false },
+    { expression: '(#É)', labels: ['#É'], unboxed: false },
+    { expression: '(#ǅ)', labels: ['#ǅ'], unboxed: false },
+    { expression: '(#1)', labels: ['#1'], unboxed: false },
+    { expression: "(#'x')", labels: ["#'x'"], unboxed: false },
+    { expression: '(#"x")', labels: ['#"x"'], unboxed: false },
+    { expression: '(#Foo {- outer {- inner -} -})', labels: ['#Foo'], unboxed: false },
+    { expression: '(#Foo -- comment\n)', labels: ['#Foo'], unboxed: false },
+    { expression: '(#Foo\n)', labels: ['#Foo'], unboxed: false },
+    { expression: String.raw`(#"escaped\"text")`, labels: [String.raw`#"escaped\"text"`], unboxed: false },
+    { expression: String.raw`(#"control\^\")`, labels: [String.raw`#"control\^\"`], unboxed: false },
+    { expression: '(#"gap\\\n \\text")', labels: ['#"gap\\\n \\text"'], unboxed: false },
     { expression: '( #Foo)', labels: ['#Foo'], unboxed: false },
     { expression: '({- comment -}#Foo)', labels: ['#Foo'], unboxed: false },
     { expression: '(# left, right #)', labels: [], unboxed: true },
@@ -265,7 +277,11 @@ test('preserves unboxed and label roles through spelling and physical-adjacency 
             query.captures(node).map(({ name, node }) => [name, snapshot(node)]);
           expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
         }
-        expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
+        expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
+          'value',
+          'following',
+          'after',
+        ]);
       } finally {
         fresh.delete();
       }
