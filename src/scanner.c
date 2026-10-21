@@ -3105,30 +3105,33 @@ static Symbol constraint_lookahead(Env *env) {
 // Actions that are executed for interior positions
 // --------------------------------------------------------------------------------------------------------
 
+static bool constraint_lookahead_valid(Env *env);
+
 static Symbol process_token_constraint(Env *env, Lexed next) {
   if ((next == LSymopSpecial && peek0(env) != '*') || next == LSymop || next == LHash) return FAIL;
-  if (
-      valid(env, CONTEXT)
-      ||
-      valid(env, INFIX)
-      ||
-      valid(env, DATA_INFIX)
-      ||
-      valid(env, TYPE_INSTANCE)
-      )
-    return constraint_lookahead(env);
+  if (constraint_lookahead_valid(env)) return constraint_lookahead(env);
   return FAIL;
 }
+
+static Symbol sized_integer(Env *env);
 
 static Symbol interior(Env *env, bool whitespace) {
   Lexed next = lex(env, false);
   dbg("interior, column %d, ws %d, token %s\n", column(env), whitespace, token_names[next]);
   SEQ(resolve_semicolon(env, next));
   SEQ(process_token_interior(env, next));
+  if (valid(env, SIZED_INTEGER) && peek0(env) >= '0' && peek0(env) <= '9' &&
+      !constraint_lookahead_valid(env)) {
+    return sized_integer(env);
+  }
   SEQ(process_token_symop(env, whitespace, next));
   SEQ(process_token_constraint(env, next));
   SEQ(process_token_splice(env, next));
   return FAIL;
+}
+
+static bool constraint_lookahead_valid(Env *env) {
+  return valid(env, CONTEXT) || valid(env, INFIX) || valid(env, DATA_INFIX) || valid(env, TYPE_INSTANCE);
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -3239,7 +3242,6 @@ static bool skip_label_line_comment(TSLexer *lexer) {
   return true;
 }
 
-static Symbol sized_integer(Env *env);
 static unsigned integer_radix(TSLexer *lexer, int32_t first);
 static bool integer_digit(int32_t c, unsigned radix);
 static Symbol unboxed_label_start(Env *env, bool whitespace);
@@ -3249,7 +3251,6 @@ static Symbol scan_main(Env *env) {
   MARK("main");
   SEQ(pre_ws_commands(env));
   bool whitespace = skip_space(env);
-  if (valid(env, SIZED_INTEGER) && PEEK >= '0' && PEEK <= '9') return sized_integer(env);
   if (valid(env, UNBOXED_LABEL_START) && char0(env, '(')) return unboxed_label_start(env, whitespace);
   if (is_newline(PEEK)) return newline_start(env);
   else if (not_eof(env)) return interior(env, whitespace);
@@ -3258,8 +3259,7 @@ static Symbol scan_main(Env *env) {
 
 static Symbol sized_integer(Env *env) {
   TSLexer *lexer = env->lexer;
-  int32_t first = PEEK;
-  // Failed probes at EOF must not become layout tokens in process_result's no-lookahead branch.
+  int32_t first = peek0(env);
   S_ADVANCE;
   unsigned radix = integer_radix(lexer, first);
   bool last_digit = radix == 10;

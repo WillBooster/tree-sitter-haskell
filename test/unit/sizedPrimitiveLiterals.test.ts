@@ -45,6 +45,56 @@ test('retains complete sized integer leaves at exact ranges in the compiler-chec
   }
 });
 
+test('retains inline numeric alternatives and separators after explicit semicolons', () => {
+  const parser = new Parser().setLanguage(language);
+  try {
+    for (const literal of ['1', '1#Int8']) {
+      for (const opener of ['case x of', String.raw`\case`, String.raw`\cases`]) {
+        const source = `value = ${opener} ${literal} -> 2\nfollowing = 1\n`;
+        const tree = parser.parse(source)!;
+        try {
+          expect(tree.rootNode.hasError, source).toBe(false);
+          expect(tree.rootNode.descendantsOfType('alternative')).toHaveLength(1);
+          expect(tree.rootNode.descendantsOfType('integer')[0]?.text).toBe(literal);
+          expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
+        } finally {
+          tree.delete();
+        }
+      }
+      const source = `value = do\n  foo; ${literal}\n  2\nfollowing = 1\n`;
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(false);
+        expect(tree.rootNode.descendantsOfType('do')[0]?.namedChildren.map((node) => node.text)).toEqual([
+          'foo',
+          literal,
+          '2',
+        ]);
+        expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
+      } finally {
+        tree.delete();
+      }
+    }
+  } finally {
+    parser.delete();
+  }
+});
+
+test('retains numeric constraint heads before the context arrow', () => {
+  const parser = new Parser().setLanguage(language);
+  const source = 'f :: 1 ~ n => Proxy n\nf = Proxy\nfollowing = 1\n';
+  const tree = parser.parse(source)!;
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    expect(tree.rootNode.descendantsOfType('context')).toHaveLength(1);
+    expect(tree.rootNode.descendantsOfType('context')[0]?.childForFieldName('context')?.text).toBe(' 1 ~ n');
+    expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
+  } finally {
+    tree.delete();
+    parser.delete();
+  }
+});
+
 test('does not accept a valid type prefix inside an invalid longer primitive suffix', () => {
   const parser = new Parser().setLanguage(language);
   try {

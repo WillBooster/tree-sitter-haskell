@@ -37,3 +37,61 @@ following = 1
       (match
         (literal
           (integer))))))
+
+================================================================================
+Numeric alternatives start inline layouts
+================================================================================
+
+value = case x of 1 -> 2
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (case
+          (variable)
+          (alternatives
+            (alternative
+              (literal (integer))
+              (match (literal (integer))))))))))
+
+================================================================================
+Numeric statements reset explicit semicolons
+================================================================================
+
+value = do
+  foo; 1
+  2
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (do
+          (exp (variable))
+          (exp (literal (integer)))
+          (exp (literal (integer))))))))
+
+================================================================================
+Numeric constraint heads precede context arrows
+================================================================================
+
+f :: 1 ~ n => Proxy n
+f = Proxy
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (signature
+      (variable)
+      (context
+        (infix (literal (integer)) (operator) (variable))
+        (apply (name) (variable))))
+    (bind (variable) (match (constructor)))))
