@@ -169,6 +169,8 @@ module.exports = {
     $._varsym,
     $._consym,
 
+    $._unboxed_label_start,
+
     // The newline is used as a dummy symbol that is emitted whenever the scanner has to update its state even though
     // the current position must be parsed by the grammar.
     /\n/,

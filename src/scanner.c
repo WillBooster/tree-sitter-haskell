@@ -162,6 +162,7 @@ typedef enum {
   TYPE_INSTANCE,
   VARSYM,
   CONSYM,
+  UNBOXED_LABEL_START,
   UPDATE,
 } Symbol;
 
@@ -217,6 +218,7 @@ static const char *sym_names[] = {
   "type_instance",
   "varsym",
   "consym",
+  "unboxed_label_start",
   "update",
 };
 
@@ -3145,10 +3147,110 @@ static Symbol pre_ws_commands(Env *env) {
   return FAIL;
 }
 
+static bool label_before_closing_paren(TSLexer *lexer);
+static bool skip_quoted_label(TSLexer *lexer);
+static bool skip_label_escape(TSLexer *lexer);
+static bool skip_label_block_comment(TSLexer *lexer);
+static bool skip_label_line_comment(TSLexer *lexer);
+
+// S_ADVANCE would retain the entire label and its trivia in the transient lookahead buffer.
+static bool parenthesized_label(Env *env) {
+  TSLexer *lexer = env->lexer;
+  if (lexer->lookahead == '"') {
+    if (!skip_quoted_label(lexer)) return false;
+  } else {
+    while (is_id_char(lexer->lookahead)) lexer->advance(lexer, false);
+  }
+  return label_before_closing_paren(lexer);
+}
+
+static bool label_before_closing_paren(TSLexer *lexer) {
+  while (!lexer->eof(lexer)) {
+    while (is_string_gap_space(lexer->lookahead)) lexer->advance(lexer, false);
+    switch (lexer->lookahead) {
+      case ')': return true;
+      case '{':
+        if (!skip_label_block_comment(lexer)) return false;
+        break;
+      case '-':
+        if (!skip_label_line_comment(lexer)) return false;
+        break;
+      default: return false;
+    }
+  }
+  return false;
+}
+
+static bool skip_quoted_label(TSLexer *lexer) {
+  lexer->advance(lexer, false);
+  while (!lexer->eof(lexer)) {
+    switch (lexer->lookahead) {
+      case '"':
+        lexer->advance(lexer, false);
+        return true;
+      case '\\':
+        if (!skip_label_escape(lexer)) return false;
+        break;
+      default:
+        lexer->advance(lexer, false);
+    }
+  }
+  return false;
+}
+
+static bool skip_label_escape(TSLexer *lexer) {
+  lexer->advance(lexer, false);
+  if (is_string_gap_space(lexer->lookahead)) {
+    while (is_string_gap_space(lexer->lookahead)) lexer->advance(lexer, false);
+    if (lexer->lookahead != '\\') return false;
+  } else if (lexer->lookahead == '^') {
+    lexer->advance(lexer, false);
+  }
+  if (lexer->eof(lexer)) return false;
+  lexer->advance(lexer, false);
+  return true;
+}
+
+static bool skip_label_block_comment(TSLexer *lexer) {
+  lexer->advance(lexer, false);
+  if (lexer->lookahead != '-') return false;
+  lexer->advance(lexer, false);
+  uint32_t depth = 1;
+  while (depth && !lexer->eof(lexer)) {
+    int32_t previous = lexer->lookahead;
+    lexer->advance(lexer, false);
+    if ((previous == '{' && lexer->lookahead == '-') || (previous == '-' && lexer->lookahead == '}')) {
+      depth = previous == '{' ? depth + 1 : depth - 1;
+      lexer->advance(lexer, false);
+    }
+  }
+  if (depth) return false;
+  return true;
+}
+
+static bool skip_label_line_comment(TSLexer *lexer) {
+  lexer->advance(lexer, false);
+  if (lexer->lookahead != '-') return false;
+  while (lexer->lookahead == '-') lexer->advance(lexer, false);
+  if (symop_char(lexer->lookahead)) return false;
+  while (!lexer->eof(lexer) && !is_newline(lexer->lookahead)) lexer->advance(lexer, false);
+  return true;
+}
+
 static Symbol scan_main(Env *env) {
   MARK("main");
   SEQ(pre_ws_commands(env));
   bool whitespace = skip_space(env);
+  if (valid(env, UNBOXED_LABEL_START) && char0(env, '(')) {
+    MARK("unboxed label start");
+    if (char1(env, '#')) {
+      int32_t next = peek2(env);
+      if ((is_id_char(next) && !varid_start_char(next)) || next == '"') {
+        return parenthesized_label(env) ? FAIL : UNBOXED_LABEL_START;
+      }
+    }
+    return interior(env, whitespace);
+  }
   if (is_newline(PEEK)) return newline_start(env);
   else if (not_eof(env)) return interior(env, whitespace);
   return FAIL;

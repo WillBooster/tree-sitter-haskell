@@ -1,0 +1,72 @@
+================================================================================
+Unboxed delimiters before label-like elements
+================================================================================
+
+upper = (#Bar, right #)
+number = (#1, right #)
+string = (#"a", right #)
+character = (#'c', right #)
+lower = (# left, right #)
+label = (##Foo, right #)
+sum = (#| right #)
+boxed = ( #Foo)
+following = 1
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (unboxed_tuple
+          (constructor)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (unboxed_tuple
+          (literal
+            (integer))
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (unboxed_tuple
+          (literal
+            (string))
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (unboxed_tuple
+          (literal
+            (char))
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (unboxed_tuple
+          (variable)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (unboxed_tuple
+          (label)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (unboxed_sum
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (parens
+          (label))))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))))
