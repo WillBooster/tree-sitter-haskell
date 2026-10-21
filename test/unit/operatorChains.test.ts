@@ -191,6 +191,47 @@ describe.each(['haskell', 'hsc'] as const)('%s unresolved operator chains', (nam
     }
   });
 
+  test.each([
+    ['block comment', '{- comment -}'],
+    ['line comment', '-- comment\n'],
+    ['Haddock comment', '{-| docs -}'],
+    ['pragma', '{-# SOURCE #-}'],
+    ['CPP branch', '\n#if FLAG\n#endif\n'],
+  ])('ignores %s inside single-operator implementation heads', (_label, extra) => {
+    const parser = new Parser().setLanguage(language);
+    try {
+      for (const prefix of ['instance', 'deriving instance']) {
+        for (let position = 0; position <= 3; position++) {
+          const parts = ['Int', ':*:', 'Bool'];
+          parts.splice(position, 0, extra);
+          const source = `${prefix} ${parts.join(' ')}\nfollowing = 1\n`;
+          for (const input of [source, source.replace('Int', 'Int :+: Char')]) {
+            const tree = parser.parse(input)!;
+            try {
+              expect(tree.rootNode.hasError, input).toBe(false);
+              const implementations = tags
+                .matches(tree.rootNode)
+                .filter(({ captures }) => captures.some(({ name }) => name === 'reference.implementation'))
+                .flatMap(({ captures }) =>
+                  captures
+                    .filter(({ name }) => name === 'name')
+                    .map(({ node }) => [node.text, node.startIndex, node.endIndex])
+                );
+              expect(implementations, input).toEqual(
+                input === source ? [[':*:', input.indexOf(':*:'), input.indexOf(':*:') + 3]] : []
+              );
+              expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following = 1');
+            } finally {
+              tree.delete();
+            }
+          }
+        }
+      }
+    } finally {
+      parser.delete();
+    }
+  });
+
   test.each([2, 32, 256])('retains flat chains through edits and undo with %i operators', (length) => {
     const original = `value x = ${'x + '.repeat(length)}x\nfollowing = 1\n`;
     const parser = new Parser().setLanguage(language);

@@ -111,7 +111,9 @@
     (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
   ]) @reference.implementation
 (instance head: (infix_chain
+  . [(cpp) (comment) (haddock) (pragma)]*
   . operand: (_)
+  . [(cpp) (comment) (haddock) (pragma)]*
   . operator: [
     (constructor_operator) @name
     (operator) @name
@@ -119,7 +121,9 @@
     (qualified id: [(constructor_operator) @name (operator) @name])
     (infix_id (qualified id: (name) @name))
   ]
+  . [(cpp) (comment) (haddock) (pragma)]*
   . operand: (_)
+  . [(cpp) (comment) (haddock) (pragma)]*
   .)) @reference.implementation
 
 (deriving_instance name: [
@@ -129,7 +133,9 @@
     (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
   ]) @reference.implementation
 (deriving_instance head: (infix_chain
+  . [(cpp) (comment) (haddock) (pragma)]*
   . operand: (_)
+  . [(cpp) (comment) (haddock) (pragma)]*
   . operator: [
     (constructor_operator) @name
     (operator) @name
@@ -137,7 +143,9 @@
     (qualified id: [(constructor_operator) @name (operator) @name])
     (infix_id (qualified id: (name) @name))
   ]
+  . [(cpp) (comment) (haddock) (pragma)]*
   . operand: (_)
+  . [(cpp) (comment) (haddock) (pragma)]*
   .)) @reference.implementation
 
 (foreign_import
