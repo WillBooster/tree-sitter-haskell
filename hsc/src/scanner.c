@@ -13,6 +13,7 @@ typedef struct {
 
 static void hsc_consume_args(Env *env, bool line);
 static bool hsc_cpp_boundary(Env *env);
+static bool hsc_text_symbol(int32_t c);
 static void hsc_skip_text(Env *env);
 static uint32_t hsc_char_end(Env *env);
 static bool hsc_text_id_char(int32_t c);
@@ -91,7 +92,11 @@ static void hsc_skip_cpp_else(Env *env, bool emit) {
 
 static bool hsc_cpp_boundary(Env *env) {
   bool bol = env->lexer->get_display_column(env->lexer, 8) == 0;
-  return PEEK == '#' && (!symop_char(peek1(env)) || (char1(env, '#') && bol));
+  return PEEK == '#' && (!hsc_text_symbol(peek1(env)) || (char1(env, '#') && bol));
+}
+
+static bool hsc_text_symbol(int32_t c) {
+  return c > 0 && c < 128 && strchr("!#$%&*+./<=>?@\\^|-~", c) != NULL;
 }
 
 static void hsc_skip_text(Env *env) {
@@ -102,7 +107,7 @@ static void hsc_skip_text(Env *env) {
     advance_over(env, 1);
     consume_block_comment(env, 0);
   } else if (c == '-' && line_comment_herald(env)) take_line(env);
-  else if (symop_char(c)) advance_before(env, advance_while(env, 0, symop_char));
+  else if (hsc_text_symbol(c)) advance_before(env, advance_while(env, 0, hsc_text_symbol));
   else if (hsc_text_id_char(c)) advance_before(env, advance_while(env, 0, hsc_text_id_char));
   else advance_over(env, 0);
 }

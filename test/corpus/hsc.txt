@@ -1819,3 +1819,42 @@ following = 1
       (match
         (literal
           (integer))))))
+
+================================================================================
+hsc: conditional text symbol boundaries
+:language(hsc)
+================================================================================
+
+module HscConditionalText where
+colon = #{if 1} 1 #{else} :#{endif}
+unicode = #{if 1} 2 #{else} ⋆#{endif}
+following = 3
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (header
+    (module
+      (module_id)))
+  (declarations
+    (bind
+      (variable)
+      (match
+        (cpp)
+        (literal
+          (integer))))
+    (cpp)
+    (cpp)
+    (bind
+      (variable)
+      (match
+        (cpp)
+        (literal
+          (integer))))
+    (cpp)
+    (cpp)
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))))

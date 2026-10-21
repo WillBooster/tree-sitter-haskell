@@ -198,6 +198,7 @@ for (const [fixture, target, replacements, names] of [
     [String.raw`'\t'`, String.raw`'\''`, String.raw`'\n'`],
     ['newline', 'quote', 'slash', 'named', 'control', 'following'],
   ],
+  ['hscConditionalText.hsc', ':', ['⋆', ';', ':'], ['colon', 'unicode', 'following']],
 ] as const) {
   test(`retains ${fixture} boundaries through edits and undo`, () => {
     const parser = new Parser().setLanguage(language);
