@@ -19,4 +19,10 @@ foreign import _CALL _SAFE "sin" c_underscore :: CDouble -> IO CDouble
 foreign import ccall _SAFE :: CDouble -> IO CDouble
 foreign export _CALL "hs_echo" hs_echo :: CDouble -> IO CDouble
 hs_echo = pure
+#define _ safe
+foreign import ccall _ "sin" c_singleSafety :: CDouble -> IO CDouble
+#undef _
+#define _ ccall
+foreign import _ safe "sin" c_singleCall :: CDouble -> IO CDouble
+#undef _
 following = 1

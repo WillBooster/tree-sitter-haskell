@@ -74,6 +74,8 @@ foreign import ccall _foreignName :: CDouble -> IO CDouble
 foreign import _CALL _SAFE "sin" c_underscore :: CDouble -> IO CDouble
 foreign import ccall _SAFE :: CDouble -> IO CDouble
 foreign export _CALL "hs_echo" hs_echo :: CDouble -> IO CDouble
+foreign import ccall _ "sin" c_singleSafety :: CDouble -> IO CDouble
+foreign import _ safe "sin" c_singleCall :: CDouble -> IO CDouble
 following = 1
 
 --------------------------------------------------------------------------------
@@ -136,4 +138,44 @@ following = 1
       (signature
         (variable)
         (function (name) (apply (name) (name)))))
+    (foreign_import
+      (calling_convention)
+      (safety)
+      (entity (string))
+      (signature
+        (variable)
+        (function (name) (apply (name) (name)))))
+    (foreign_import
+      (calling_convention)
+      (safety)
+      (entity (string))
+      (signature
+        (variable)
+        (function (name) (apply (name) (name)))))
+    (bind (variable) (match (literal (integer))))))
+
+================================================================================
+foreign: error recovery retains following ordinary declarations
+================================================================================
+
+foo = ) _bar
+x = 1
+y = ) Maybe
+z = 2
+f :: ) Int
+g = 3
+h = ) _
+k = 4
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind (variable) (match (ERROR) (variable)))
+    (bind (variable) (match (literal (integer))))
+    (bind (variable) (match (ERROR) (constructor)))
+    (bind (variable) (match (literal (integer))))
+    (signature (variable) (ERROR) (name))
+    (bind (variable) (match (literal (integer))))
+    (bind (variable) (match (ERROR) (typed_hole)))
     (bind (variable) (match (literal (integer))))))

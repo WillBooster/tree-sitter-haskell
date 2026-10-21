@@ -29,9 +29,9 @@ data A = Int :: Int
   (declarations
     (data_type
       (name)
-      (ERROR
-        (data_constructors
-          (data_constructor
-            (prefix
-              (constructor)))))
-      (name))))
+      (data_constructors
+        (data_constructor
+          (prefix
+            (constructor)
+            (ERROR)
+            (name)))))))

@@ -38,6 +38,8 @@ test('retains calling convention and safety macro fields without consuming optio
       ['ccall', undefined, undefined, '_foreignName'],
       ['_CALL', '_SAFE', '"sin"', 'c_underscore'],
       ['ccall', undefined, undefined, '_SAFE'],
+      ['ccall', '_', '"sin"', 'c_singleSafety'],
+      ['_', 'safe', '"sin"', 'c_singleCall'],
     ]);
     expect(
       tree.rootNode
@@ -70,6 +72,10 @@ test('retains calling convention and safety macro fields without consuming optio
       ['_CALL', 17, 15, 20],
       ['_SAFE', 17, 21, 26],
       ['ccall', 18, 15, 20],
+      ['ccall', 22, 15, 20],
+      ['_', 22, 21, 22],
+      ['_', 25, 15, 16],
+      ['safe', 25, 17, 21],
     ]);
     expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
     for (const query of queries) expect(() => query.captures(tree.rootNode)).not.toThrow();
@@ -106,12 +112,7 @@ test('reparses changes between safety keywords and macros identically to a fresh
       try {
         expect(tree.rootNode.hasError).toBe(false);
         expect(tree.rootNode.descendantsOfType('foreign_import')[0]?.childForFieldName('safety')?.text).toBe(safety);
-        expect(nodeMetadata(tree.rootNode)).toEqual(nodeMetadata(fresh.rootNode));
-        for (const query of queries) {
-          const captures = (node: Node): (string | number)[][] =>
-            query.captures(node).map(({ name, node: value }) => [name, value.type, value.startIndex, value.endIndex]);
-          expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
-        }
+        expectSameTreeAndCaptures(tree.rootNode, fresh.rootNode);
       } finally {
         fresh.delete();
       }
@@ -139,6 +140,76 @@ test('does not split an uppercase identifier into a safety prefix and a foreign 
     parser.delete();
   }
 });
+
+test('retains following declarations through errors, repairs and undo outside foreign syntax', () => {
+  const original = 'foo = ) _bar\nx = 1\ny = ) Maybe\nz = 2\nf :: ) Int\ng = 3\nh = ) _\nk = 4\n';
+  let source = original;
+  const parser = new Parser().setLanguage(language);
+  let tree = parser.parse(source)!;
+  const removals: number[] = [];
+  const edit = (start: number, remove: number, insert: string): void => {
+    const lines = source.slice(0, start).split('\n');
+    const row = lines.length - 1,
+      column = lines.at(-1)!.length;
+    tree.edit(
+      new Edit({
+        startIndex: start,
+        oldEndIndex: start + remove,
+        newEndIndex: start + insert.length,
+        startPosition: { row, column },
+        oldEndPosition: { row, column: column + remove },
+        newEndPosition: { row, column: column + insert.length },
+      })
+    );
+    source = source.slice(0, start) + insert + source.slice(start + remove);
+    const next = parser.parse(source, tree)!;
+    tree.delete();
+    tree = next;
+    const fresh = parser.parse(source)!;
+    try {
+      expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
+        'foo',
+        'x',
+        'y',
+        'z',
+        'g',
+        'h',
+        'k',
+      ]);
+      expect(tree.rootNode.descendantsOfType('signature').map((node) => node.childForFieldName('name')?.text)).toEqual([
+        'f',
+      ]);
+      expectSameTreeAndCaptures(tree.rootNode, fresh.rootNode);
+    } finally {
+      fresh.delete();
+    }
+  };
+  try {
+    expect(tree.rootNode.hasError).toBe(true);
+    edit(0, 0, '');
+    while (source.includes(')')) {
+      const start = source.indexOf(')');
+      removals.push(start);
+      edit(start, 1, '');
+    }
+    expect(tree.rootNode.hasError).toBe(false);
+    for (const start of removals.toReversed()) edit(start, 0, ')');
+    expect(source).toBe(original);
+    expect(tree.rootNode.hasError).toBe(true);
+  } finally {
+    tree.delete();
+    parser.delete();
+  }
+});
+
+function expectSameTreeAndCaptures(actual: Node, expected: Node): void {
+  expect(nodeMetadata(actual)).toEqual(nodeMetadata(expected));
+  for (const query of queries) {
+    const captures = (node: Node): (string | number)[][] =>
+      query.captures(node).map(({ name, node: value }) => [name, value.type, value.startIndex, value.endIndex]);
+    expect(captures(actual)).toEqual(captures(expected));
+  }
+}
 
 function nodeMetadata(node: Node): unknown {
   return [

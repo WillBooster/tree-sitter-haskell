@@ -131,27 +131,29 @@ module.exports = {
     'capi',
     'prim',
     'javascript',
-    '_',
-    foreignMacro,
   )),
 
   _foreign_safety_keyword: _ => token(choice(
     'unsafe',
     'safe',
     'interruptible',
-    '_',
-    foreignMacro,
   )),
+
+  _foreign_macro: _ => token(prec(-1, foreignMacro)),
 
   _foreign_underscore_identifier: _ => token(/_[A-Za-z_0-9]+/),
 
   _foreign_calling_convention: $ => choice(
+    alias('_', $.calling_convention),
     alias($._foreign_calling_keyword, $.calling_convention),
+    alias($._foreign_macro, $.calling_convention),
     alias($._foreign_underscore_identifier, $.calling_convention),
   ),
 
   _foreign_safety: $ => choice(
+    alias('_', $.safety),
     alias($._foreign_safety_keyword, $.safety),
+    alias($._foreign_macro, $.safety),
     alias($._foreign_underscore_identifier, $.safety),
   ),
 

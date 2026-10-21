@@ -10765,14 +10765,6 @@
           {
             "type": "STRING",
             "value": "javascript"
-          },
-          {
-            "type": "STRING",
-            "value": "_"
-          },
-          {
-            "type": "PATTERN",
-            "value": "[A-Z][A-Za-z_0-9]*"
           }
         ]
       }
@@ -10793,16 +10785,19 @@
           {
             "type": "STRING",
             "value": "interruptible"
-          },
-          {
-            "type": "STRING",
-            "value": "_"
-          },
-          {
-            "type": "PATTERN",
-            "value": "[A-Z][A-Za-z_0-9]*"
           }
         ]
+      }
+    },
+    "_foreign_macro": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": -1,
+        "content": {
+          "type": "PATTERN",
+          "value": "[A-Z][A-Za-z_0-9]*"
+        }
       }
     },
     "_foreign_underscore_identifier": {
@@ -10818,8 +10813,26 @@
         {
           "type": "ALIAS",
           "content": {
+            "type": "STRING",
+            "value": "_"
+          },
+          "named": true,
+          "value": "calling_convention"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
             "type": "SYMBOL",
             "name": "_foreign_calling_keyword"
+          },
+          "named": true,
+          "value": "calling_convention"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_foreign_macro"
           },
           "named": true,
           "value": "calling_convention"
@@ -10841,8 +10854,26 @@
         {
           "type": "ALIAS",
           "content": {
+            "type": "STRING",
+            "value": "_"
+          },
+          "named": true,
+          "value": "safety"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
             "type": "SYMBOL",
             "name": "_foreign_safety_keyword"
+          },
+          "named": true,
+          "value": "safety"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_foreign_macro"
           },
           "named": true,
           "value": "safety"
