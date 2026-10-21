@@ -5,6 +5,16 @@ const {
   layout,
 } = require('./util.js')
 
+const binding = ($, pattern) => prec('bind', seq(
+  choice(
+    field('pattern', pattern),
+    field('name', $._var),
+    field('name', alias($._binding_name_parens, $.parenthesized_name)),
+    field('implicit', $.implicit_variable),
+  ),
+  $._bind_matches,
+))
+
 module.exports = {
 
   // ------------------------------------------------------------------------
@@ -112,15 +122,15 @@ module.exports = {
    * The `implicit_variable` here is for:
    * g = let ?par = Impy 5 in f
    */
-  bind: $ => prec('bind', seq(
-    choice(
-      field('pattern', $._pat),
-      field('name', $._var),
-      field('name', alias($._binding_name_parens, $.parenthesized_name)),
-      field('implicit', $.implicit_variable),
-    ),
-    $._bind_matches,
-  )),
+  bind: $ => binding($, $._pat),
+
+  _module_bind: $ => binding($, $._binding_pat),
+
+  _module_decl: $ => choice(
+    $.signature,
+    $.function,
+    alias($._module_bind, $.bind),
+  ),
 
   decl: $ => choice(
     $.signature,
