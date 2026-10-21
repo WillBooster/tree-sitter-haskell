@@ -3155,7 +3155,7 @@ static Symbol scan_main(Env *env) {
     MARK("unboxed label start");
     if (char1(env, '#')) {
       int32_t next = peek2(env);
-      if (is_id_char(next) || next == '"') return UNBOXED_LABEL_START;
+      if ((is_id_char(next) && !varid_start_char(next)) || next == '"') return UNBOXED_LABEL_START;
     }
     return interior(env, whitespace);
   }

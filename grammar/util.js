@@ -37,6 +37,7 @@ const layout_sort_single = ($, start, rule) => seq(
 )
 
 /**
+ * The start rule must be a `_cmd_layout_<type>` external so the scanner can push a layout context.
  * Layout-start externals make the scanner record the current column; conditional end and semicolon tokens compare it.
  */
 const layout_sort = ($, start, rule) => seq(

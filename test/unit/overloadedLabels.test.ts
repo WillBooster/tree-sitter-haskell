@@ -185,7 +185,7 @@ test.each([
 });
 
 test('keeps unspaced unboxed delimiters ahead of label-like first elements', () => {
-  const elements = ['Bar', '1', '"a"', "'c'", 'left', '#Foo'];
+  const elements = ['Bar', '1', '"a"', "'c'", '#Foo'];
   const expressions = elements.map((element) => `(#${element}, right #)`);
   const source =
     expressions.map((expression, index) => `tuple${index} = ${expression}\n`).join('') +
@@ -218,7 +218,7 @@ test('preserves unboxed and label roles through spelling and physical-adjacency 
   const prefix = 'value = ',
     suffix = '\nfollowing = 1\n';
   const examples = [
-    { expression: '(#left, right #)', labels: [], unboxed: true },
+    { expression: '(# left, right #)', labels: [], unboxed: true },
     { expression: '(#Bar, right #)', labels: [], unboxed: true },
     { expression: '(#1, right #)', labels: [], unboxed: true },
     { expression: '(#"a", right #)', labels: [], unboxed: true },
@@ -226,7 +226,7 @@ test('preserves unboxed and label roles through spelling and physical-adjacency 
     { expression: '(##Foo, right #)', labels: ['#Foo'], unboxed: true },
     { expression: '( #Foo)', labels: ['#Foo'], unboxed: false },
     { expression: '({- comment -}#Foo)', labels: ['#Foo'], unboxed: false },
-    { expression: '(#left, right #)', labels: [], unboxed: true },
+    { expression: '(# left, right #)', labels: [], unboxed: true },
   ];
   let expression = examples[0]!.expression;
   let source = prefix + expression + suffix;
@@ -274,6 +274,41 @@ test('preserves unboxed and label roles through spelling and physical-adjacency 
     }
   } finally {
     tree.delete();
+    parser.delete();
+  }
+});
+
+test('retains existing variable-shaped parenthesized labels and optics expressions', () => {
+  const expressions = [
+    'view (#name) r',
+    'user & (#name .~ "x")',
+    '(#field %~ f)',
+    '(#_field)',
+    '(#привет)',
+    '(#こんにちは)',
+  ];
+  const parser = new Parser().setLanguage(language);
+  try {
+    for (const expression of expressions) {
+      const source = `value = ${expression}\nfollowing = 1\nafter = 2\n`;
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, expression).toBe(false);
+        const label = /#[^ ).%]+/.exec(expression)![0];
+        expect(
+          tree.rootNode.descendantsOfType('label').map((node) => [node.text, node.startIndex, node.endIndex])
+        ).toEqual([[label, source.indexOf(label), source.indexOf(label) + label.length]]);
+        expect(tree.rootNode.descendantsOfType('unboxed_tuple')).toHaveLength(0);
+        expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
+          'value',
+          'following',
+          'after',
+        ]);
+      } finally {
+        tree.delete();
+      }
+    }
+  } finally {
     parser.delete();
   }
 });
