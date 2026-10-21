@@ -20,7 +20,7 @@ afterAll(() => {
   localQuery.delete();
 });
 
-test('indexes deeply grouped simple bindings while retaining local definitions and pattern exclusions', () => {
+test('indexes deeply grouped simple bindings alongside destructured module bindings while excluding local bindings', () => {
   const parser = new Parser().setLanguage(language);
   const tags = tagQuery;
   const locals = localQuery;
@@ -39,9 +39,14 @@ test('indexes deeply grouped simple bindings while retaining local definitions a
           source
         ).toEqual([depth]);
         expect(
-          names.some(({ node }) => ['left', 'right'].includes(node.text)),
+          names
+            .filter(({ node }) => ['left', 'right'].includes(node.text))
+            .map(({ node }) => [node.text, node.startIndex, node.endIndex]),
           source
-        ).toBe(false);
+        ).toEqual([
+          ['left', source.indexOf('left'), source.indexOf('left') + 4],
+          ['right', source.indexOf('right'), source.indexOf('right') + 5],
+        ]);
         const captures = locals.captures(tree.rootNode).filter(({ node }) => node.text === 'named');
         expect(
           captures.map(({ name }) => name),

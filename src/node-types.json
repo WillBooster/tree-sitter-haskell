@@ -1,5 +1,121 @@
 [
   {
+    "type": "binding_field_pattern",
+    "named": true,
+    "subtypes": [
+      {
+        "type": "field_pattern",
+        "named": true
+      }
+    ]
+  },
+  {
+    "type": "binding_pattern",
+    "named": true,
+    "subtypes": [
+      {
+        "type": "apply",
+        "named": true
+      },
+      {
+        "type": "as",
+        "named": true
+      },
+      {
+        "type": "constructor",
+        "named": true
+      },
+      {
+        "type": "infix",
+        "named": true
+      },
+      {
+        "type": "irrefutable",
+        "named": true
+      },
+      {
+        "type": "list",
+        "named": true
+      },
+      {
+        "type": "literal",
+        "named": true
+      },
+      {
+        "type": "negation",
+        "named": true
+      },
+      {
+        "type": "parens",
+        "named": true
+      },
+      {
+        "type": "prefix_id",
+        "named": true
+      },
+      {
+        "type": "prefix_tuple",
+        "named": true
+      },
+      {
+        "type": "prefix_unboxed_sum",
+        "named": true
+      },
+      {
+        "type": "prefix_unboxed_tuple",
+        "named": true
+      },
+      {
+        "type": "qualified",
+        "named": true
+      },
+      {
+        "type": "quasiquote",
+        "named": true
+      },
+      {
+        "type": "record",
+        "named": true
+      },
+      {
+        "type": "splice",
+        "named": true
+      },
+      {
+        "type": "strict",
+        "named": true
+      },
+      {
+        "type": "tuple",
+        "named": true
+      },
+      {
+        "type": "unboxed_sum",
+        "named": true
+      },
+      {
+        "type": "unboxed_tuple",
+        "named": true
+      },
+      {
+        "type": "unboxed_unit",
+        "named": true
+      },
+      {
+        "type": "unit",
+        "named": true
+      },
+      {
+        "type": "variable",
+        "named": true
+      },
+      {
+        "type": "wildcard",
+        "named": true
+      }
+    ]
+  },
+  {
     "type": "class_decl",
     "named": true,
     "subtypes": [
@@ -156,6 +272,10 @@
     "named": true,
     "subtypes": [
       {
+        "type": "bind",
+        "named": true
+      },
+      {
         "type": "class",
         "named": true
       },
@@ -169,10 +289,6 @@
       },
       {
         "type": "data_type",
-        "named": true
-      },
-      {
-        "type": "decl",
         "named": true
       },
       {
@@ -196,6 +312,10 @@
         "named": true
       },
       {
+        "type": "function",
+        "named": true
+      },
+      {
         "type": "instance",
         "named": true
       },
@@ -213,6 +333,10 @@
       },
       {
         "type": "role_annotation",
+        "named": true
+      },
+      {
+        "type": "signature",
         "named": true
       },
       {
@@ -880,6 +1004,10 @@
         "required": true,
         "types": [
           {
+            "type": "binding_pattern",
+            "named": true
+          },
+          {
             "type": "explicit_type",
             "named": true
           },
@@ -927,6 +1055,10 @@
         "multiple": false,
         "required": false,
         "types": [
+          {
+            "type": "binding_pattern",
+            "named": true
+          },
           {
             "type": "expression",
             "named": true
@@ -1005,6 +1137,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "binding_pattern",
+            "named": true
+          },
           {
             "type": "pattern",
             "named": true
@@ -1127,6 +1263,10 @@
         "multiple": false,
         "required": false,
         "types": [
+          {
+            "type": "binding_pattern",
+            "named": true
+          },
           {
             "type": "pattern",
             "named": true
@@ -2440,6 +2580,10 @@
         "required": false,
         "types": [
           {
+            "type": "binding_pattern",
+            "named": true
+          },
+          {
             "type": "pattern",
             "named": true
           },
@@ -3371,6 +3515,10 @@
         "required": true,
         "types": [
           {
+            "type": "binding_pattern",
+            "named": true
+          },
+          {
             "type": "expression",
             "named": true
           },
@@ -3426,6 +3574,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "binding_pattern",
+            "named": true
+          },
           {
             "type": "expression",
             "named": true
@@ -3614,6 +3766,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "binding_pattern",
+            "named": true
+          },
           {
             "type": "pattern",
             "named": true
@@ -3932,6 +4088,10 @@
         "multiple": true,
         "required": false,
         "types": [
+          {
+            "type": "binding_pattern",
+            "named": true
+          },
           {
             "type": "expression",
             "named": true
@@ -4361,6 +4521,10 @@
         "multiple": false,
         "required": false,
         "types": [
+          {
+            "type": "binding_pattern",
+            "named": true
+          },
           {
             "type": "pattern",
             "named": true
@@ -5025,6 +5189,10 @@
         "required": false,
         "types": [
           {
+            "type": "binding_pattern",
+            "named": true
+          },
+          {
             "type": "pattern",
             "named": true
           }
@@ -5045,11 +5213,11 @@
         "required": false,
         "types": [
           {
-            "type": "field",
+            "type": "binding_field_pattern",
             "named": true
           },
           {
-            "type": "field_pattern",
+            "type": "field",
             "named": true
           },
           {
@@ -5225,6 +5393,10 @@
         "required": false,
         "types": [
           {
+            "type": "binding_pattern",
+            "named": true
+          },
+          {
             "type": "pattern",
             "named": true
           }
@@ -5353,6 +5525,10 @@
         "required": true,
         "types": [
           {
+            "type": "binding_pattern",
+            "named": true
+          },
+          {
             "type": "pattern",
             "named": true
           }
@@ -5471,6 +5647,10 @@
         "multiple": true,
         "required": false,
         "types": [
+          {
+            "type": "binding_pattern",
+            "named": true
+          },
           {
             "type": "expression",
             "named": true
@@ -5887,6 +6067,10 @@
         "required": true,
         "types": [
           {
+            "type": "binding_pattern",
+            "named": true
+          },
+          {
             "type": "expression",
             "named": true
           },
@@ -5918,6 +6102,10 @@
         "multiple": true,
         "required": true,
         "types": [
+          {
+            "type": "binding_pattern",
+            "named": true
+          },
           {
             "type": "expression",
             "named": true
@@ -5990,6 +6178,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "binding_pattern",
+            "named": true
+          },
           {
             "type": "pattern",
             "named": true

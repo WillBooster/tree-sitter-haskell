@@ -56,6 +56,9 @@ module.exports = {
     $._pat_name,
     $._pat_texp,
     $._pat_wildcard,
+    $._binding_pat_apply_arg,
+    $._binding_pat_name,
+    $._binding_pat_texp,
 
     // ------------------------------------------------
     // type

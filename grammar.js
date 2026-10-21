@@ -74,6 +74,8 @@ module.exports = grammar({
   supertypes: $ => [
     $.expression,
     $.pattern,
+    $.binding_pattern,
+    $.binding_field_pattern,
     $.type,
     $.quantified_type,
     $.constraint,

@@ -126,7 +126,7 @@ module.exports = {
    * This is a supertype.
    */
   declaration: $ => choice(
-    $.decl,
+    $._module_decl,
     $.type_synonym,
     $.kind_signature,
     $.type_family,

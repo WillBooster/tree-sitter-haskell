@@ -232,7 +232,55 @@ testCommand(
           { name: 'method', kind: 'method', role: 'def', row: 9, column: 5 },
         ])
       );
-      expect(tags.some(({ name }) => ['x', 'y', 'local'].includes(name))).toBe(false);
+      expect(tags.filter(({ name }) => ['x', 'y'].includes(name))).toEqual([
+        { name: 'x', kind: 'variable', role: 'def', row: 5, column: 1 },
+        { name: 'y', kind: 'variable', role: 'def', row: 5, column: 4 },
+      ]);
+      expect(tags.some(({ name }) => name === 'local')).toBe(false);
+    },
+  }
+);
+
+testCommand(
+  'indexes destructured module bindings without tagging their constructors or local bindings',
+  [
+    'script/tree-sitter',
+    'tags',
+    '--config-path',
+    configPath,
+    '--scope',
+    'source.haskell',
+    'test/fixtures/navigation/destructuredBindings.hs',
+  ],
+  170_000,
+  {
+    check: (output) => {
+      expect(
+        readTags(output)
+          .filter(({ kind, role }) => kind === 'variable' && role === 'def')
+          .map(({ name }) => name)
+      ).toEqual([
+        'first',
+        'second',
+        'extracted',
+        'headValue',
+        'tailValues',
+        'whole',
+        'nestedFirst',
+        'nestedSecond',
+        'nestedThird',
+        'punned',
+        'fieldValue',
+        'viewed',
+        'typed',
+        'typeCompanion',
+        'lazyFirst',
+        'lazySecond',
+        'withDo',
+        'withComprehension',
+        'listFirst',
+        'listSecond',
+      ]);
     },
   }
 );
