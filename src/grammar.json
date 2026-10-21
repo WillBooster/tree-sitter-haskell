@@ -334,6 +334,130 @@
         }
       ]
     },
+    "comment": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_cond_comment"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "{-"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "content"
+                },
+                {
+                  "type": "STRING",
+                  "value": "-}"
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "--+"
+                  },
+                  "named": false,
+                  "value": "--"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "content"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "haddock": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_cond_haddock"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "{-"
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "|"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "^"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "content"
+                },
+                {
+                  "type": "STRING",
+                  "value": "-}"
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "--+"
+                  },
+                  "named": false,
+                  "value": "--"
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "|"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "^"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "content"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
     "_inferred_tyvar": {
       "type": "SEQ",
       "members": [
@@ -14533,11 +14657,15 @@
     },
     {
       "type": "SYMBOL",
-      "name": "comment"
+      "name": "_cond_comment"
     },
     {
       "type": "SYMBOL",
-      "name": "haddock"
+      "name": "_cond_haddock"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "content"
     },
     {
       "type": "SYMBOL",

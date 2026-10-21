@@ -286,14 +286,16 @@ a = a
       (variable)
       (match
         (variable)))
-    (haddock)
+    (haddock
+      (content))
     (bind
       (variable)
       (match
         (do
           (exp
             (variable)))))
-    (haddock)
+    (haddock
+      (content))
     (bind
       (variable)
       (match

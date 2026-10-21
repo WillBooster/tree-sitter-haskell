@@ -2809,7 +2809,8 @@ a = if do a then# then a else a
 --------------------------------------------------------------------------------
 
 (haskell
-  (comment)
+  (comment
+    (content))
   (declarations
     (bind
       (variable)

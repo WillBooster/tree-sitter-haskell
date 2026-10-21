@@ -106,7 +106,7 @@ static void hsc_skip_text(Env *env) {
   else if (c == '\'') advance_over(env, hsc_char_end(env));
   else if (c == '{' && char1(env, '-')) {
     advance_over(env, 1);
-    consume_block_comment(env, 0);
+    consume_block_comment(env, 0, false);
   } else if (c == '-' && hsc_text_comment(env)) {
     while (not_eof(env) && PEEK != '\n') S_ADVANCE;
   }
