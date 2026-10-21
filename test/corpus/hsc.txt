@@ -1858,3 +1858,66 @@ following = 3
       (match
         (literal
           (integer))))))
+
+================================================================================
+hsc: conditional comment and operator boundaries
+:language(hsc)
+================================================================================
+
+module HscCommentBoundaries where
+unicodeComment = #{if 1} 1 #{else} --⊕#{endif}
+ignoredUnicode = 10
+#{endif}
+colonComment = #{if 1} 2 #{else} --:#{endif}
+ignoredColon = 20
+#{endif}
+longComment = #{if 1} 3 #{else} ----⋆#{endif}
+ignoredLong = 30
+#{endif}
+operator = #{if 1} 4 #{else} --+ #{endif}
+following = 5
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (header
+    (module
+      (module_id)))
+  (declarations
+    (bind
+      (variable)
+      (match
+        (cpp)
+        (literal
+          (integer))))
+    (cpp)
+    (cpp)
+    (bind
+      (variable)
+      (match
+        (cpp)
+        (literal
+          (integer))))
+    (cpp)
+    (cpp)
+    (bind
+      (variable)
+      (match
+        (cpp)
+        (literal
+          (integer))))
+    (cpp)
+    (cpp)
+    (bind
+      (variable)
+      (match
+        (cpp)
+        (literal
+          (integer))))
+    (cpp)
+    (cpp)
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))))

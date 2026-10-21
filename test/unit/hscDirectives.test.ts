@@ -199,6 +199,12 @@ for (const [fixture, target, replacements, names] of [
     ['newline', 'quote', 'slash', 'named', 'control', 'following'],
   ],
   ['hscConditionalText.hsc', ':', ['⋆', ';', ':'], ['colon', 'unicode', 'following']],
+  [
+    'hscCommentBoundaries.hsc',
+    '⊕',
+    [':', '⋆', '⊕'],
+    ['unicodeComment', 'colonComment', 'longComment', 'operator', 'following'],
+  ],
 ] as const) {
   test(`retains ${fixture} boundaries through edits and undo`, () => {
     const parser = new Parser().setLanguage(language);
@@ -245,7 +251,9 @@ for (const [fixture, target, replacements, names] of [
         const fresh = parser.parse(source)!;
         try {
           expect(tree.rootNode.hasError).toBe(false);
-          expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
+          expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
+            names
+          );
           expect(metadata(tree.rootNode)).toEqual(metadata(fresh.rootNode));
           for (const query of queries) {
             const captures = (node: Node): (string | number)[][] =>

@@ -15,6 +15,7 @@ static void hsc_consume_args(Env *env, bool line);
 static bool hsc_cpp_boundary(Env *env);
 static bool hsc_text_symbol(int32_t c);
 static void hsc_skip_text(Env *env);
+static bool hsc_text_comment(Env *env);
 static uint32_t hsc_char_end(Env *env);
 static bool hsc_text_id_char(int32_t c);
 static void hsc_quoted(HscCursor *cursor, int32_t quote);
@@ -106,10 +107,17 @@ static void hsc_skip_text(Env *env) {
   else if (c == '{' && char1(env, '-')) {
     advance_over(env, 1);
     consume_block_comment(env, 0);
-  } else if (c == '-' && line_comment_herald(env)) take_line(env);
+  } else if (c == '-' && hsc_text_comment(env)) take_line(env);
   else if (hsc_text_symbol(c)) advance_before(env, advance_while(env, 0, hsc_text_symbol));
   else if (hsc_text_id_char(c)) advance_before(env, advance_while(env, 0, hsc_text_id_char));
   else advance_over(env, 0);
+}
+
+static bool hsc_text_comment(Env *env) {
+  if (!char1(env, '-')) return false;
+  uint32_t i = 2;
+  while (char_at(env, i, '-')) i++;
+  return !hsc_text_symbol(peek(env, i));
 }
 
 static uint32_t hsc_char_end(Env *env) {
