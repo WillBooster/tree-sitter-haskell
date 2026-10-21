@@ -2497,17 +2497,6 @@ static Symbol resolve_semicolon(Env *env, Lexed next) {
   return FAIL;
 }
 
-/**
- * Generate a layout semicolon after a newline if the indent is less or equal to the current layout's indent, unless:
- *
- * - The current context doesn't use layout semicolons, which is the case for explicit brace layouts, tuple expressions,
- *   the module header and multi-way if layouts.
- *
- * - `no_semi` was set because newline lookahead found an explicit semicolon in the next line, or this function was
- *   executed before for the same newline.
- *
- * - `skip_semi` was set because the previous line ended with an explicit semicolon.
- */
 static Symbol semicolon(Env *env) {
   if (pending_layout_semicolon(env)) {
     env->state->newline.no_semi = true;
