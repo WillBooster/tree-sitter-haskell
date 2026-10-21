@@ -154,7 +154,7 @@ type A = A ++ A
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (name)
         (operator)
         (name)))))
@@ -171,14 +171,13 @@ type A = A :++ A ':++ A
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (name)
         (constructor_operator)
-        (infix
-          (name)
-          (promoted
-            (constructor_operator))
-          (name))))))
+        (name)
+        (promoted
+          (constructor_operator))
+        (name)))))
 
 ================================================================================
 type: list cons
@@ -192,7 +191,7 @@ type A = A : A
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (name)
         (constructor_operator)
         (name)))))
@@ -209,7 +208,7 @@ type A = A ': A
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (name)
         (promoted
           (constructor_operator))
@@ -289,7 +288,7 @@ type A = A A.A.:++ A
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (name)
         (qualified
           (module
@@ -310,7 +309,7 @@ type A = A ':++ A
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (name)
         (promoted
           (constructor_operator))
@@ -328,7 +327,7 @@ type A = A 'A.:++ A
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (name)
         (promoted
           (qualified
@@ -349,7 +348,7 @@ type A = A `A.A` A
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (name)
         (infix_id
           (qualified
@@ -407,13 +406,13 @@ type A = ∀ a . (A a ~ A a) => A
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (name)
         (operator)
         (name)))
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (name)
         (operator)
         (name)))
@@ -424,7 +423,7 @@ type A = ∀ a . (A a ~ A a) => A
           (variable))
         (context
           (parens
-            (infix
+            (infix_chain
               (apply
                 (name)
                 (variable))
@@ -446,7 +445,7 @@ type A = a a ': a
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (apply
           (variable)
           (variable))
@@ -466,39 +465,35 @@ type A = A :++ A A ': A (A A a) : '[] ':++ A `A.A` '[]
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (name)
         (constructor_operator)
-        (infix
-          (apply
-            (name)
-            (name))
-          (promoted
-            (constructor_operator))
-          (infix
+        (apply
+          (name)
+          (name))
+        (promoted
+          (constructor_operator))
+        (apply
+          (name)
+          (parens
             (apply
-              (name)
-              (parens
-                (apply
-                  (apply
-                    (name)
-                    (name))
-                  (variable))))
-            (constructor_operator)
-            (infix
-              (promoted
-                (empty_list))
-              (promoted
-                (constructor_operator))
-              (infix
+              (apply
                 (name)
-                (infix_id
-                  (qualified
-                    (module
-                      (module_id))
-                    (name)))
-                (promoted
-                  (empty_list))))))))))
+                (name))
+              (variable))))
+        (constructor_operator)
+        (promoted
+          (empty_list))
+        (promoted
+          (constructor_operator))
+        (name)
+        (infix_id
+          (qualified
+            (module
+              (module_id))
+            (name)))
+        (promoted
+          (empty_list))))))
 
 ================================================================================
 type: multi-apply in infix
@@ -512,7 +507,7 @@ type A = A a a a ++ A a a a
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (apply
           (apply
             (apply
@@ -1225,7 +1220,7 @@ type A = A ->.. A
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (name)
         (operator)
         (name)))))

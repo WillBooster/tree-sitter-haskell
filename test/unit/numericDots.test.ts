@@ -32,13 +32,14 @@ test('keeps dot operators before numeric and quoted operands in applications and
           const tree = parser.parse(source)!;
           try {
             expect(tree.rootNode.hasError, source).toBe(false);
-            expect(tree.rootNode.descendantsOfType(left ? 'infix' : 'right_section'), source).toHaveLength(1);
+            expect(tree.rootNode.descendantsOfType(left ? 'operator_chain' : 'right_section'), source).toHaveLength(1);
             expect(
               query.captures(tree.rootNode).map(({ node }) => [node.text, node.startIndex, node.endIndex])
             ).toEqual([['.', source.indexOf('.'), source.indexOf('.') + 1]]);
-            const operand = tree.rootNode
-              .descendantsOfType(left ? 'infix' : 'right_section')[0]!
-              .childForFieldName('right_operand')!;
+            const expressionNode = tree.rootNode.descendantsOfType(left ? 'operator_chain' : 'right_section')[0]!;
+            const operand = left
+              ? expressionNode.childrenForFieldName('operand').at(-1)!
+              : expressionNode.childForFieldName('right_operand')!;
             expect(operand.text).toBe(operandText);
             expect(operand.startIndex).toBe(source.indexOf(operandText));
             expect(tree.rootNode.descendantsOfType('projection')).toHaveLength(0);

@@ -15,8 +15,7 @@ to its authors and contributors. This is not an official release of that project
 This fork is based on upstream's version 0.23.1 grammar and generates the parser with the
 [WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parser carries that fork's own ABI number, so it loads only with that fork's runtime, version 7.0.7 or later in the 7.x series; upstream's runtime rejects it.
 [Upstream's README at that version](https://github.com/tree-sitter/tree-sitter-haskell/blob/v0.23.1/README.md) lists
-the supported language extensions and, under "Querying", explains how to query the grammar's supertypes; it is the
-readme that the comments in `grammar.js` refer to.
+the supported language extensions. The fork's node and query contracts are described below.
 
 ## Differences from upstream
 
@@ -88,7 +87,11 @@ Declaration names and variable/operator callees remain indexed through nested pa
 
 Function and type declaration-head parentheses are anonymous syntax: the enclosing declaration directly exposes its `name`, parameter groups and infix `head` fields. Parentheses inside parameters and types retain their existing nodes. A grouped variable name, including a qualified name, uses one `parenthesized_name` node with a direct name child, independent of grouping depth. A symbolic variable operator keeps its required prefix parentheses in `prefix_id`: `(<+>)` and `(Demo.<+>)` remain `prefix_id`, while redundant grouping such as `((<+>))` adds one `parenthesized_name` wrapper around that node. This also applies to unapplied names; only function position creates a call reference or call highlight. A parenthesized simple binding name uses `parenthesized_name` in the `bind` node's `name` field, retaining one wrapper at any grouping depth. Complex expressions retain ordinary `parens` nodes. These changes affect public syntax trees.
 
-Module binding patterns use the `binding_pattern` supertype; ordinary patterns use `pattern`. Both retain the same concrete node names. A `binding_field_pattern/field_pattern` with a `field` field and no `pattern` field is a module binding record pun. The `decl` supertype covers bindings in local blocks and declaration quotes; module declarations use `declaration`.
+Operator uses retain unresolved source order. Expressions use `operator_chain` with repeated `operand` and `operator` fields: `6 * 7 == 42` has operands `6`, `7`, `42` and operators `*`, `==`. Application stays inside an operand; explicit parentheses and greedy block bodies retain their own grouping. A `prefix_operator` field records each named `prefix_negation` token at its source position, including unary-only chains. Its semantic extent depends on fixities and language extensions, so the tree does not assign it an operand subtree.
+
+Type, pattern and constraint operators use `infix_chain` with repeated `operand` and `operator` fields, even for a single operator. Function, type and data declaration heads retain the `infix` node because they define one operator. Instance and standalone deriving implementation tags identify a class only for a single-operator head; multi-operator heads require fixity resolution by the caller.
+
+Queries distinguish operands through the `expression_operand`, `type_operand`, `pattern_operand`, `binding_pattern_operand` and `constraint_operand` supertypes. For example, `(expression_operand/variable)` selects an expression variable and `(binding_pattern_operand/variable)` selects an explicit module-binding name. Match chains directly with `(operator_chain)` or `(infix_chain)` and their fields. The concrete operand node names remain shared across contexts. A `binding_field_pattern/field_pattern` with a `field` field and no `pattern` field is a module binding record pun. The `decl` supertype covers bindings in local blocks and declaration quotes; module declarations use `declaration`.
 
 In a repository checkout, configure the CLI parser directories to include the grammar, then run `script/tree-sitter tags file.hs` to inspect the tags.
 
@@ -99,7 +102,7 @@ fuzzed with:
 ```toml
 [dependencies]
 tree-sitter = { package = "willbooster-tree-sitter", version = "7.0.7" }
-tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "8" }
+tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "10" }
 ```
 
 ```rust

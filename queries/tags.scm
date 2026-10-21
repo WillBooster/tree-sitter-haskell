@@ -15,9 +15,9 @@
     (parenthesized_name [(variable) @name (prefix_id (operator) @name)])
   ]) @definition.variable)
 
-(binding_pattern/variable) @name @definition.variable
-(binding_pattern/prefix_id (operator) @name) @definition.variable
-(binding_pattern/as bind: (variable) @name) @definition.variable
+(binding_pattern_operand/variable) @name @definition.variable
+(binding_pattern_operand/prefix_id (operator) @name) @definition.variable
+(binding_pattern_operand/as bind: (variable) @name) @definition.variable
 
 (binding_field_pattern/field_pattern
   !pattern
@@ -110,13 +110,17 @@
     (prefix_id [(operator) @name (constructor_operator) @name])
     (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
   ]) @reference.implementation
-(instance head: (infix operator: [
-  (constructor_operator) @name
-  (operator) @name
-  (infix_id (name) @name)
-  (qualified id: [(constructor_operator) @name (operator) @name])
-  (infix_id (qualified id: (name) @name))
-])) @reference.implementation
+(instance head: (infix_chain
+  . operand: (_)
+  . operator: [
+    (constructor_operator) @name
+    (operator) @name
+    (infix_id (name) @name)
+    (qualified id: [(constructor_operator) @name (operator) @name])
+    (infix_id (qualified id: (name) @name))
+  ]
+  . operand: (_)
+  .)) @reference.implementation
 
 (deriving_instance name: [
     (name) @name
@@ -124,18 +128,22 @@
     (prefix_id [(operator) @name (constructor_operator) @name])
     (prefix_id (qualified id: [(operator) @name (constructor_operator) @name]))
   ]) @reference.implementation
-(deriving_instance head: (infix operator: [
-  (constructor_operator) @name
-  (operator) @name
-  (infix_id (name) @name)
-  (qualified id: [(constructor_operator) @name (operator) @name])
-  (infix_id (qualified id: (name) @name))
-])) @reference.implementation
+(deriving_instance head: (infix_chain
+  . operand: (_)
+  . operator: [
+    (constructor_operator) @name
+    (operator) @name
+    (infix_id (name) @name)
+    (qualified id: [(constructor_operator) @name (operator) @name])
+    (infix_id (qualified id: (name) @name))
+  ]
+  . operand: (_)
+  .)) @reference.implementation
 
 (foreign_import
   signature: (signature name: [(variable) @name (prefix_id (operator) @name)])) @definition.function
 
-(expression/apply
+(expression_operand/apply
   function: [
     (variable) @name
     (qualified id: (variable) @name)
@@ -149,7 +157,7 @@
     ])
   ]) @reference.call
 
-(expression/infix
+(operator_chain
   operator: [
     (operator) @name
     (infix_id (variable) @name)

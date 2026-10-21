@@ -1,6 +1,12 @@
 module.exports = {
 
   inline: $ => [
+    $.expression,
+    $.pattern,
+    $.binding_pattern,
+    $.type,
+    $.constraint,
+
 
     // ------------------------------------------------
     // variable
@@ -43,6 +49,7 @@ module.exports = {
     // expression
     // ------------------------------------------------
 
+    $._exp_chain_operand,
     $._exp_name,
     $._exp_typed_hole,
     $._exp_greedy,

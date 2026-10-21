@@ -13,7 +13,7 @@ pattern A a <- a : a
         (apply
           (constructor)
           (variable))
-        (infix
+        (infix_chain
           (variable)
           (constructor_operator)
           (variable))))))
@@ -54,7 +54,7 @@ pattern A a <- a : a where
         (apply
           (constructor)
           (variable))
-        (infix
+        (infix_chain
           (variable)
           (constructor_operator)
           (variable))
@@ -126,10 +126,10 @@ pattern A { a } <- A a where
               argument: (variable))
             match: (match
               expression: (conditional
-                if: (infix
-                  left_operand: (variable)
+                if: (operator_chain
+                  operand: (variable)
                   operator: (operator)
-                  right_operand: (literal
+                  operand: (literal
                     (integer)))
                 then: (variable)
                 else: (variable)))))))))
@@ -163,10 +163,10 @@ pattern A a <- A a where
             match: (match
               guards: (guards
                 guard: (boolean
-                  (infix
-                    left_operand: (variable)
+                  (operator_chain
+                    operand: (variable)
                     operator: (operator)
-                    right_operand: (literal
+                    operand: (literal
                       (integer)))))
               expression: (parens
                 expression: (apply
@@ -250,10 +250,10 @@ pattern a :-> b <- a
         type: (name)))
     (pattern_synonym
       (equation
-        synonym: (infix
-          left_operand: (variable)
+        synonym: (infix_chain
+          operand: (variable)
           operator: (constructor_operator)
-          right_operand: (variable))
+          operand: (variable))
         pattern: (variable)))))
 
 ================================================================================
@@ -270,7 +270,7 @@ pattern A <- a `A.A` a
     (pattern_synonym
       (equation
         (constructor)
-        (infix
+        (infix_chain
           (variable)
           (infix_id
             (constructor))
@@ -278,7 +278,7 @@ pattern A <- a `A.A` a
     (pattern_synonym
       (equation
         (constructor)
-        (infix
+        (infix_chain
           (variable)
           (infix_id
             (qualified

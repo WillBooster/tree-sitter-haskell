@@ -400,7 +400,7 @@ a = A { a = a
           (field_update
             (field_name
               (variable))
-            (infix
+            (operator_chain
               (variable)
               (operator)
               (variable))))))))

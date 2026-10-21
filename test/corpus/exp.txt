@@ -185,7 +185,7 @@ a = (+ a A.+ a)
       (match
         (right_section
           (operator)
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (variable)))))
@@ -194,13 +194,12 @@ a = (+ a A.+ a)
       (match
         (right_section
           (operator)
-          (infix
+          (operator_chain
             (variable)
             (operator)
-            (infix
-              (variable)
-              (operator)
-              (variable))))))
+            (variable)
+            (operator)
+            (variable)))))
     (bind
       (variable)
       (match
@@ -209,7 +208,7 @@ a = (+ a A.+ a)
             (module
               (module_id))
             (operator))
-          (infix
+          (operator_chain
             (variable)
             (qualified
               (module
@@ -224,7 +223,7 @@ a = (+ a A.+ a)
             (module
               (module_id))
             (operator))
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (variable)))))
@@ -233,7 +232,7 @@ a = (+ a A.+ a)
       (match
         (right_section
           (operator)
-          (infix
+          (operator_chain
             (variable)
             (qualified
               (module
@@ -330,7 +329,7 @@ a = (a A.A.+ a A.A.+)
       (variable)
       (match
         (left_section
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (variable))
@@ -339,22 +338,20 @@ a = (a A.A.+ a A.A.+)
       (variable)
       (match
         (left_section
-          (infix
+          (operator_chain
             (variable)
             (operator)
-            (infix
-              (variable)
-              (operator)
-              (infix
-                (variable)
-                (operator)
-                (variable))))
+            (variable)
+            (operator)
+            (variable)
+            (operator)
+            (variable))
           (operator))))
     (bind
       (variable)
       (match
         (left_section
-          (infix
+          (operator_chain
             (variable)
             (qualified
               (module
@@ -366,7 +363,7 @@ a = (a A.A.+ a A.A.+)
       (variable)
       (match
         (left_section
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (variable))
@@ -378,7 +375,7 @@ a = (a A.A.+ a A.A.+)
       (variable)
       (match
         (left_section
-          (infix
+          (operator_chain
             (variable)
             (qualified
               (module
@@ -517,30 +514,28 @@ a = (a + a)
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (constructor)
           (operator)
-          (infix
-            (variable)
-            (operator)
-            (infix
-              (literal
-                (string))
-              (operator)
-              (variable))))))
+          (variable)
+          (operator)
+          (literal
+            (string))
+          (operator)
+          (variable))))
     (bind
       (variable)
       (match
         (do
           (bind
             (variable)
-            (infix
+            (operator_chain
               (variable)
               (operator)
               (variable)))
           (bind
             (variable)
-            (infix
+            (operator_chain
               (variable)
               (operator)
               (variable))))))
@@ -548,7 +543,7 @@ a = (a + a)
       (variable)
       (match
         (parens
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (variable)))))))
@@ -567,23 +562,21 @@ a = a . a $ a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
-          (infix
-            (variable)
-            (operator)
-            (variable)))))
+          (variable)
+          (operator)
+          (variable))))
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
-          (infix
-            (variable)
-            (operator)
-            (variable)))))))
+          (variable)
+          (operator)
+          (variable))))))
 
 ================================================================================
 exp: infix con/var
@@ -600,7 +593,7 @@ a = a `A` a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (infix_id
             (variable))
@@ -608,7 +601,7 @@ a = a `A` a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (infix_id
             (qualified
@@ -619,7 +612,7 @@ a = a `A` a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (infix_id
             (constructor))
@@ -690,7 +683,7 @@ a = \ a -> a >>= \ a -> a
         (lambda
           (patterns
             (variable))
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (lambda
@@ -715,13 +708,12 @@ a = \ a a a -> a <$> a <*> a
         (lambda
           (patterns
             (variable))
-          (infix
+          (operator_chain
             (variable)
             (constructor_operator)
-            (infix
-              (variable)
-              (constructor_operator)
-              (variable))))))
+            (variable)
+            (constructor_operator)
+            (variable)))))
     (bind
       (variable)
       (match
@@ -730,13 +722,12 @@ a = \ a a a -> a <$> a <*> a
             (variable)
             (variable)
             (variable))
-          (infix
+          (operator_chain
             (variable)
             (operator)
-            (infix
-              (variable)
-              (operator)
-              (variable))))))))
+            (variable)
+            (operator)
+            (variable)))))))
 
 ================================================================================
 exp: parenthesized infix
@@ -752,7 +743,7 @@ a = (a <$> a)
       (variable)
       (match
         (parens
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (variable)))))))
@@ -770,7 +761,7 @@ a = a a A.+++ a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (variable))
@@ -933,7 +924,7 @@ a = a >>= \case
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (lambda_case
@@ -977,7 +968,7 @@ a = \case a -> a : a
             (alternative
               (variable)
               (match
-                (infix
+                (operator_chain
                   (variable)
                   (constructor_operator)
                   (variable))))))))))
@@ -1205,7 +1196,7 @@ a = a a a {a = a}
           (field_update
             (field_name
               (variable))
-            (infix
+            (operator_chain
               (variable)
               (operator)
               (variable))))))
@@ -1326,7 +1317,7 @@ a = - a a a {a}
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (record
             (variable)
             (field_update
@@ -1339,7 +1330,7 @@ a = - a a a {a}
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (record
@@ -1354,7 +1345,7 @@ a = - a a a {a}
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (apply
               (variable)
@@ -1371,7 +1362,8 @@ a = - a a a {a}
     (bind
       (variable)
       (match
-        (negation
+        (operator_chain
+          (prefix_negation)
           (record
             (variable)
             (field_update
@@ -1380,7 +1372,8 @@ a = - a a a {a}
     (bind
       (variable)
       (match
-        (negation
+        (operator_chain
+          (prefix_negation)
           (apply
             (variable)
             (record
@@ -1391,7 +1384,8 @@ a = - a a a {a}
     (bind
       (variable)
       (match
-        (negation
+        (operator_chain
+          (prefix_negation)
           (apply
             (apply
               (variable)
@@ -1891,7 +1885,7 @@ a = a A.!? a a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (qualified
             (module
@@ -1909,7 +1903,7 @@ a = a A.!? a a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (qualified
             (module
@@ -1919,7 +1913,7 @@ a = a A.!? a a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (apply
               (variable)
@@ -1933,7 +1927,7 @@ a = a A.!? a a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (qualified
             (module
@@ -1977,7 +1971,8 @@ a = (-a, a)
       (variable)
       (match
         (tuple
-          (negation
+          (operator_chain
+            (prefix_negation)
             (variable))
           (variable))))))
 
@@ -1997,14 +1992,16 @@ a = (+ -a)
       (variable)
       (match
         (left_section
-          (negation
+          (operator_chain
+            (prefix_negation)
             (variable))
           (constructor_operator))))
     (bind
       (variable)
       (match
         (left_section
-          (negation
+          (operator_chain
+            (prefix_negation)
             (apply
               (variable)
               (variable)))
@@ -2014,7 +2011,8 @@ a = (+ -a)
       (match
         (right_section
           (operator)
-          (negation
+          (operator_chain
+            (prefix_negation)
             (variable)))))))
 
 ================================================================================
@@ -2075,7 +2073,7 @@ a = (# A a + a #)
       (variable)
       (match
         (unboxed_tuple
-          (infix
+          (operator_chain
             (apply
               (constructor)
               (variable))
@@ -2144,10 +2142,15 @@ a = (# a |#)
 --------------------------------------------------------------------------------
 
 (haskell
-  (ERROR
-    (variable)
-    (variable)
-    (operator)))
+ (declarations
+   (bind
+     (variable)
+     (match
+       (right_section
+         (operator)
+         (variable)
+         (ERROR
+           (operator)))))))
 
 ================================================================================
 exp: label
@@ -2355,7 +2358,7 @@ a = a.a.a.a
       (match
         (projection
           (parens
-            (infix
+            (operator_chain
               (variable)
               (operator)
               (variable)))
@@ -2388,7 +2391,7 @@ a = a ++ a.a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (projection
@@ -2501,7 +2504,7 @@ a = [a $ \a -> a]
       (variable)
       (match
         (list
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (lambda
@@ -2631,7 +2634,7 @@ a = a a a $$$$ a a a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (variable))
@@ -2644,7 +2647,7 @@ a = a a a $$$$ a a a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (variable))
@@ -2657,7 +2660,7 @@ a = a a a $$$$ a a a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (variable))
@@ -2666,7 +2669,7 @@ a = a a a $$$$ a a a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (apply
               (variable)
@@ -2925,7 +2928,7 @@ a = a @a `a` a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (type_application
@@ -2935,7 +2938,7 @@ a = a @a `a` a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (apply
               (variable)
@@ -2947,7 +2950,7 @@ a = a @a `a` a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (type_application
@@ -2970,7 +2973,7 @@ a = a ''A `a` a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (th_quoted_name
@@ -2980,7 +2983,7 @@ a = a ''A `a` a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (th_quoted_name
@@ -3028,14 +3031,14 @@ longer = a ->.. b
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (variable))))
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (variable))))
@@ -3063,7 +3066,7 @@ longer = a ->.. b
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (qualified
             (module
@@ -3073,7 +3076,7 @@ longer = a ->.. b
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (variable))))))
@@ -3106,7 +3109,7 @@ h = if | a ->. b -> c
               (match
                 (guards
                   (boolean
-                    (infix
+                    (operator_chain
                       (variable)
                       (operator)
                       (variable))))
@@ -3116,7 +3119,7 @@ h = if | a ->. b -> c
               (match
                 (guards
                   (boolean
-                    (infix
+                    (operator_chain
                       (variable)
                       (operator)
                       (variable))))
@@ -3131,7 +3134,7 @@ h = if | a ->. b -> c
               (match
                 (guards
                   (boolean
-                    (infix
+                    (operator_chain
                       (variable)
                       (operator)
                       (variable))))
@@ -3141,7 +3144,7 @@ h = if | a ->. b -> c
               (match
                 (guards
                   (boolean
-                    (infix
+                    (operator_chain
                       (variable)
                       (operator)
                       (variable))))
@@ -3153,7 +3156,7 @@ h = if | a ->. b -> c
           (match
             (guards
               (boolean
-                (infix
+                (operator_chain
                   (variable)
                   (operator)
                   (variable))))
@@ -3161,7 +3164,7 @@ h = if | a ->. b -> c
           (match
             (guards
               (boolean
-                (infix
+                (operator_chain
                   (variable)
                   (operator)
                   (variable))))
@@ -3186,7 +3189,7 @@ i = (case a of b -> c ⊸ d)
         (parens
           (do
             (exp
-              (infix
+              (operator_chain
                 (variable)
                 (operator)
                 (variable)))))))
@@ -3196,7 +3199,7 @@ i = (case a of b -> c ⊸ d)
         (parens
           (do
             (exp
-              (infix
+              (operator_chain
                 (variable)
                 (operator)
                 (variable)))))))
@@ -3210,7 +3213,7 @@ i = (case a of b -> c ⊸ d)
               (alternative
                 (variable)
                 (match
-                  (infix
+                  (operator_chain
                     (variable)
                     (operator)
                     (variable)))))))))
@@ -3224,7 +3227,7 @@ i = (case a of b -> c ⊸ d)
               (alternative
                 (variable)
                 (match
-                  (infix
+                  (operator_chain
                     (variable)
                     (operator)
                     (variable)))))))))))

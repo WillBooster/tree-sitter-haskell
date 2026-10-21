@@ -13,13 +13,12 @@ a a (a:a : as) (a, a, (a, [a])) = a
       patterns: (patterns
         (variable)
         (parens
-          pattern: (infix
-            left_operand: (variable)
+          pattern: (infix_chain
+            operand: (variable)
             operator: (constructor_operator)
-            right_operand: (infix
-              left_operand: (variable)
-              operator: (constructor_operator)
-              right_operand: (variable))))
+            operand: (variable)
+            operator: (constructor_operator)
+            operand: (variable)))
         (tuple
           element: (variable)
           element: (variable)
@@ -106,7 +105,7 @@ a (a :++ a) = a
       (variable)
       (patterns
         (parens
-          (infix
+          (infix_chain
             (variable)
             (constructor_operator)
             (variable))))
@@ -519,23 +518,23 @@ a a | a < 1, a > 1 = A
       match: (match
         guards: (guards
           guard: (boolean
-            (infix
-              left_operand: (variable)
+            (operator_chain
+              operand: (variable)
               operator: (operator)
-              right_operand: (literal
+              operand: (literal
                 (integer))))
           guard: (boolean
-            (infix
-              left_operand: (variable)
+            (operator_chain
+              operand: (variable)
               operator: (operator)
-              right_operand: (literal
+              operand: (literal
                 (integer)))))
         expression: (constructor))
       match: (match
         guards: (guards
           guard: (pattern_guard
-            pattern: (infix
-              left_operand: (apply
+            pattern: (infix_chain
+              operand: (apply
                 function: (constructor)
                 argument: (parens
                   pattern: (apply
@@ -547,7 +546,7 @@ a a | a < 1, a > 1 = A
                           (wildcard))))
                     argument: (wildcard))))
               operator: (constructor_operator)
-              right_operand: (variable))
+              operand: (variable))
             expression: (variable)))
         expression: (constructor))
       match: (match
@@ -954,7 +953,7 @@ a (a <> if a then a else a -> a) = a
       (patterns
         (parens
           (view_pattern
-            (infix
+            (operator_chain
               (variable)
               (operator)
               (conditional
@@ -1028,7 +1027,7 @@ a (A a `A` A a) = a
       (variable)
       (patterns
         (parens
-          (infix
+          (infix_chain
             (variable)
             (infix_id
               (constructor))
@@ -1039,7 +1038,7 @@ a (A a `A` A a) = a
       (variable)
       (patterns
         (parens
-          (infix
+          (infix_chain
             (variable)
             (infix_id
               (qualified
@@ -1053,7 +1052,7 @@ a (A a `A` A a) = a
       (variable)
       (patterns
         (parens
-          (infix
+          (infix_chain
             (apply
               (constructor)
               (variable))
@@ -1125,7 +1124,7 @@ a (A a A.:++ A a) = a
       (variable)
       (patterns
         (parens
-          (infix
+          (infix_chain
             (variable)
             (qualified
               (module
@@ -1138,28 +1137,27 @@ a (A a A.:++ A a) = a
       (variable)
       (patterns
         (parens
-          (infix
+          (infix_chain
             (variable)
             (qualified
               (module
                 (module_id)
                 (module_id))
               (constructor_operator))
-            (infix
-              (variable)
-              (qualified
-                (module
-                  (module_id)
-                  (module_id))
-                (constructor_operator))
-              (variable)))))
+            (variable)
+            (qualified
+              (module
+                (module_id)
+                (module_id))
+              (constructor_operator))
+            (variable))))
       (match
         (variable)))
     (function
       (variable)
       (patterns
         (parens
-          (infix
+          (infix_chain
             (apply
               (constructor)
               (variable))

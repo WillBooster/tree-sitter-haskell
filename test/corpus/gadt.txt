@@ -254,7 +254,7 @@ data a +++ b where
               (variable)
               (function
                 (variable)
-                (infix
+                (infix_chain
                   (variable)
                   (operator)
                   (variable))))))))))
@@ -327,7 +327,7 @@ data A where
         (gadt_constructor
           (constructor)
           (context
-            (infix
+            (infix_chain
               (name)
               (operator)
               (name)))
@@ -355,7 +355,7 @@ type data A a where
         (gadt_constructor
           (constructor)
           (context
-            (infix
+            (infix_chain
               (name)
               (operator)
               (name)))

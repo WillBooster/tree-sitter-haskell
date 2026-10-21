@@ -84,13 +84,12 @@ f = $(a . a $ a)
       (match
         (splice
           (parens
-            (infix
+            (operator_chain
               (variable)
               (operator)
-              (infix
-                (variable)
-                (operator)
-                (variable)))))))))
+              (variable)
+              (operator)
+              (variable))))))))
 
 ================================================================================
 th: inline typed splice
@@ -159,7 +158,7 @@ derive A a @A
           (th_quoted_name
             (name)))))
     (top_splice
-      (infix
+      (operator_chain
         (variable)
         (operator)
         (th_quoted_name
@@ -327,7 +326,7 @@ a = [e|a + a⟧
       (match
         (quote
           (quoted_expression
-            (infix
+            (operator_chain
               (variable)
               (operator)
               (variable))))))
@@ -336,7 +335,7 @@ a = [e|a + a⟧
       (match
         (quote
           (quoted_expression
-            (infix
+            (operator_chain
               (apply
                 (constructor)
                 (variable))
@@ -352,7 +351,7 @@ a = [e|a + a⟧
       (match
         (quote
           (quoted_expression
-            (infix
+            (operator_chain
               (variable)
               (operator)
               (variable))))))
@@ -361,7 +360,7 @@ a = [e|a + a⟧
       (match
         (quote
           (quoted_expression
-            (infix
+            (operator_chain
               (variable)
               (operator)
               (variable))))))))
@@ -389,7 +388,7 @@ a = [t|∀ a . A a => a ++ a :: A⟧
                   (apply
                     (name)
                     (variable))
-                  (infix
+                  (infix_chain
                     (variable)
                     (operator)
                     (variable))))
@@ -546,7 +545,7 @@ a = a
       (match
         (typed_quote
           (quoted_expression
-            (infix
+            (operator_chain
               (variable)
               (operator)
               (variable))))))
@@ -555,7 +554,7 @@ a = a
       (match
         (typed_quote
           (quoted_expression
-            (infix
+            (operator_chain
               (variable)
               (operator)
               (variable))))))
@@ -598,7 +597,7 @@ a = a $⟦a|]
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (quote
@@ -660,6 +659,7 @@ th: top-level expression splice with negation
 (haskell
   (declarations
     (top_splice
-      (negation
+      (operator_chain
+        (prefix_negation)
         (literal
           (integer))))))

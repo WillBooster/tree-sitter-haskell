@@ -40,7 +40,7 @@ test('preserves tab-indented do continuation and the following statement', () =>
   const tree = parser.parse(source)!;
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    expect(tree.rootNode.descendantsOfType('infix').map((node) => node.text)).toEqual(['first\n\t|| second']);
+    expect(tree.rootNode.descendantsOfType('operator_chain').map((node) => node.text)).toEqual(['first\n\t|| second']);
     expect(tree.rootNode.descendantsOfType('exp').map((node) => node.text)).toEqual(['pure x']);
   } finally {
     tree.delete();

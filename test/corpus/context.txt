@@ -20,7 +20,7 @@ a ::
       (function
         (variable)
         (context
-          (infix
+          (infix_chain
             (apply
               (variable)
               (variable))
@@ -88,10 +88,10 @@ a :: a ++ a => a
     (signature
       name: (variable)
       type: (context
-        context: (infix
-          left_operand: (variable)
+        context: (infix_chain
+          operand: (variable)
           operator: (operator)
-          right_operand: (variable))
+          operand: (variable))
         type: (variable)))))
 
 ================================================================================
@@ -107,7 +107,7 @@ a :: A a ++ a => a
     (signature
       (variable)
       (context
-        (infix
+        (infix_chain
           (apply
             (name)
             (variable))
@@ -130,7 +130,7 @@ a :: a -> a a ++ a a => a a a => a
       (function
         (variable)
         (context
-          (infix
+          (infix_chain
             (apply
               (variable)
               (variable))
@@ -256,7 +256,7 @@ type A = A a => ∀ a . a *+* a => A
           (quantified_variables
             (variable))
           (context
-            (infix
+            (infix_chain
               (variable)
               (operator)
               (variable))
@@ -520,7 +520,7 @@ a :: (A a => A) => a
           (apply
             (name)
             (variable))
-          (infix
+          (infix_chain
             (variable)
             (operator)
             (variable)))
@@ -530,7 +530,7 @@ a :: (A a => A) => a
       (context
         (parens
           (parens
-            (infix
+            (infix_chain
               (apply
                 (name)
                 (variable))
@@ -564,7 +564,7 @@ a :: a ++ a a a => a => a
     (signature
       (variable)
       (context
-        (infix
+        (infix_chain
           (variable)
           (operator)
           (apply
@@ -576,7 +576,7 @@ a :: a ++ a a a => a => a
     (signature
       (variable)
       (context
-        (infix
+        (infix_chain
           (variable)
           (operator)
           (apply
@@ -602,7 +602,7 @@ a :: a a a ++ a => a => a
     (signature
       (variable)
       (context
-        (infix
+        (infix_chain
           (apply
             (variable)
             (variable))
@@ -614,7 +614,7 @@ a :: a a a ++ a => a => a
     (signature
       (variable)
       (context
-        (infix
+        (infix_chain
           (apply
             (apply
               (variable)
@@ -674,7 +674,7 @@ a :: a a '++ a => a
     (signature
       (variable)
       (context
-        (infix
+        (infix_chain
           (apply
             (variable)
             (variable))
@@ -696,7 +696,7 @@ a :: a a ':++ a => a
     (signature
       (variable)
       (context
-        (infix
+        (infix_chain
           (apply
             (variable)
             (variable))
@@ -1029,9 +1029,9 @@ a :: (a + a) + a => a
     (signature
       (variable)
       (context
-        (infix
+        (infix_chain
           (parens
-            (infix
+            (infix_chain
               (variable)
               (operator)
               (variable)))
@@ -1052,7 +1052,7 @@ a :: a~a => A
     (signature
       (variable)
       (context
-        (infix
+        (infix_chain
           (variable)
           (operator)
           (variable))
@@ -1073,13 +1073,13 @@ a :: (a + a :: A, a + a :: A) => a
       (context
         (tuple
           (signature
-            (infix
+            (infix_chain
               (variable)
               (operator)
               (variable))
             (name))
           (signature
-            (infix
+            (infix_chain
               (variable)
               (operator)
               (variable))
@@ -1101,7 +1101,7 @@ a :: (a + a => a) => a
       (context
         (parens
           (context
-            (infix
+            (infix_chain
               (variable)
               (operator)
               (variable))
@@ -1146,28 +1146,58 @@ following = 1
       (variable)
       (unboxed_tuple
         (context
-          (apply (name) (variable))
+          (apply
+            (name)
+            (variable))
           (variable))
         (variable)))
-    (bind (variable) (match (variable)))
+    (bind
+      (variable)
+      (match
+        (variable)))
     (signature
       (variable)
       (unboxed_sum
         (context
-          (apply (name) (variable))
+          (apply
+            (name)
+            (variable))
           (variable))
         (variable)))
-    (bind (variable) (match (variable)))
+    (bind
+      (variable)
+      (match
+        (variable)))
     (signature
       (variable)
       (context
-        (infix (star) (operator) (variable))
-        (apply (name) (variable))))
-    (bind (variable) (match (variable)))
+        (infix_chain
+          (star)
+          (operator)
+          (variable))
+        (apply
+          (name)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (variable)))
     (signature
       (variable)
       (context
-        (infix (star) (operator) (variable))
-        (apply (name) (variable))))
-    (bind (variable) (match (variable)))
-    (bind (variable) (match (literal (integer))))))
+        (infix_chain
+          (star)
+          (operator)
+          (variable))
+        (apply
+          (name)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (variable)))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))))

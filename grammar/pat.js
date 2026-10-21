@@ -34,7 +34,7 @@ const patternRules = (name, recordField) => {
     // ------------------------------------------------------------------------
 
     [name('_pat_record')]: $ => prec('record', seq(
-      field('constructor', rule($, 'pattern')),
+      field('constructor', rule($, 'pattern_operand')),
       braces($, sep(',', field('field', recordField($)))),
     )),
 
@@ -48,11 +48,11 @@ const patternRules = (name, recordField) => {
      *
      * > f (A a) = exp
      *
-     * Because of the "single choice disambiguated with named precedences" approach used for `pattern`, the left node in
+     * Because of the "single choice disambiguated with named precedences" approach used for `pattern_operand`, the left node in
      * `pat_apply` can be a variable, even though it's not valid Haskell.
      * While the static prec 'pat-name' covers this at generation time, Haskell's ambiguity requires us to use a runtime
      * conflict for `function`/`bind`, where static prec is ineffective.
-     * Giving the reduction of `_var` to `pattern` a strong negative dynamic prec ensures that the runtime branch for
+     * Giving the reduction of `_var` to `pattern_operand` a strong negative dynamic prec ensures that the runtime branch for
      * `bind` has lower precedence because of `f`, so `function` always wins.
      *
      * While `bind` usually has a lower score than `function` anyway in this situation because it is slightly more
@@ -64,26 +64,26 @@ const patternRules = (name, recordField) => {
       $._cons,
     ),
 
-    [name('_pat_as')]: $ => prec('prefix', seq(field('bind', $.variable), $._tight_at, field('pattern', rule($, 'pattern')))),
+    [name('_pat_as')]: $ => prec('prefix', seq(field('bind', $.variable), $._tight_at, field('pattern', rule($, 'pattern_operand')))),
 
     [name('_pat_wildcard')]: _ => '_',
 
-    [name('_pat_strict')]: $ => prec('prefix', seq($._any_prefix_bang, field('pattern', rule($, 'pattern')))),
+    [name('_pat_strict')]: $ => prec('prefix', seq($._any_prefix_bang, field('pattern', rule($, 'pattern_operand')))),
 
-    [name('_pat_irrefutable')]: $ => prec('prefix', seq($._any_prefix_tilde, field('pattern', rule($, 'pattern')))),
+    [name('_pat_irrefutable')]: $ => prec('prefix', seq($._any_prefix_tilde, field('pattern', rule($, 'pattern_operand')))),
 
     // ------------------------------------------------------------------------
     // application
     // ------------------------------------------------------------------------
 
     [name('_pat_apply_arg')]: $ => choice(
-      rule($, 'pattern'),
+      rule($, 'pattern_operand'),
       alias($._at_type, $.type_binder),
       $.explicit_type,
     ),
 
     [name('_pat_apply')]: $ => prec.left('apply', seq(
-      field('function', rule($, 'pattern')),
+      field('function', rule($, 'pattern_operand')),
       field('argument', rule($, '_pat_apply_arg')),
     )),
 
@@ -93,23 +93,25 @@ const patternRules = (name, recordField) => {
 
     [name('_pat_negation')]: $ => seq('-', field('number', $._number)),
 
-    [name('_pat_infix')]: $ => prec.right('infix', seq(
-      field('left_operand', rule($, 'pattern')),
+    [name('_pat_infix_operator')]: $ => seq(
       optional($._cond_no_section_op),
       field('operator', choice(
         $.constructor_operator,
         $._conids_ticked,
         seq($._cond_qualified_op, $._qconsym),
       )),
-      field('right_operand', rule($, 'pattern')),
+    ),
+
+    [name('_pat_infix_chain')]: $ => prec.right('infix', seq(
+      field('operand', rule($, 'pattern_operand')),
+      repeat1(prec.right('infix', seq(rule($, '_pat_infix_operator'), field('operand', rule($, 'pattern_operand'))))),
     )),
 
     // ------------------------------------------------------------------------
     // top level
     // ------------------------------------------------------------------------
 
-    [name('pattern')]: $ => choice(
-      alias(rule($, '_pat_infix'), $.infix),
+    [name('pattern_operand')]: $ => choice(
       alias(rule($, '_pat_negation'), $.negation),
       alias(rule($, '_pat_apply'), $.apply),
       rule($, '_pat_name'),
@@ -125,6 +127,11 @@ const patternRules = (name, recordField) => {
       alias(rule($, '_pat_strict'), $.strict),
       alias(rule($, '_pat_irrefutable'), $.irrefutable),
       $._universal,
+    ),
+
+    [name('pattern')]: $ => choice(
+      alias(rule($, '_pat_infix_chain'), $.infix_chain),
+      rule($, 'pattern_operand'),
     ),
 
     [name('_pat_signature')]: $ => prec.right('annotated', seq(

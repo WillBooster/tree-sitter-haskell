@@ -40,7 +40,9 @@ test('preserves subtraction after grouped names instead of applying them to nega
       try {
         expect(tree.rootNode.hasError, source).toBe(false);
         const declaration = tree.rootNode.childForFieldName('declarations')?.firstNamedChild;
-        expect(declaration?.childForFieldName('match')?.childForFieldName('expression')?.type, source).toBe('infix');
+        expect(declaration?.childForFieldName('match')?.childForFieldName('expression')?.type, source).toBe(
+          'operator_chain'
+        );
         const calls = query
           .matches(tree.rootNode)
           .filter(({ captures }) => captures.some(({ name }) => name === 'reference.call'));
@@ -85,7 +87,8 @@ test('normalizes grouped name expressions while reserving call tags and highligh
         .filter(({ name, node }) => name === 'function.call' && node.text === 'f')
         .map(({ node }) => node.startIndex)
     ).toEqual([callStart]);
-    expect(tree.rootNode.descendantsOfType('negation').map((node) => node.text)).toEqual(['-x']);
+    expect(tree.rootNode.descendantsOfType('operator_chain').map((node) => node.text)).toEqual(['-x']);
+    expect(tree.rootNode.descendantsOfType('prefix_negation').map((node) => node.text)).toEqual(['-']);
   } finally {
     tree.delete();
     parser.delete();

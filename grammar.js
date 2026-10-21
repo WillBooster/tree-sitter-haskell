@@ -64,23 +64,14 @@ module.exports = grammar({
     $.pragma,
   ],
 
-  /**
-   * Rules with leading underscore are generally omitted from the AST, and can therefore not be used in queries.
-   * The rules listed in this attribute are omitted from the AST, but their names can be used in queries in place of
-   * their children; as well as in combination with them, using the syntax `expression/variable`.
-   * This is most useful for choice rules that represent syntactic categories, like expressions, patterns, and types in
-   * Haskell.
-   *
-   * See the readme for a detailed explanation.
-   */
   supertypes: $ => [
-    $.expression,
-    $.pattern,
-    $.binding_pattern,
+    $.expression_operand,
+    $.pattern_operand,
+    $.binding_pattern_operand,
     $.binding_field_pattern,
-    $.type,
+    $.type_operand,
     $.quantified_type,
-    $.constraint,
+    $.constraint_operand,
     $.constraints,
     $.type_param,
     $.declaration,

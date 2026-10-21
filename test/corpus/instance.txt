@@ -147,7 +147,7 @@ instance a + a => A
   (declarations
     (instance
       (context
-        (infix
+        (infix_chain
           (variable)
           (operator)
           (variable)))
@@ -166,7 +166,7 @@ instance A ~~ A => ((A) a)
   (declarations
     (instance
       (context
-        (infix
+        (infix_chain
           (apply
             (name)
             (variable))
@@ -179,7 +179,7 @@ instance A ~~ A => ((A) a)
         (variable)))
     (instance
       (context
-        (infix
+        (infix_chain
           (name)
           (operator)
           (name)))
@@ -332,7 +332,7 @@ deriving instance (A a, A a a) => A (A a)
             (name)
             (variable)))))
     (deriving_instance
-      (infix
+      (infix_chain
         (name)
         (operator)
         (name)))
@@ -456,7 +456,7 @@ instance a - b where
 (haskell
   (declarations
     (instance
-      (infix
+      (infix_chain
         (variable)
         (operator)
         (variable)))))
