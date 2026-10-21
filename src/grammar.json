@@ -12160,6 +12160,10 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "_sized_integer"
+        },
+        {
+          "type": "SYMBOL",
           "name": "_binary_literal"
         },
         {
@@ -14498,6 +14502,10 @@
     {
       "type": "SYMBOL",
       "name": "_unboxed_label_start"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_sized_integer"
     },
     {
       "type": "PATTERN",

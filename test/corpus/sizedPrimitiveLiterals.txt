@@ -1,0 +1,97 @@
+================================================================================
+Sized primitive integer literals
+================================================================================
+
+signed = 55#Int64
+unsigned = 0xff#Word8
+binary = 0b11_0111#Int16
+octal = 0o_6_7#Word64
+following = 1
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))))
+
+================================================================================
+Numeric alternatives start inline layouts
+================================================================================
+
+value = case x of 1 -> 2
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (case
+          (variable)
+          (alternatives
+            (alternative
+              (literal (integer))
+              (match (literal (integer))))))))))
+
+================================================================================
+Numeric statements reset explicit semicolons
+================================================================================
+
+value = do
+  foo; 1
+  2
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (do
+          (exp (variable))
+          (exp (literal (integer)))
+          (exp (literal (integer))))))))
+
+================================================================================
+Numeric constraint heads precede context arrows
+================================================================================
+
+f :: 1 ~ n => Proxy n
+f = Proxy
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (signature
+      (variable)
+      (context
+        (infix (literal (integer)) (operator) (variable))
+        (apply (name) (variable))))
+    (bind (variable) (match (constructor)))))

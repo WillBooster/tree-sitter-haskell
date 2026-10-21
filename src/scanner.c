@@ -163,6 +163,7 @@ typedef enum {
   VARSYM,
   CONSYM,
   UNBOXED_LABEL_START,
+  SIZED_INTEGER,
   UPDATE,
 } Symbol;
 
@@ -219,6 +220,7 @@ static const char *sym_names[] = {
   "varsym",
   "consym",
   "unboxed_label_start",
+  "sized_integer",
   "update",
 };
 
@@ -3103,30 +3105,33 @@ static Symbol constraint_lookahead(Env *env) {
 // Actions that are executed for interior positions
 // --------------------------------------------------------------------------------------------------------
 
+static bool constraint_lookahead_valid(Env *env);
+
 static Symbol process_token_constraint(Env *env, Lexed next) {
   if ((next == LSymopSpecial && peek0(env) != '*') || next == LSymop || next == LHash) return FAIL;
-  if (
-      valid(env, CONTEXT)
-      ||
-      valid(env, INFIX)
-      ||
-      valid(env, DATA_INFIX)
-      ||
-      valid(env, TYPE_INSTANCE)
-      )
-    return constraint_lookahead(env);
+  if (constraint_lookahead_valid(env)) return constraint_lookahead(env);
   return FAIL;
 }
+
+static Symbol sized_integer(Env *env);
 
 static Symbol interior(Env *env, bool whitespace) {
   Lexed next = lex(env, false);
   dbg("interior, column %d, ws %d, token %s\n", column(env), whitespace, token_names[next]);
   SEQ(resolve_semicolon(env, next));
   SEQ(process_token_interior(env, next));
+  if (valid(env, SIZED_INTEGER) && peek0(env) >= '0' && peek0(env) <= '9' &&
+      !constraint_lookahead_valid(env)) {
+    return sized_integer(env);
+  }
   SEQ(process_token_symop(env, whitespace, next));
   SEQ(process_token_constraint(env, next));
   SEQ(process_token_splice(env, next));
   return FAIL;
+}
+
+static bool constraint_lookahead_valid(Env *env) {
+  return valid(env, CONTEXT) || valid(env, INFIX) || valid(env, DATA_INFIX) || valid(env, TYPE_INSTANCE);
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -3237,23 +3242,80 @@ static bool skip_label_line_comment(TSLexer *lexer) {
   return true;
 }
 
+static unsigned integer_radix(TSLexer *lexer, int32_t first);
+static bool integer_digit(int32_t c, unsigned radix);
+static Symbol unboxed_label_start(Env *env, bool whitespace);
+static bool primitive_integer_type(TSLexer *lexer);
+
 static Symbol scan_main(Env *env) {
   MARK("main");
   SEQ(pre_ws_commands(env));
   bool whitespace = skip_space(env);
-  if (valid(env, UNBOXED_LABEL_START) && char0(env, '(')) {
-    MARK("unboxed label start");
-    if (char1(env, '#')) {
-      int32_t next = peek2(env);
-      if ((is_id_char(next) && !varid_start_char(next)) || next == '"') {
-        return parenthesized_label(env) ? FAIL : UNBOXED_LABEL_START;
-      }
-    }
-    return interior(env, whitespace);
-  }
+  if (valid(env, UNBOXED_LABEL_START) && char0(env, '(')) return unboxed_label_start(env, whitespace);
   if (is_newline(PEEK)) return newline_start(env);
   else if (not_eof(env)) return interior(env, whitespace);
   return FAIL;
+}
+
+static Symbol sized_integer(Env *env) {
+  TSLexer *lexer = env->lexer;
+  int32_t first = peek0(env);
+  S_ADVANCE;
+  unsigned radix = integer_radix(lexer, first);
+  bool last_digit = radix == 10;
+  while (integer_digit(lexer->lookahead, radix) || lexer->lookahead == '_') {
+    last_digit = lexer->lookahead != '_';
+    lexer->advance(lexer, false);
+  }
+  if (!last_digit || lexer->lookahead != '#') return FAIL;
+  lexer->advance(lexer, false);
+  if (!primitive_integer_type(lexer)) return FAIL;
+  return finish_marked(env, SIZED_INTEGER, "sized integer");
+}
+
+static unsigned integer_radix(TSLexer *lexer, int32_t first) {
+  if (first != '0') return 10;
+  unsigned radix;
+  switch (lexer->lookahead) {
+    case 'b': case 'B': radix = 2; break;
+    case 'o': case 'O': radix = 8; break;
+    case 'x': case 'X': radix = 16; break;
+    default: return 10;
+  }
+  lexer->advance(lexer, false);
+  return radix;
+}
+
+static bool integer_digit(int32_t c, unsigned radix) {
+  if (c >= '0' && c <= '9') return (unsigned) (c - '0') < radix;
+  return radix == 16 && ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
+}
+
+static bool primitive_integer_type(TSLexer *lexer) {
+  char name[7] = {0};
+  unsigned length = 0;
+  while (is_id_char(lexer->lookahead)) {
+    if (length == sizeof(name) - 1 || lexer->lookahead > 127) return false;
+    name[length++] = (char) lexer->lookahead;
+    lexer->advance(lexer, false);
+  }
+  const char *width;
+  if (strncmp(name, "Int", 3) == 0) width = name + 3;
+  else if (strncmp(name, "Word", 4) == 0) width = name + 4;
+  else return false;
+  return !*width || strcmp(width, "8") == 0 || strcmp(width, "16") == 0 ||
+    strcmp(width, "32") == 0 || strcmp(width, "64") == 0;
+}
+
+static Symbol unboxed_label_start(Env *env, bool whitespace) {
+  MARK("unboxed label start");
+  if (char1(env, '#')) {
+    int32_t next = peek2(env);
+    if ((is_id_char(next) && !varid_start_char(next)) || next == '"') {
+      return parenthesized_label(env) ? FAIL : UNBOXED_LABEL_START;
+    }
+  }
+  return interior(env, whitespace);
 }
 
 static bool process_result(Env *env, Symbol result) {
