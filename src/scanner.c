@@ -1726,7 +1726,8 @@ static Symbol end_layout_indent(Env *env) {
 static bool pending_layout_semicolon(Env *env) {
   return is_semicolon_context(env)
     && !(env->state->newline.no_semi || env->state->newline.skip_semi)
-    && indent_lesseq(env, env->state->newline.indent);
+    && indent_lesseq(env, env->state->newline.indent)
+    && !valid(env, START_IF);
 }
 
 /**
