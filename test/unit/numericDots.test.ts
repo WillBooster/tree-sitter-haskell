@@ -1,12 +1,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Edit, Language, Parser, Query, type Node } from '@willbooster/web-tree-sitter';
-import { expect, test } from 'vitest';
+import { afterAll, beforeAll, expect, test } from 'vitest';
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 const root = path.join(import.meta.dirname, '../..');
 await Parser.init();
 const language = await Language.load(currentWasmPath(root));
+const queries: Query[] = [];
+beforeAll(() => {
+  queries.push(
+    ...fs
+      .readdirSync(path.join(root, 'queries'))
+      .filter((file) => file.endsWith('.scm'))
+      .map((file) => new Query(language, fs.readFileSync(path.join(root, 'queries', file), 'utf8')))
+  );
+}, 180_000);
+afterAll(() => {
+  for (const query of queries) query.delete();
+});
 
 test('keeps dot operators before numeric and quoted operands in applications and right sections', () => {
   const parser = new Parser().setLanguage(language);
@@ -68,10 +80,6 @@ test('preserves Unicode record fields, field selectors, and qualified names', ()
 
 test('reparses dots when record fields become numeric operands or quoted names', () => {
   const parser = new Parser().setLanguage(language);
-  const queries = fs
-    .readdirSync(path.join(root, 'queries'))
-    .filter((file) => file.endsWith('.scm'))
-    .map((file) => new Query(language, fs.readFileSync(path.join(root, 'queries', file), 'utf8')));
   const prefix = 'value = ',
     suffix = '\nfollowing = 1\n';
   let expression = 'left.field';
@@ -119,7 +127,6 @@ test('reparses dots when record fields become numeric operands or quoted names',
     }
   } finally {
     tree.delete();
-    for (const query of queries) query.delete();
     parser.delete();
   }
 });
