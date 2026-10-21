@@ -258,7 +258,7 @@ module.exports = {
   ),
 
   _exp_record: $ => prec('record', seq(
-    field('expression', $.expression),
+    field('expression', $.expression_operand),
     braces($, sep(',', field('field', $.field_update)))),
   ),
 
@@ -271,7 +271,7 @@ module.exports = {
 
   _exp_projection: $ => seq(
     prec('projection', seq(
-      field('expression', $.expression),
+      field('expression', $.expression_operand),
       $._tight_dot,
     )),
     field('field', $.field_name),
@@ -288,9 +288,9 @@ module.exports = {
   parenthesized_name: $ => prec.dynamic(1, parens($, $._grouped_name)),
 
   _exp_apply: $ => prec.left('apply', seq(
-    field('function', $.expression),
+    field('function', $.expression_operand),
     field('argument', choice(
-      $.expression,
+      $.expression_operand,
       alias($._at_type, $.type_application),
       $.explicit_type,
     )),
@@ -326,43 +326,40 @@ module.exports = {
     field('right_operand', $.expression),
   ),
 
-  _exp_negation: $ => seq(
-    field('minus', '-'),
-    prec('negation', field('expression', $.expression)),
-  ),
+  prefix_negation: _ => '-',
 
-  /**
-   * Infix expressions have severe conflicts with several structures:
-   *
-   * - Negation is supposed to bind less tight than application and tighter than infix, which requires an unsolvable
-   *   precedence configuration
-   * - Qualified operators cannot be identified with single-token lookahead, which causes ambiguity with function
-   *   application
-   * - Left operator sections require infix expressions in their operand to reduce before the section operator, but
-   *   single-token lookahead also makes this decision impossible
-   *
-   * All of these are solved with external symbols.
-   * Consult `grammar/externals.js` for more information.
-   */
-  _exp_infix: $ => prec.right('infix', seq(
-    field('left_operand', $.expression),
+  _exp_infix_operator: $ => seq(
     optional($._cond_no_section_op),
     field('operator', choice(
       seq($._cond_minus, $._operator_minus),
       $._exp_op,
       seq($._cond_qualified_op, $._qsym),
     )),
-    field('right_operand', $.expression),
+  ),
+
+  _exp_chain_operand: $ => seq(
+    repeat(field('prefix_operator', $.prefix_negation)),
+    field('operand', $.expression_operand),
+  ),
+
+  _exp_operator_chain: $ => prec.right('infix', choice(
+    seq(
+      repeat1(field('prefix_operator', $.prefix_negation)),
+      field('operand', $.expression_operand),
+      repeat(prec.right('infix', seq($._exp_infix_operator, $._exp_chain_operand))),
+    ),
+    seq(
+      field('operand', $.expression_operand),
+      repeat1(prec.right('infix', seq($._exp_infix_operator, $._exp_chain_operand))),
+    ),
   )),
 
   // ------------------------------------------------------------------------
   // top level
   // ------------------------------------------------------------------------
 
-  expression: $ => choice(
+  expression_operand: $ => choice(
     $.parenthesized_name,
-    alias($._exp_infix, $.infix),
-    alias($._exp_negation, $.negation),
     alias($._exp_apply, $.apply),
     alias($._exp_record, $.record),
     alias($._exp_projection, $.projection),
@@ -390,6 +387,11 @@ module.exports = {
     $._exp_name,
     alias($._exp_typed_hole, $.typed_hole),
     $._universal,
+  ),
+
+  expression: $ => choice(
+    alias($._exp_operator_chain, $.operator_chain),
+    $.expression_operand,
   ),
 
   _exp_signature: $ => prec.right('annotated', seq(

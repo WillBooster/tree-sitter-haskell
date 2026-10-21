@@ -377,7 +377,7 @@ decl: symop constructor pattern in infix varop decl
     (function
       (infix
         (parens
-          (infix
+          (infix_chain
             (variable)
             (constructor_operator)
             (variable)))
@@ -414,7 +414,7 @@ A a == A a = a == a
           (constructor)
           (variable)))
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (variable))))))
@@ -430,14 +430,13 @@ a == a + a = a
 (haskell
   (declarations
     (top_splice
-      (infix
+     (operator_chain
+       (variable)
+       (operator)
         (variable)
         (operator)
         (apply
-          (infix
-            (variable)
-            (operator)
-            (variable))
+         (variable)
           (ERROR)
           (variable))))))
 

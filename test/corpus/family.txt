@@ -471,13 +471,13 @@ type instance A <> A = a
         (variable))
       (equations
         (equation
-          (infix
+          (infix_chain
             (variable)
             (operator)
             (variable))
           (variable))))
     (type_instance
-      (infix
+      (infix_chain
         (name)
         (operator)
         (name))
@@ -507,7 +507,7 @@ type family A a a a a a where
         (variable))
       (equations
         (equation
-          (infix
+          (infix_chain
             (variable)
             (operator)
             (variable))
@@ -721,7 +721,7 @@ type family A where
             (variable))
           (variable))
         (equation
-          (infix
+          (infix_chain
             (variable)
             (qualified
               (module
@@ -752,7 +752,7 @@ type instance a A.A.++ a = a
         (variable))
       (variable))
     (type_instance
-      (infix
+      (infix_chain
         (variable)
         (qualified
           (module

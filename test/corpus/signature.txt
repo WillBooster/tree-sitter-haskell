@@ -51,7 +51,7 @@ a :: A a => ∀ a. a ++ a => a -> ∀ a. a -> A => A => A a
           (quantified_variables
             (variable))
           (context
-            (infix
+            (infix_chain
               (variable)
               (operator)
               (variable))

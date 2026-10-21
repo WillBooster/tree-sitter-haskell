@@ -597,7 +597,7 @@ data a +++ b => a *** b
   (declarations
     (data_type
       (context
-        (infix
+        (infix_chain
           (variable)
           (operator)
           (variable)))
@@ -619,10 +619,10 @@ data (a %% b) => A
     (data_type
       context: (context
         context: (parens
-          (infix
-            left_operand: (variable)
+          (infix_chain
+            operand: (variable)
             operator: (operator)
-            right_operand: (variable))))
+            operand: (variable))))
       name: (name))))
 
 ================================================================================
@@ -1024,7 +1024,7 @@ data A = A { a :: A ! A }
               (field
                 (field_name
                   (variable))
-                (infix
+                (infix_chain
                   (name)
                   (operator)
                   (name))))))))))
@@ -1065,7 +1065,7 @@ data A = a `A.A` a => A
       (data_constructors
         (data_constructor
           (context
-            (infix
+            (infix_chain
               (variable)
               (infix_id
                 (name))
@@ -1077,7 +1077,7 @@ data A = a `A.A` a => A
       (data_constructors
         (data_constructor
           (context
-            (infix
+            (infix_chain
               (variable)
               (infix_id
                 (qualified
@@ -1196,9 +1196,9 @@ data A = (a %% b) => A
         constructor: (data_constructor
           context: (context
             context: (parens
-              (infix
-                left_operand: (variable)
+              (infix_chain
+                operand: (variable)
                 operator: (operator)
-                right_operand: (variable))))
+                operand: (variable))))
           constructor: (prefix
             name: (constructor)))))))

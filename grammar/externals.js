@@ -141,13 +141,6 @@ module.exports = {
     // Without this, we would get wrong token ranges for the operator.
     $._cond_no_section_op,
 
-    // This symbol always succeeds when a minus is ahead.
-    // Infix expressions with minus as the operator conflict with function application.
-    // `a - b` can be parsed as `a (- b)`, which would normally be solved by a simple precedence entry, but is
-    // impossible to express because it contradicts another conflict: Negation in the left operand, `- a + b`, which
-    // must be parsed as `(- a) + b`.
-    // Simply sequencing this external before the operator solves this conflict, because a minus following an expression
-    // can never be negation; it can only occur at the beginning of an expression.
     $._cond_minus,
 
     /**

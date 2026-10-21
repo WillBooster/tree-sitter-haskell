@@ -1,0 +1,511 @@
+================================================================================
+operator chains: unresolved fixities and explicit grouping
+================================================================================
+
+{-# LANGUAGE DataKinds, NoStarIsType, TypeOperators #-}
+module Fixity156 where
+
+import Prelude
+
+infixr 8 .^.
+(.^.) :: Integer -> Integer -> Integer
+x .^. y = x ^ y
+
+infixl 4 .+.
+(.+.) :: Integer -> Integer -> Integer
+x .+. y = x + y
+
+original = 6 * 7 == 42
+highNegation = -2 .^. 2
+lowNegation = -2 .+. 2
+application f x y z = f x .+. y .^. z
+parenthesized = (1 .+. 2) .^. 3
+leftSection = (1 .^. 2 .+.)
+rightSection = (.+. 1 .^. 2)
+backticks x y z = x `div` y `mod` z
+qualified = 1 Prelude.+ 2 Prelude.* 3
+
+infixr 6 :+:
+infixl 7 :*:
+data Tree = Leaf Integer | Tree :+: Tree | Tree :*: Tree
+patternChain (a :+: b :*: c) = (a, b, c)
+Leaf first :+: Leaf second :*: Leaf third = Leaf 1 :+: Leaf 2 :*: Leaf 3
+
+type a :*: b = (a, b)
+type a :+: b = Either a b
+type TypeChain = Integer :+: Bool :*: Char
+following = 1
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (pragma)
+  (header
+    (module
+      (module_id)))
+  (imports
+    (import
+      (module
+        (module_id))))
+  (declarations
+    (fixity
+      (integer)
+      (operator))
+    (signature
+      (prefix_id
+        (operator))
+      (function
+        (name)
+        (function
+          (name)
+          (name))))
+    (function
+      (infix
+        (variable)
+        (operator)
+        (variable))
+      (match
+        (operator_chain
+          (variable)
+          (operator)
+          (variable))))
+    (fixity
+      (integer)
+      (operator))
+    (signature
+      (prefix_id
+        (operator))
+      (function
+        (name)
+        (function
+          (name)
+          (name))))
+    (function
+      (infix
+        (variable)
+        (operator)
+        (variable))
+      (match
+        (operator_chain
+          (variable)
+          (operator)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (operator_chain
+          (literal
+            (integer))
+          (operator)
+          (literal
+            (integer))
+          (operator)
+          (literal
+            (integer)))))
+    (bind
+      (variable)
+      (match
+        (operator_chain
+          (prefix_negation)
+          (literal
+            (integer))
+          (operator)
+          (literal
+            (integer)))))
+    (bind
+      (variable)
+      (match
+        (operator_chain
+          (prefix_negation)
+          (literal
+            (integer))
+          (operator)
+          (literal
+            (integer)))))
+    (function
+      (variable)
+      (patterns
+        (variable)
+        (variable)
+        (variable)
+        (variable))
+      (match
+        (operator_chain
+          (apply
+            (variable)
+            (variable))
+          (operator)
+          (variable)
+          (operator)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (operator_chain
+          (parens
+            (operator_chain
+              (literal
+                (integer))
+              (operator)
+              (literal
+                (integer))))
+          (operator)
+          (literal
+            (integer)))))
+    (bind
+      (variable)
+      (match
+        (left_section
+          (operator_chain
+            (literal
+              (integer))
+            (operator)
+            (literal
+              (integer)))
+          (operator))))
+    (bind
+      (variable)
+      (match
+        (right_section
+          (operator)
+          (operator_chain
+            (literal
+              (integer))
+            (operator)
+            (literal
+              (integer))))))
+    (function
+      (variable)
+      (patterns
+        (variable)
+        (variable)
+        (variable))
+      (match
+        (operator_chain
+          (variable)
+          (infix_id
+            (variable))
+          (variable)
+          (infix_id
+            (variable))
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (operator_chain
+          (literal
+            (integer))
+          (qualified
+            (module
+              (module_id))
+            (operator))
+          (literal
+            (integer))
+          (qualified
+            (module
+              (module_id))
+            (operator))
+          (literal
+            (integer)))))
+    (fixity
+      (integer)
+      (constructor_operator))
+    (fixity
+      (integer)
+      (constructor_operator))
+    (data_type
+      (name)
+      (data_constructors
+        (data_constructor
+          (prefix
+            (constructor)
+            (name)))
+        (data_constructor
+          (infix
+            (name)
+            (constructor_operator)
+            (name)))
+        (data_constructor
+          (infix
+            (name)
+            (constructor_operator)
+            (name)))))
+    (function
+      (variable)
+      (patterns
+        (parens
+          (infix_chain
+            (variable)
+            (constructor_operator)
+            (variable)
+            (constructor_operator)
+            (variable))))
+      (match
+        (tuple
+          (variable)
+          (variable)
+          (variable))))
+    (bind
+      (infix_chain
+        (apply
+          (constructor)
+          (variable))
+        (constructor_operator)
+        (apply
+          (constructor)
+          (variable))
+        (constructor_operator)
+        (apply
+          (constructor)
+          (variable)))
+      (match
+        (operator_chain
+          (apply
+            (constructor)
+            (literal
+              (integer)))
+          (constructor_operator)
+          (apply
+            (constructor)
+            (literal
+              (integer)))
+          (constructor_operator)
+          (apply
+            (constructor)
+            (literal
+              (integer))))))
+    (type_synonym
+      (infix
+        (variable)
+        (constructor_operator)
+        (variable))
+      (tuple
+        (variable)
+        (variable)))
+    (type_synonym
+      (infix
+        (variable)
+        (constructor_operator)
+        (variable))
+      (apply
+        (apply
+          (name)
+          (variable))
+        (variable)))
+    (type_synonym
+      (name)
+      (infix_chain
+        (name)
+        (constructor_operator)
+        (name)
+        (constructor_operator)
+        (name)))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))))
+
+================================================================================
+operator chains: greedy bodies and prefix application
+================================================================================
+
+{-# LANGUAGE BlockArguments #-}
+module Fixity156Scopes where
+
+greedyLet = 1 + let x = 2 in x * 3 + 4
+greedyIf = 1 + if True then 2 else 3 * 4
+blockApply f x = f \y -> y + x * 2
+lambdaRhs f x = f $ \y -> y + x * 2
+prefixApply f x y = -f x * y
+typed x = x * 2 == 4 :: Bool
+following = 1
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (pragma)
+  (header
+    (module
+      (module_id)))
+  (declarations
+    (bind
+      (variable)
+      (match
+        (operator_chain
+          (literal
+            (integer))
+          (operator)
+          (let_in
+            (local_binds
+              (bind
+                (variable)
+                (match
+                  (literal
+                    (integer)))))
+            (operator_chain
+              (variable)
+              (operator)
+              (literal
+                (integer))
+              (operator)
+              (literal
+                (integer)))))))
+    (bind
+      (variable)
+      (match
+        (operator_chain
+          (literal
+            (integer))
+          (operator)
+          (conditional
+            (constructor)
+            (literal
+              (integer))
+            (operator_chain
+              (literal
+                (integer))
+              (operator)
+              (literal
+                (integer)))))))
+    (function
+      (variable)
+      (patterns
+        (variable)
+        (variable))
+      (match
+        (apply
+          (variable)
+          (lambda
+            (patterns
+              (variable))
+            (operator_chain
+              (variable)
+              (operator)
+              (variable)
+              (operator)
+              (literal
+                (integer)))))))
+    (function
+      (variable)
+      (patterns
+        (variable)
+        (variable))
+      (match
+        (operator_chain
+          (variable)
+          (operator)
+          (lambda
+            (patterns
+              (variable))
+            (operator_chain
+              (variable)
+              (operator)
+              (variable)
+              (operator)
+              (literal
+                (integer)))))))
+    (function
+      (variable)
+      (patterns
+        (variable)
+        (variable)
+        (variable))
+      (match
+        (operator_chain
+          (prefix_negation)
+          (apply
+            (variable)
+            (variable))
+          (operator)
+          (variable))))
+    (function
+      (variable)
+      (patterns
+        (variable))
+      (match
+        (signature
+          (operator_chain
+            (variable)
+            (operator)
+            (literal
+              (integer))
+            (operator)
+            (literal
+              (integer)))
+          (name))))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))))
+
+================================================================================
+operator chains: single and unresolved instance heads
+================================================================================
+
+{-# LANGUAGE DeriveAnyClass, DerivingStrategies, FlexibleInstances, MultiParamTypeClasses, StandaloneDeriving, TypeOperators #-}
+module Fixity156Instances where
+
+infixr 5 :*:
+infixr 6 :+:
+class a :*: b
+data a :+: b = Pair a b
+instance Int :*: Bool
+instance Int :+: Bool :*: Char
+deriving anyclass instance Bool :*: Int
+following = 1
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (pragma)
+  (header
+    (module
+      (module_id)))
+  (declarations
+    (fixity
+      (integer)
+      (constructor_operator))
+    (fixity
+      (integer)
+      (constructor_operator))
+    (class
+      (infix
+        (variable)
+        (constructor_operator)
+        (variable)))
+    (data_type
+      (infix
+        (variable)
+        (constructor_operator)
+        (variable))
+      (data_constructors
+        (data_constructor
+          (prefix
+            (constructor)
+            (variable)
+            (variable)))))
+    (instance
+      (infix_chain
+        (name)
+        (constructor_operator)
+        (name)))
+    (instance
+      (infix_chain
+        (name)
+        (constructor_operator)
+        (name)
+        (constructor_operator)
+        (name)))
+    (deriving_instance
+      (deriving_strategy)
+      (infix_chain
+        (name)
+        (constructor_operator)
+        (name)))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))))

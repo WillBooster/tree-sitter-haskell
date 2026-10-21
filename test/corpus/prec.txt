@@ -22,7 +22,7 @@ a = a A..= a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (qualified
             (module
@@ -32,7 +32,7 @@ a = a A..= a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (constructor))
@@ -41,7 +41,7 @@ a = a A..= a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (qualified
             (module
@@ -51,7 +51,7 @@ a = a A..= a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (constructor))
@@ -60,7 +60,7 @@ a = a A..= a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (qualified
             (module
@@ -70,7 +70,7 @@ a = a A..= a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (constructor))
@@ -79,7 +79,7 @@ a = a A..= a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (qualified
             (module
@@ -89,7 +89,7 @@ a = a A..= a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (qualified
             (module
@@ -99,7 +99,7 @@ a = a A..= a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (qualified
             (module
@@ -121,7 +121,7 @@ a = a A :!? a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (qualified
             (module
@@ -131,7 +131,7 @@ a = a A :!? a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (constructor))
@@ -233,7 +233,7 @@ a = [a A..+ a]
       (variable)
       (match
         (list
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (variable)))))
@@ -241,7 +241,7 @@ a = [a A..+ a]
       (variable)
       (match
         (list
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (variable)))))
@@ -249,7 +249,7 @@ a = [a A..+ a]
       (variable)
       (match
         (list
-          (infix
+          (operator_chain
             (variable)
             (qualified
               (module
@@ -271,14 +271,14 @@ a = a..+a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (variable))))
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (variable))))))
@@ -560,21 +560,21 @@ a = a . a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (variable))))
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (variable))))
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (variable))))))
@@ -598,7 +598,7 @@ a = (a . a)
       (variable)
       (match
         (parens
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (variable)))))
@@ -606,7 +606,7 @@ a = (a . a)
       (variable)
       (match
         (parens
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (variable)))))
@@ -614,7 +614,7 @@ a = (a . a)
       (variable)
       (match
         (parens
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (variable)))))))
@@ -644,7 +644,7 @@ a = A.A.A .A.a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (qualified
             (module
               (module_id)
@@ -655,32 +655,7 @@ a = A.A.A .A.a
     (bind
       (variable)
       (match
-        (infix
-          (qualified
-            (module
-              (module_id)
-              (module_id))
-            (variable))
-          (operator)
-          (qualified
-            (module
-              (module_id))
-            (variable)))))
-    (bind
-      (variable)
-      (match
-        (infix
-          (qualified
-            (module
-              (module_id)
-              (module_id))
-            (variable))
-          (operator)
-          (variable))))
-    (bind
-      (variable)
-      (match
-        (infix
+        (operator_chain
           (qualified
             (module
               (module_id)
@@ -694,7 +669,7 @@ a = A.A.A .A.a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (qualified
             (module
               (module_id)
@@ -705,7 +680,7 @@ a = A.A.A .A.a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (qualified
             (module
               (module_id)
@@ -719,7 +694,32 @@ a = A.A.A .A.a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
+          (qualified
+            (module
+              (module_id)
+              (module_id))
+            (variable))
+          (operator)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (operator_chain
+          (qualified
+            (module
+              (module_id)
+              (module_id))
+            (variable))
+          (operator)
+          (qualified
+            (module
+              (module_id))
+            (variable)))))
+    (bind
+      (variable)
+      (match
+        (operator_chain
           (qualified
             (module
               (module_id)
@@ -730,7 +730,7 @@ a = A.A.A .A.a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (qualified
             (module
               (module_id)
@@ -744,7 +744,7 @@ a = A.A.A .A.a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (qualified
             (module
               (module_id)
@@ -755,7 +755,7 @@ a = A.A.A .A.a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (qualified
             (module
               (module_id)
@@ -769,7 +769,7 @@ a = A.A.A .A.a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (qualified
             (module
               (module_id)
@@ -780,7 +780,7 @@ a = A.A.A .A.a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (qualified
             (module
               (module_id)
@@ -805,7 +805,7 @@ a = a.(a)
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (parenthesized_name
@@ -875,7 +875,7 @@ a = do \ a -> a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (apply
               (apply
@@ -894,7 +894,7 @@ a = do \ a -> a
                         (variable))))))
               (do
                 (exp
-                  (infix
+                  (operator_chain
                     (variable)
                     (operator)
                     (variable)))))
@@ -927,7 +927,7 @@ a :: A ++ A = a
     (bind
       (signature
         (variable)
-        (infix
+        (infix_chain
           (name)
           (operator)
           (name)))
@@ -1165,14 +1165,14 @@ a = a ## a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (variable))))
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (variable))))))
@@ -1223,7 +1223,7 @@ type A = (# a | a # b | c #)
     (type_synonym
       (name)
       (unboxed_tuple
-        (infix
+        (infix_chain
           (variable)
           (operator)
           (variable))
@@ -1232,7 +1232,7 @@ type A = (# a | a # b | c #)
       (name)
       (unboxed_tuple
         (variable)
-        (infix
+        (infix_chain
           (variable)
           (operator)
           (variable))
@@ -1241,7 +1241,7 @@ type A = (# a | a # b | c #)
       (name)
       (unboxed_tuple
         (variable)
-        (infix
+        (infix_chain
           (variable)
           (operator)
           (variable))))
@@ -1253,7 +1253,7 @@ type A = (# a | a # b | c #)
     (type_synonym
       (name)
       (unboxed_sum
-        (infix
+        (infix_chain
           (variable)
           (operator)
           (variable))
@@ -1262,7 +1262,7 @@ type A = (# a | a # b | c #)
       (name)
       (unboxed_sum
         (variable)
-        (infix
+        (infix_chain
           (variable)
           (operator)
           (variable))
@@ -1337,7 +1337,7 @@ a = a# || a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (variable))))))
@@ -1375,11 +1375,11 @@ a = a $ - a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
-          (negation
-            (variable)))))))
+          (prefix_negation)
+          (variable))))))
 
 ================================================================================
 prec: negation vs. infix with apply
@@ -1397,7 +1397,7 @@ a = a a + a a - a a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (apply
               (variable)
@@ -1412,51 +1412,48 @@ a = a a + a a - a a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (variable))
           (operator)
-          (infix
-            (apply
-              (variable)
-              (variable))
-            (operator)
-            (apply
-              (variable)
-              (variable))))))
+          (apply
+            (variable)
+            (variable))
+          (operator)
+          (apply
+            (variable)
+            (variable)))))
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (variable))
           (operator)
-          (infix
-            (apply
-              (variable)
-              (variable))
-            (operator)
-            (apply
-              (variable)
-              (variable))))))
+          (apply
+            (variable)
+            (variable))
+          (operator)
+          (apply
+            (variable)
+            (variable)))))
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (variable))
           (operator)
-          (infix
-            (apply
-              (variable)
-              (variable))
-            (operator)
-            (apply
-              (variable)
-              (variable))))))))
+          (apply
+            (variable)
+            (variable))
+          (operator)
+          (apply
+            (variable)
+            (variable)))))))
 
 ================================================================================
 prec: negation in left operand of infix minus
@@ -1472,19 +1469,19 @@ a = - a a - a
     (bind
       (variable)
       (match
-        (infix
-          (negation
-            (variable))
+        (operator_chain
+          (prefix_negation)
+          (variable)
           (operator)
           (variable))))
     (bind
       (variable)
       (match
-        (infix
-          (negation
-            (apply
-              (variable)
-              (variable)))
+        (operator_chain
+          (prefix_negation)
+          (apply
+            (variable)
+            (variable))
           (operator)
           (variable))))))
 
@@ -1502,7 +1499,7 @@ a = (a - a -)
       (variable)
       (match
         (left_section
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (variable))
@@ -1525,46 +1522,46 @@ a = (+ - a a a + - a a a)
       (match
         (right_section
           (operator)
-          (infix
-            (negation
+          (operator_chain
+            (prefix_negation)
+            (variable)
+            (operator)
+            (prefix_negation)
+            (variable)))))
+    (bind
+      (variable)
+      (match
+        (right_section
+          (operator)
+          (operator_chain
+            (prefix_negation)
+            (apply
+              (variable)
               (variable))
             (operator)
-            (negation
+            (prefix_negation)
+            (apply
+              (variable)
               (variable))))))
     (bind
       (variable)
       (match
         (right_section
           (operator)
-          (infix
-            (negation
+          (operator_chain
+            (prefix_negation)
+            (apply
               (apply
                 (variable)
-                (variable)))
+                (variable))
+              (variable))
             (operator)
-            (negation
+            (prefix_negation)
+            (apply
               (apply
                 (variable)
-                (variable)))))))
-    (bind
-      (variable)
-      (match
-        (right_section
-          (operator)
-          (infix
-            (negation
-              (apply
-                (apply
-                  (variable)
-                  (variable))
-                (variable)))
-            (operator)
-            (negation
-              (apply
-                (apply
-                  (variable)
-                  (variable))
-                (variable)))))))))
+                (variable))
+              (variable))))))))
 
 ================================================================================
 prec: qualified infix varsym with two module segments
@@ -1579,7 +1576,7 @@ a = a A.A.+++ a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (qualified
             (module
@@ -1604,7 +1601,7 @@ a = a a A.+++ a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (variable)
             (variable))
@@ -1627,7 +1624,7 @@ a = A.A.a A.A.a A.A.+++ A.A.a A.A.a A.A.+++ A.A.a A.A.a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (apply
             (qualified
               (module
@@ -1644,34 +1641,33 @@ a = A.A.a A.A.a A.A.+++ A.A.a A.A.a A.A.+++ A.A.a A.A.a
               (module_id)
               (module_id))
             (operator))
-          (infix
-            (apply
-              (qualified
-                (module
-                  (module_id)
-                  (module_id))
-                (variable))
-              (qualified
-                (module
-                  (module_id)
-                  (module_id))
-                (variable)))
+          (apply
             (qualified
               (module
                 (module_id)
                 (module_id))
-              (operator))
-            (apply
-              (qualified
-                (module
-                  (module_id)
-                  (module_id))
-                (variable))
-              (qualified
-                (module
-                  (module_id)
-                  (module_id))
-                (variable)))))))))
+              (variable))
+            (qualified
+              (module
+                (module_id)
+                (module_id))
+              (variable)))
+          (qualified
+            (module
+              (module_id)
+              (module_id))
+            (operator))
+          (apply
+            (qualified
+              (module
+                (module_id)
+                (module_id))
+              (variable))
+            (qualified
+              (module
+                (module_id)
+                (module_id))
+              (variable))))))))
 
 ================================================================================
 prec: apply/infix/qualified in type
@@ -1685,7 +1681,7 @@ type A = A.A.A A.A.A A.A.+++ A.A.A A.A.A A.A.+++ A.A.A A.A.A
   (declarations
     (type_synonym
       (name)
-      (infix
+      (infix_chain
         (apply
           (qualified
             (module
@@ -1702,31 +1698,30 @@ type A = A.A.A A.A.A A.A.+++ A.A.A A.A.A A.A.+++ A.A.A A.A.A
             (module_id)
             (module_id))
           (operator))
-        (infix
-          (apply
-            (qualified
-              (module
-                (module_id)
-                (module_id))
-              (name))
-            (qualified
-              (module
-                (module_id)
-                (module_id))
-              (name)))
+        (apply
           (qualified
             (module
               (module_id)
               (module_id))
-            (operator))
-          (apply
-            (qualified
-              (module
-                (module_id)
-                (module_id))
-              (name))
-            (qualified
-              (module
-                (module_id)
-                (module_id))
-              (name))))))))
+            (name))
+          (qualified
+            (module
+              (module_id)
+              (module_id))
+            (name)))
+        (qualified
+          (module
+            (module_id)
+            (module_id))
+          (operator))
+        (apply
+          (qualified
+            (module
+              (module_id)
+              (module_id))
+            (name))
+          (qualified
+            (module
+              (module_id)
+              (module_id))
+            (name)))))))

@@ -11,7 +11,6 @@ module.exports = {
       'record',
       'prefix',
       'apply',
-      'negation',
       'infix',
       'implicit',
       'fun',

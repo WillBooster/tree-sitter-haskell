@@ -10,16 +10,11 @@ module.exports = {
   // ------------------------------------------------------------------------
 
   _class_apply: $ => prec.left('apply', seq(
-    field('constructor', $.constraint),
+    field('constructor', $.constraint_operand),
     field('argument', $._type_apply_arg),
   )),
 
-  _class_infix: $ => prec.right('infix', seq(
-    $._cond_infix,
-    field('left_operand', $.type),
-    field('operator', $._tyops),
-    field('right_operand', $.type),
-  )),
+  _class_infix_chain: $ => seq($._cond_infix, $._type_infix_chain),
 
   _ctr_parens: $ => parens($, $.constraints),
 
@@ -34,14 +29,18 @@ module.exports = {
    */
   implicit_parameter: $ => prec.left(seq(field('name', $.implicit_variable), $._type_annotation)),
 
-  constraint: $ => choice(
+  constraint_operand: $ => choice(
     $._type_name,
-    alias($._class_infix, $.infix),
     alias($._class_apply, $.apply),
     alias($._ctr_parens, $.parens),
     alias($._ctr_tuple, $.tuple),
     alias($._type_wildcard, $.wildcard),
     $._universal,
+  ),
+
+  constraint: $ => choice(
+    alias($._class_infix_chain, $.infix_chain),
+    $.constraint_operand,
   ),
 
   _ctr_forall: $ => prec('fun', seq($._forall_body, '.', field('constraint', $.constraints))),

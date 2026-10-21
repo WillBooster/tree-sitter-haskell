@@ -2,25 +2,25 @@
 ; and don't override destructured parameters
 (variable) @variable
 
-[(pattern/wildcard) (binding_pattern/wildcard)] @variable
+[(pattern_operand/wildcard) (binding_pattern_operand/wildcard)] @variable
 
 (function
   patterns: (patterns
     (_) @variable.parameter))
 
-(expression/lambda
+(expression_operand/lambda
   (_)+ @variable.parameter
   "->")
 
 (function
   (infix
-    (pattern) @variable.parameter))
+    [(pattern_operand) (infix_chain)] @variable.parameter))
 
 (integer) @number
 
 (negation) @number
 
-(expression/literal
+(expression_operand/literal
   (float)) @number.float
 
 (char) @character
@@ -70,6 +70,7 @@
 
 [
   (operator)
+  (prefix_negation)
   (constructor_operator)
   (all_names)
   (wildcard)
@@ -127,11 +128,11 @@
 
 (signature
   name: (variable) @variable
-  type: (type))
+  type: [(type_operand) (infix_chain)])
 
 ((signature
   name: (variable) @_name
-  type: (type))
+  type: [(type_operand) (infix_chain)])
   .
   [
     (function name: (variable) @variable)
@@ -142,13 +143,13 @@
 
 (signature
   name: (variable) @function
-  type: (type/apply
+  type: (type_operand/apply
     constructor: (name) @_type)
   (#eq? @_type "IO"))
 
 ((signature
   name: (variable) @_name
-  type: (type/apply
+  type: (type_operand/apply
     constructor: (name) @_type)
   (#eq? @_type "IO"))
   .
@@ -170,12 +171,12 @@
 (bind
   name: (variable) @function
   (match
-    expression: (expression/lambda)))
+    expression: (expression_operand/lambda)))
 
 (view_pattern
   [
-    (expression/variable) @function.call
-    (expression/qualified
+    (expression_operand/variable) @function.call
+    (expression_operand/qualified
       (variable) @function.call)
   ])
 
@@ -186,7 +187,7 @@
       (variable) @operator)
   ])
 
-(infix
+(operator_chain
   [
     (variable) @function.call
     (qualified
@@ -196,63 +197,33 @@
   .
   (operator))
 
-((expression/variable) @variable
+((expression_operand/variable) @variable
   .
   (operator))
 
 ((operator)
   .
   [
-    (expression/variable) @variable
-    (expression/qualified
+    (expression_operand/variable) @variable
+    (expression_operand/qualified
       (variable) @variable)
   ])
 
 ([
-    (expression/variable) @function.call
-    (expression/qualified
+    (expression_operand/variable) @function.call
+    (expression_operand/qualified
       (variable) @function.call)
   ]
   .
   (operator) @_op
   (#any-of? @_op "$" "<$>" ">>=" "=<<"))
 
-((infix
-  [
-    (operator)
-    (infix_id (variable))
-  ]
-  .
-  [
-    (variable) @function.call
-    (qualified
-      (variable) @function.call)
-  ])
-  .
-  (operator) @_op
-  (#any-of? @_op "$" "<$>" "=<<"))
-
 (
   [
-    (expression/variable) @function
-    (expression/qualified
+    (expression_operand/variable) @function
+    (expression_operand/qualified
       (variable) @function)
   ]
-  .
-  (operator) @_op
-  (#any-of? @_op "." ">>>" "***" ">=>" "<=<"))
-
-((infix
-  [
-    (operator)
-    (infix_id (variable))
-  ]
-  .
-  [
-    (variable) @function
-    (qualified
-      (variable) @function)
-  ])
   .
   (operator) @_op
   (#any-of? @_op "." ">>>" "***" ">=>" "<=<"))
@@ -260,8 +231,8 @@
 ((operator) @_op
   .
   [
-    (expression/variable) @function
-    (expression/qualified
+    (expression_operand/variable) @function
+    (expression_operand/qualified
       (variable) @function)
   ]
   (#any-of? @_op "." ">>>" "***" ">=>" "<=<"))
@@ -269,21 +240,21 @@
 (function
   name: (variable) @function
   (match
-    expression: (infix
+    expression: (operator_chain
       operator: (operator) @_op
       (#any-of? @_op "." ">>>" "***" ">=>" "<=<"))))
 
 (apply
   [
-    (expression/variable) @function.call
-    (expression/qualified
+    (expression_operand/variable) @function.call
+    (expression_operand/qualified
       (variable) @function.call)
   ])
 
 (apply
   .
-  (expression/parens
-    (infix
+  (expression_operand/parens
+    (operator_chain
       [
         (variable) @function.call
         (qualified
@@ -294,8 +265,8 @@
 
 (apply
   .
-  (expression/parens
-    (infix
+  (expression_operand/parens
+    (operator_chain
       (operator)
       .
       [
@@ -308,8 +279,8 @@
   (_)
   .
   [
-    (expression/variable) @variable
-    (expression/qualified
+    (expression_operand/variable) @variable
+    (expression_operand/qualified
       (variable) @variable)
   ])
 
@@ -318,7 +289,7 @@
   (#eq? @function "main"))
 
 (signature
-  pattern: [(pattern/variable) (binding_pattern/variable)] @function
+  pattern: [(pattern_operand/variable) (binding_pattern_operand/variable)] @function
   type: (quantified_type))
 
 (signature
@@ -335,11 +306,11 @@
 
 (name) @type
 
-(type/star) @type
+(type_operand/star) @type
 
 [
-  (type/variable)
-  (constraint/variable)
+  (type_operand/variable)
+  (constraint_operand/variable)
   (type_param/variable)
 ] @type
 
@@ -388,7 +359,7 @@
 
 (comment) @spell
 
-(expression/apply
+(expression_operand/apply
   function: (parenthesized_name
     [
       (variable) @function.call

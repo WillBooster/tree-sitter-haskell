@@ -308,23 +308,21 @@ foo x = x + #{size foo_t} + (#size struct bar_t) + #{size SDL_Color}
       (patterns
         (variable))
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
-          (infix
+          (hsc
+            (hsc_directive_name)
+            (hsc_args))
+          (operator)
+          (parenthesized_name
             (hsc
               (hsc_directive_name)
-              (hsc_args))
-            (operator)
-            (infix
-              (parenthesized_name
-                (hsc
-                  (hsc_directive_name)
-                  (hsc_args)))
-              (operator)
-              (hsc
-                (hsc_directive_name)
-                (hsc_args)))))))))
+              (hsc_args)))
+          (operator)
+          (hsc
+            (hsc_directive_name)
+            (hsc_args)))))))
 
 ================================================================================
 hsc: complex #const 1
@@ -788,7 +786,7 @@ a = a A.## a
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (operator)
           (variable))))
@@ -796,14 +794,14 @@ a = a A.## a
       (variable)
       (match
         (parens
-          (infix
+          (operator_chain
             (variable)
             (operator)
             (variable)))))
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (variable)
           (qualified
             (module
@@ -1644,7 +1642,7 @@ following = 1
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (literal
             (integer))
           (operator)
@@ -1653,7 +1651,7 @@ following = 1
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (literal
             (integer))
           (operator)
@@ -1662,7 +1660,7 @@ following = 1
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (literal
             (integer))
           (operator)
@@ -1671,7 +1669,7 @@ following = 1
     (bind
       (variable)
       (match
-        (infix
+        (operator_chain
           (literal
             (integer))
           (operator)

@@ -92,6 +92,15 @@ f = Proxy
     (signature
       (variable)
       (context
-        (infix (literal (integer)) (operator) (variable))
-        (apply (name) (variable))))
-    (bind (variable) (match (constructor)))))
+        (infix_chain
+          (literal
+            (integer))
+          (operator)
+          (variable))
+        (apply
+          (name)
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (constructor)))))

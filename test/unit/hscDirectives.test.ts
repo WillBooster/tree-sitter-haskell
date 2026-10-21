@@ -186,7 +186,9 @@ for (const [fixture, target, replacements, names] of [
       }
       if (fixture === 'hscHashOperators.hsc') {
         expect(
-          state.tree.rootNode.descendantsOfType('infix').map((node) => node.childForFieldName('operator')?.text)
+          state.tree.rootNode
+            .descendantsOfType('operator_chain')
+            .flatMap((node) => node.childrenForFieldName('operator').map((operator) => operator.text))
         ).toEqual(['##+', '##|+', '####+', '+##']);
       }
       for (const replacement of replacements) {

@@ -94,12 +94,12 @@ module.exports = {
   // application
   // ------------------------------------------------------------------------
 
-  _at_type: $ => prefix_at($, field('type', $.type)),
+  _at_type: $ => prefix_at($, field('type', $.type_operand)),
 
-  _type_apply_arg: $ => choice($.type, alias($._at_type, $.kind_application)),
+  _type_apply_arg: $ => choice($.type_operand, alias($._at_type, $.kind_application)),
 
   _type_apply: $ => prec.left('apply', seq(
-    field('constructor', $.type),
+    field('constructor', $.type_operand),
     field('argument', $._type_apply_arg),
   )),
 
@@ -107,17 +107,16 @@ module.exports = {
   // infix
   // ------------------------------------------------------------------------
 
-  _type_infix: $ => prec.right('infix', seq(
-    field('left_operand', $.type),
-    field('operator', $._tyops),
-    field('right_operand', $.type),
+  _type_infix_chain: $ => prec.right('infix', seq(
+    field('operand', $.type_operand),
+    repeat1(seq(field('operator', $._tyops), field('operand', $.type_operand))),
   )),
 
   // ------------------------------------------------------------------------
   // unquantified type
   // ------------------------------------------------------------------------
 
-  type: $ => choice(
+  type_operand: $ => choice(
     $._type_name,
     alias($._type_star, $.star),
     alias($._type_wildcard, $.wildcard),
@@ -128,9 +127,13 @@ module.exports = {
     alias($._type_unboxed_tuple, $.unboxed_tuple),
     alias($._type_unboxed_sum, $.unboxed_sum),
     alias($._type_tuple, $.tuple),
-    alias($._type_infix, $.infix),
     alias($._type_apply, $.apply),
     $._universal,
+  ),
+
+  type: $ => choice(
+    alias($._type_infix_chain, $.infix_chain),
+    $.type_operand,
   ),
 
   // ------------------------------------------------------------------------
@@ -318,7 +321,7 @@ module.exports = {
 
   _type_instance_head: $ => choice(
     seq($._type_instance_head_params, optional(field('patterns', $.type_patterns))),
-    seq($._cond_infix, field('head', alias($._type_infix, $.infix))),
+    seq($._cond_infix, field('head', alias($._type_infix_chain, $.infix_chain))),
   ),
 
   // ------------------------------------------------------------------------

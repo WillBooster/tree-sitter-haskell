@@ -10,7 +10,7 @@
     ]
   },
   {
-    "type": "binding_pattern",
+    "type": "binding_pattern_operand",
     "named": true,
     "subtypes": [
       {
@@ -23,10 +23,6 @@
       },
       {
         "type": "constructor",
-        "named": true
-      },
-      {
-        "type": "infix",
         "named": true
       },
       {
@@ -146,15 +142,11 @@
     ]
   },
   {
-    "type": "constraint",
+    "type": "constraint_operand",
     "named": true,
     "subtypes": [
       {
         "type": "apply",
-        "named": true
-      },
-      {
-        "type": "infix",
         "named": true
       },
       {
@@ -228,7 +220,7 @@
     "named": true,
     "subtypes": [
       {
-        "type": "constraint",
+        "type": "constraint_operand",
         "named": true
       },
       {
@@ -241,6 +233,10 @@
       },
       {
         "type": "implicit_parameter",
+        "named": true
+      },
+      {
+        "type": "infix_chain",
         "named": true
       },
       {
@@ -358,7 +354,7 @@
     ]
   },
   {
-    "type": "expression",
+    "type": "expression_operand",
     "named": true,
     "subtypes": [
       {
@@ -387,10 +383,6 @@
       },
       {
         "type": "implicit_variable",
-        "named": true
-      },
-      {
-        "type": "infix",
         "named": true
       },
       {
@@ -431,10 +423,6 @@
       },
       {
         "type": "multi_way_if",
-        "named": true
-      },
-      {
-        "type": "negation",
         "named": true
       },
       {
@@ -568,7 +556,7 @@
     ]
   },
   {
-    "type": "pattern",
+    "type": "pattern_operand",
     "named": true,
     "subtypes": [
       {
@@ -581,10 +569,6 @@
       },
       {
         "type": "constructor",
-        "named": true
-      },
-      {
-        "type": "infix",
         "named": true
       },
       {
@@ -724,11 +708,15 @@
         "named": true
       },
       {
+        "type": "infix_chain",
+        "named": true
+      },
+      {
         "type": "linear_function",
         "named": true
       },
       {
-        "type": "type",
+        "type": "type_operand",
         "named": true
       }
     ]
@@ -756,15 +744,11 @@
     ]
   },
   {
-    "type": "type",
+    "type": "type_operand",
     "named": true,
     "subtypes": [
       {
         "type": "apply",
-        "named": true
-      },
-      {
-        "type": "infix",
         "named": true
       },
       {
@@ -914,7 +898,11 @@
         "required": false,
         "types": [
           {
-            "type": "pattern",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -1004,7 +992,7 @@
         "required": true,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
@@ -1012,7 +1000,7 @@
             "named": true
           },
           {
-            "type": "expression",
+            "type": "expression_operand",
             "named": true
           },
           {
@@ -1020,11 +1008,7 @@
             "named": true
           },
           {
-            "type": "pattern",
-            "named": true
-          },
-          {
-            "type": "type",
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -1034,6 +1018,10 @@
           {
             "type": "type_binder",
             "named": true
+          },
+          {
+            "type": "type_operand",
+            "named": true
           }
         ]
       },
@@ -1042,11 +1030,11 @@
         "required": false,
         "types": [
           {
-            "type": "constraint",
+            "type": "constraint_operand",
             "named": true
           },
           {
-            "type": "type",
+            "type": "type_operand",
             "named": true
           }
         ]
@@ -1056,15 +1044,15 @@
         "required": false,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "expression",
+            "type": "expression_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "pattern_operand",
             "named": true
           }
         ]
@@ -1080,7 +1068,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -1094,7 +1086,11 @@
         "required": false,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -1108,7 +1104,11 @@
         "required": false,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -1138,11 +1138,11 @@
         "required": true,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "pattern_operand",
             "named": true
           }
         ]
@@ -1212,7 +1212,11 @@
         "required": false,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -1264,11 +1268,15 @@
         "required": false,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -1312,7 +1320,11 @@
       "required": true,
       "types": [
         {
-          "type": "expression",
+          "type": "expression_operand",
+          "named": true
+        },
+        {
+          "type": "operator_chain",
           "named": true
         },
         {
@@ -1342,7 +1354,11 @@
       "required": true,
       "types": [
         {
-          "type": "expression",
+          "type": "expression_operand",
+          "named": true
+        },
+        {
+          "type": "operator_chain",
           "named": true
         },
         {
@@ -1507,7 +1523,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -1521,7 +1541,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -1535,7 +1559,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -1608,7 +1636,11 @@
         "required": false,
         "types": [
           {
-            "type": "pattern",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -1667,7 +1699,11 @@
         "required": true,
         "types": [
           {
-            "type": "constraint",
+            "type": "constraint_operand",
+            "named": true
+          },
+          {
+            "type": "infix_chain",
             "named": true
           }
         ]
@@ -1888,6 +1924,10 @@
           {
             "type": "infix",
             "named": true
+          },
+          {
+            "type": "infix_chain",
+            "named": true
           }
         ]
       },
@@ -2007,7 +2047,11 @@
         "required": true,
         "types": [
           {
-            "type": "constraint",
+            "type": "constraint_operand",
+            "named": true
+          },
+          {
+            "type": "infix_chain",
             "named": true
           }
         ]
@@ -2067,7 +2111,7 @@
         "required": false,
         "types": [
           {
-            "type": "infix",
+            "type": "infix_chain",
             "named": true
           }
         ]
@@ -2246,7 +2290,7 @@
         "required": false,
         "types": [
           {
-            "type": "infix",
+            "type": "infix_chain",
             "named": true
           }
         ]
@@ -2284,7 +2328,11 @@
         "required": false,
         "types": [
           {
-            "type": "pattern",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -2308,7 +2356,11 @@
         "required": false,
         "types": [
           {
-            "type": "pattern",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           }
         ]
@@ -2350,7 +2402,11 @@
       "required": true,
       "types": [
         {
-          "type": "expression",
+          "type": "expression_operand",
+          "named": true
+        },
+        {
+          "type": "operator_chain",
           "named": true
         },
         {
@@ -2369,7 +2425,11 @@
         "required": true,
         "types": [
           {
-            "type": "type",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "type_operand",
             "named": true
           }
         ]
@@ -2522,7 +2582,11 @@
       "required": false,
       "types": [
         {
-          "type": "type",
+          "type": "infix_chain",
+          "named": true
+        },
+        {
+          "type": "type_operand",
           "named": true
         }
       ]
@@ -2596,11 +2660,15 @@
         "required": false,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -2634,7 +2702,11 @@
         "required": false,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -3168,7 +3240,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -3182,7 +3258,11 @@
         "required": true,
         "types": [
           {
-            "type": "pattern",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -3202,7 +3282,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -3216,7 +3300,11 @@
         "required": false,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -3547,11 +3635,7 @@
         "required": true,
         "types": [
           {
-            "type": "binding_pattern",
-            "named": true
-          },
-          {
-            "type": "expression",
+            "type": "infix_chain",
             "named": true
           },
           {
@@ -3559,7 +3643,7 @@
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -3567,11 +3651,87 @@
             "named": true
           },
           {
-            "type": "type",
+            "type": "type_operand",
             "named": true
           },
           {
             "type": "type_param",
+            "named": true
+          }
+        ]
+      },
+      "operator": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "constructor_operator",
+            "named": true
+          },
+          {
+            "type": "infix_id",
+            "named": true
+          },
+          {
+            "type": "operator",
+            "named": true
+          },
+          {
+            "type": "qualified",
+            "named": true
+          }
+        ]
+      },
+      "right_operand": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "lazy_field",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
+            "named": true
+          },
+          {
+            "type": "strict_field",
+            "named": true
+          },
+          {
+            "type": "type_operand",
+            "named": true
+          },
+          {
+            "type": "type_param",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "infix_chain",
+    "named": true,
+    "fields": {
+      "operand": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "binding_pattern_operand",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
+            "named": true
+          },
+          {
+            "type": "type_operand",
             "named": true
           }
         ]
@@ -3598,40 +3758,6 @@
           },
           {
             "type": "qualified",
-            "named": true
-          }
-        ]
-      },
-      "right_operand": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "binding_pattern",
-            "named": true
-          },
-          {
-            "type": "expression",
-            "named": true
-          },
-          {
-            "type": "lazy_field",
-            "named": true
-          },
-          {
-            "type": "pattern",
-            "named": true
-          },
-          {
-            "type": "strict_field",
-            "named": true
-          },
-          {
-            "type": "type",
-            "named": true
-          },
-          {
-            "type": "type_param",
             "named": true
           }
         ]
@@ -3708,7 +3834,7 @@
         "required": false,
         "types": [
           {
-            "type": "infix",
+            "type": "infix_chain",
             "named": true
           }
         ]
@@ -3799,11 +3925,11 @@
         "required": true,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "pattern_operand",
             "named": true
           }
         ]
@@ -3819,7 +3945,7 @@
         "required": true,
         "types": [
           {
-            "type": "type",
+            "type": "type_operand",
             "named": true
           }
         ]
@@ -3893,7 +4019,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -3955,7 +4085,11 @@
         "required": true,
         "types": [
           {
-            "type": "type",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "type_operand",
             "named": true
           }
         ]
@@ -3971,7 +4105,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           }
         ]
@@ -4035,7 +4173,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -4121,15 +4263,19 @@
         "required": false,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "expression",
+            "type": "expression_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "operator_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -4157,7 +4303,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -4234,7 +4384,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -4264,7 +4418,11 @@
       "required": true,
       "types": [
         {
-          "type": "type",
+          "type": "infix_chain",
+          "named": true
+        },
+        {
+          "type": "type_operand",
           "named": true
         }
       ]
@@ -4326,29 +4484,9 @@
     "type": "negation",
     "named": true,
     "fields": {
-      "expression": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      },
-      "minus": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "-",
-            "named": false
-          }
-        ]
-      },
       "number": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "float",
@@ -4426,6 +4564,10 @@
         "types": [
           {
             "type": "infix",
+            "named": true
+          },
+          {
+            "type": "infix_chain",
             "named": true
           }
         ]
@@ -4522,6 +4664,54 @@
     "fields": {}
   },
   {
+    "type": "operator_chain",
+    "named": true,
+    "fields": {
+      "operand": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "expression_operand",
+            "named": true
+          }
+        ]
+      },
+      "operator": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "constructor_operator",
+            "named": true
+          },
+          {
+            "type": "infix_id",
+            "named": true
+          },
+          {
+            "type": "operator",
+            "named": true
+          },
+          {
+            "type": "qualified",
+            "named": true
+          }
+        ]
+      },
+      "prefix_operator": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "prefix_negation",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "parens",
     "named": true,
     "fields": {
@@ -4540,7 +4730,11 @@
         "required": false,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -4554,11 +4748,15 @@
         "required": false,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -4659,7 +4857,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -4673,7 +4875,11 @@
         "required": true,
         "types": [
           {
-            "type": "pattern",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -4716,7 +4922,7 @@
           "named": true
         },
         {
-          "type": "pattern",
+          "type": "pattern_operand",
           "named": true
         },
         {
@@ -4735,6 +4941,10 @@
         "required": false,
         "types": [
           {
+            "type": "infix_chain",
+            "named": true
+          },
+          {
             "type": "lazy_field",
             "named": true
           },
@@ -4743,7 +4953,7 @@
             "named": true
           },
           {
-            "type": "type",
+            "type": "type_operand",
             "named": true
           }
         ]
@@ -4803,6 +5013,11 @@
     "fields": {}
   },
   {
+    "type": "prefix_negation",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "prefix_tuple",
     "named": true,
     "fields": {}
@@ -4826,7 +5041,7 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
             "named": true
           }
         ]
@@ -5187,7 +5402,11 @@
       "required": true,
       "types": [
         {
-          "type": "expression",
+          "type": "expression_operand",
+          "named": true
+        },
+        {
+          "type": "operator_chain",
           "named": true
         },
         {
@@ -5206,7 +5425,11 @@
       "required": true,
       "types": [
         {
-          "type": "pattern",
+          "type": "infix_chain",
+          "named": true
+        },
+        {
+          "type": "pattern_operand",
           "named": true
         },
         {
@@ -5293,11 +5516,11 @@
         "required": false,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "pattern_operand",
             "named": true
           }
         ]
@@ -5307,7 +5530,7 @@
         "required": false,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
             "named": true
           }
         ]
@@ -5371,7 +5594,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           }
         ]
@@ -5453,7 +5680,11 @@
         "required": false,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           }
         ]
@@ -5497,11 +5728,15 @@
         "required": false,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           }
         ]
@@ -5629,11 +5864,11 @@
         "required": true,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "pattern_operand",
             "named": true
           }
         ]
@@ -5649,7 +5884,11 @@
         "required": true,
         "types": [
           {
-            "type": "type",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "type_operand",
             "named": true
           }
         ]
@@ -5687,7 +5926,11 @@
         "required": false,
         "types": [
           {
-            "type": "type",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "type_operand",
             "named": true
           }
         ]
@@ -5703,7 +5946,11 @@
       "required": true,
       "types": [
         {
-          "type": "expression",
+          "type": "expression_operand",
+          "named": true
+        },
+        {
+          "type": "operator_chain",
           "named": true
         }
       ]
@@ -5718,7 +5965,11 @@
         "required": false,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -5732,7 +5983,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -5752,15 +6007,19 @@
         "required": false,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "expression",
+            "type": "expression_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "operator_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -5798,7 +6057,7 @@
         "required": true,
         "types": [
           {
-            "type": "type",
+            "type": "type_operand",
             "named": true
           }
         ]
@@ -5814,7 +6073,7 @@
         "required": true,
         "types": [
           {
-            "type": "type",
+            "type": "type_operand",
             "named": true
           }
         ]
@@ -5972,7 +6231,7 @@
         "required": false,
         "types": [
           {
-            "type": "infix",
+            "type": "infix_chain",
             "named": true
           }
         ]
@@ -6074,7 +6333,7 @@
           "named": true
         },
         {
-          "type": "type",
+          "type": "type_operand",
           "named": true
         }
       ]
@@ -6171,15 +6430,19 @@
         "required": true,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "expression",
+            "type": "expression_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "operator_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -6207,15 +6470,19 @@
         "required": true,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "expression",
+            "type": "expression_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "operator_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           },
           {
@@ -6269,7 +6536,11 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "expression_operand",
+            "named": true
+          },
+          {
+            "type": "operator_chain",
             "named": true
           },
           {
@@ -6283,11 +6554,15 @@
         "required": true,
         "types": [
           {
-            "type": "binding_pattern",
+            "type": "binding_pattern_operand",
             "named": true
           },
           {
-            "type": "pattern",
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
             "named": true
           },
           {
