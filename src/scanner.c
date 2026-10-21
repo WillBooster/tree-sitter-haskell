@@ -2408,6 +2408,7 @@ static Symbol start_comment(Env *env, bool block) {
     : (haddock ? START_HADDOCK_LINE : START_COMMENT_LINE);
   if (!valid(env, sym)) return FAIL;
   env->state->comment = (Comment) {.active = true, .block = block, .haddock = haddock};
+  if (newline_init(env)) env->state->newline.state = NProcess;
   return finish(sym, "start_comment");
 }
 
