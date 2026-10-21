@@ -57,6 +57,7 @@ module.exports = {
   ),
 
   integer: $ => choice(
+    $._sized_integer,
     $._binary_literal,
     $._integer_literal,
     $._octal_literal,

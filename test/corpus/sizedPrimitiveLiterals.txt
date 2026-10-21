@@ -1,0 +1,39 @@
+================================================================================
+Sized primitive integer literals
+================================================================================
+
+signed = 55#Int64
+unsigned = 0xff#Word8
+binary = 0b11_0111#Int16
+octal = 0o_6_7#Word64
+following = 1
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))))
