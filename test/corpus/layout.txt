@@ -3517,3 +3517,108 @@ a = do
 
           (exp
             (variable)))))))
+
+================================================================================
+layout: same-indent conditional expressions in do
+================================================================================
+
+plain condition action = do
+  if
+  condition then action else action
+  action
+commented condition action = do
+  if -- condition
+  condition
+    then action
+    else action
+  action
+nested first second action = do
+  if
+  if first then second else first
+    then action
+    else action
+  action
+multi condition action = do
+  if
+    | condition -> action
+    | otherwise -> action
+  action
+following = 1
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (function
+      (variable)
+      (patterns
+        (variable)
+        (variable))
+      (match
+        (do
+          (exp
+            (conditional
+              (variable)
+              (variable)
+              (variable)))
+          (exp
+            (variable)))))
+    (function
+      (variable)
+      (patterns
+        (variable)
+        (variable))
+      (match
+        (do
+          (exp
+            (conditional
+              (comment)
+              (variable)
+              (variable)
+              (variable)))
+          (exp
+            (variable)))))
+    (function
+      (variable)
+      (patterns
+        (variable)
+        (variable)
+        (variable))
+      (match
+        (do
+          (exp
+            (conditional
+              (conditional
+                (variable)
+                (variable)
+                (variable))
+              (variable)
+              (variable)))
+          (exp
+            (variable)))))
+    (function
+      (variable)
+      (patterns
+        (variable)
+        (variable))
+      (match
+        (do
+          (exp
+            (multi_way_if
+              (match
+                (guards
+                  (boolean
+                    (variable)))
+                (variable))
+              (match
+                (guards
+                  (boolean
+                    (variable)))
+                (variable))))
+          (exp
+            (variable)))))
+    (bind
+      (variable)
+      (match
+        (literal
+          (integer))))))
