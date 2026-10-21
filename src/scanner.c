@@ -1975,6 +1975,10 @@ static Lexed lex_splice(int32_t c) {
 static Lexed lex_single_symop(Env *env, int32_t c1);
 static Lexed lex_double_symop(Env *env, int32_t c1);
 
+#ifdef HSC_EXT
+static Lexed lex_hsc_hash(Env *env);
+#endif
+
 /**
  * Lex special occurrences of symbolic operator characters, or declare a valid operator.
  *
@@ -1993,10 +1997,6 @@ static Lexed lex_double_symop(Env *env, int32_t c1);
  *   selectors as well due to ambiguity.
  *   This is not a regular tight op since it needs to allow symops and conid.
  */
-#ifdef HSC_EXT
-static Lexed lex_hsc_hash(Env *env);
-#endif
-
 static Lexed lex_symop(Env *env) {
 #ifdef HSC_EXT
   if (peek0(env) == '#') return lex_hsc_hash(env);
