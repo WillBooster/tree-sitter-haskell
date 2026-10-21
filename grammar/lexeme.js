@@ -52,8 +52,7 @@ module.exports = {
   _bracket_open: $ => seq('[', $._cmd_texp_start),
   _bracket_close: $ => seq(']', $._cmd_texp_end),
 
-  // Sadly, this does not have the effect of creating a single terminal for the bracket :'(
-  _unboxed_open: $ => alias(seq($._paren_open, token.immediate('#')), '(#'),
+  _unboxed_open: $ => alias(seq($._paren_open, choice(token.immediate('#'), alias($._unboxed_hash, '(#'))), '(#'),
   _unboxed_close: $ => seq('#)', $._cmd_texp_end),
   _unboxed_bar: _ => choice('|', token.immediate('|')),
 

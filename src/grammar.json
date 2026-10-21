@@ -13905,11 +13905,25 @@
             "name": "_paren_open"
           },
           {
-            "type": "IMMEDIATE_TOKEN",
-            "content": {
-              "type": "STRING",
-              "value": "#"
-            }
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "IMMEDIATE_TOKEN",
+                "content": {
+                  "type": "STRING",
+                  "value": "#"
+                }
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_unboxed_hash"
+                },
+                "named": false,
+                "value": "(#"
+              }
+            ]
           }
         ]
       },
@@ -14477,6 +14491,10 @@
     {
       "type": "SYMBOL",
       "name": "_consym"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_unboxed_hash"
     },
     {
       "type": "PATTERN",

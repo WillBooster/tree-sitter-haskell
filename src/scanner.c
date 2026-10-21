@@ -162,6 +162,7 @@ typedef enum {
   TYPE_INSTANCE,
   VARSYM,
   CONSYM,
+  UNBOXED_HASH,
   UPDATE,
 } Symbol;
 
@@ -217,6 +218,7 @@ static const char *sym_names[] = {
   "type_instance",
   "varsym",
   "consym",
+  "unboxed_hash",
   "update",
 };
 
@@ -3149,6 +3151,14 @@ static Symbol scan_main(Env *env) {
   MARK("main");
   SEQ(pre_ws_commands(env));
   bool whitespace = skip_space(env);
+  if (!whitespace && valid(env, UNBOXED_HASH) && char0(env, '#')) {
+    int32_t next = peek1(env);
+    if (is_id_char(next) || next == '"') {
+      MARK("unboxed hash");
+      return UNBOXED_HASH;
+    }
+    return interior(env, false);
+  }
   if (is_newline(PEEK)) return newline_start(env);
   else if (not_eof(env)) return interior(env, whitespace);
   return FAIL;

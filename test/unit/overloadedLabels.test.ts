@@ -184,6 +184,84 @@ test.each([
   }
 });
 
+test('keeps unspaced unboxed delimiters ahead of label-like first elements', () => {
+  const elements = ['Bar', '1', '"a"', "'c'", 'left', '#Foo'];
+  const expressions = elements.map((element) => `(#${element}, right #)`);
+  const source =
+    expressions.map((expression, index) => `tuple${index} = ${expression}\n`).join('') +
+    'sum = (#| right #)\nboxed = ( #Foo)\nfollowing = 1\n';
+  const parser = new Parser().setLanguage(language);
+  const tree = parser.parse(source)!;
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    expect(tree.rootNode.descendantsOfType('unboxed_tuple').map((node) => node.text)).toEqual(expressions);
+    expect(
+      tree.rootNode
+        .descendantsOfType('unboxed_tuple')
+        .map((node) =>
+          node.children.filter((_, index) => node.fieldNameForChild(index) === 'element').map((node) => node.text)
+        )
+    ).toEqual(elements.map((element) => [element, 'right']));
+    expect(tree.rootNode.descendantsOfType('unboxed_sum').map((node) => node.text)).toEqual(['(#| right #)']);
+    expect(tree.rootNode.descendantsOfType('label').map((node) => [node.text, node.startIndex, node.endIndex])).toEqual(
+      [source.indexOf('#Foo'), source.lastIndexOf('#Foo')].map((start) => ['#Foo', start, start + 4])
+    );
+    expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
+  } finally {
+    tree.delete();
+    parser.delete();
+  }
+});
+
+test('preserves unboxed element roles through label, constructor and literal edits', () => {
+  const parser = new Parser().setLanguage(language);
+  const prefix = 'value = (#',
+    suffix = ', right #)\nfollowing = 1\n';
+  let element = 'left';
+  let tree = parser.parse(prefix + element + suffix)!;
+  try {
+    for (const next of ['Bar', '1', '"a"', "'c'", '#Foo', 'left']) {
+      tree.edit(
+        new Edit({
+          startIndex: prefix.length,
+          oldEndIndex: prefix.length + element.length,
+          newEndIndex: prefix.length + next.length,
+          startPosition: { row: 0, column: prefix.length },
+          oldEndPosition: { row: 0, column: prefix.length + element.length },
+          newEndPosition: { row: 0, column: prefix.length + next.length },
+        })
+      );
+      const source = prefix + next + suffix,
+        previous = tree;
+      tree = parser.parse(source, previous)!;
+      previous.delete();
+      const fresh = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError).toBe(false);
+        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
+        expect(tree.rootNode.descendantsOfType('unboxed_tuple').map((node) => node.text)).toEqual([
+          `(#${next}, right #)`,
+        ]);
+        expect(
+          tree.rootNode.descendantsOfType('label').map((node) => [node.text, node.startIndex, node.endIndex])
+        ).toEqual(next === '#Foo' ? [[next, prefix.length, prefix.length + next.length]] : []);
+        for (const query of queries) {
+          const captures = (node: Node): unknown =>
+            query.captures(node).map(({ name, node }) => [name, snapshot(node)]);
+          expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
+        }
+        expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
+      } finally {
+        fresh.delete();
+      }
+      element = next;
+    }
+  } finally {
+    tree.delete();
+    parser.delete();
+  }
+});
+
 test('incrementally changes label spellings and repairs incomplete labels without stale ranges or captures', () => {
   const parser = new Parser().setLanguage(language);
   const prefix = 'value = ',
