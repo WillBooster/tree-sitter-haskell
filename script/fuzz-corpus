@@ -5,11 +5,16 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 mkdir -p .tmp/fuzz
-# Runs in the same checkout may overlap, so each builds the parser into a file of its own.
-parser=$(mktemp .tmp/fuzz/haskell.XXXXXX)
-trap 'rm -f "$parser"' EXIT
-script/tree-sitter build -o "$parser"
+parser=
+trap '[[ -z $parser ]] || rm -f "$parser"' EXIT
 export TREE_SITTER_SEED=${TREE_SITTER_SEED:-1}
 export TREE_SITTER_ITERATIONS=${TREE_SITTER_ITERATIONS:-1000}
 export TREE_SITTER_EDITS=${TREE_SITTER_EDITS:-10}
-script/tree-sitter fuzz --lib-path "$parser" --lang-name haskell
+languages=$(node -e 'const {grammars} = require("./tree-sitter.json"); console.log(grammars.map(({name, path}) => `${name}\t${path ?? "."}`).join("\n"));')
+while IFS=$'\t' read -r language grammar; do
+  parser=$(mktemp ".tmp/fuzz/$language.XXXXXX")
+  script/tree-sitter build "$grammar" -o "$parser"
+  script/tree-sitter fuzz --lib-path "$parser" --lang-name "$language"
+  rm -f "$parser"
+  parser=
+done <<< "$languages"

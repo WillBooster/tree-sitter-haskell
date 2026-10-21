@@ -20,7 +20,10 @@
     "queries/*.scm",
     "src/node-types.json",
     "tree-sitter.json",
-    "*.wasm"
+    "*.wasm",
+    "hsc/grammar.js",
+    "hsc/src/node-types.json",
+    "hsc/queries/*.scm"
   ],
   "scripts": {
     "build-wasm": "script/generate --build-wasm",

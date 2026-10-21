@@ -37,11 +37,13 @@ module.exports = {
   // ------------------------------------------------------------------------
 
   _constructor: $ => alias($.name, $.constructor),
+  _decl_constructor: $ => $._constructor,
   _qualified_constructor: $ => qualified($, $._constructor),
   _qconid: $ => alias($._qualified_constructor, $.qualified),
   _conids: $ => choice($._qconid, $._constructor),
 
   _con: $ => choice($._constructor, $._pconsym),
+  _decl_con: $ => $._con,
   _qcon: $ => choice($._qconid, $._pqconsym),
   _cons: $ => choice(prec('con', $._con), $._qcon),
 

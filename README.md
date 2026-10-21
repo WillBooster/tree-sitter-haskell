@@ -79,6 +79,8 @@ parser.setLanguage(await Language.load(haskell));
 
 The package also ships `grammar.js` with the files in `grammar/` it loads, the queries in `queries/`, and the node types in `src/node-types.json`.
 
+For [hsc2hs](https://github.com/haskell/hsc2hs) source in `.hsc` files, load `tree-sitter-hsc.wasm` instead. This dialect parses C directives and the doubled hashes that hsc2hs turns into literal hashes. Its node schema is `hsc/src/node-types.json`. Combine the ordinary queries with the matching suffixes in `hsc/queries/` for directive highlighting and C-body injections.
+
 For code navigation, use `queries/tags.scm` (or `TAGS_QUERY` in Rust). It indexes module headers, top-level named functions and bindings, named types and classes, class and instance methods, and syntactic variable/operator calls. A signature and each equation have separate definition locations. Call references identify the called name without resolving its binding.
 
 Declaration names and variable/operator callees remain indexed through nested parentheses. Class and instance equations retain their method roles; grouping a value without applying it does not create a call reference. Destructuring bindings contribute their explicit names at every nesting depth, including as-pattern binders and record puns. Local pattern bindings, names bound by patterns inside declaration quotes and constructors (including pattern synonyms) are not indexed.
@@ -96,13 +98,15 @@ fuzzed with:
 ```toml
 [dependencies]
 tree-sitter = { package = "willbooster-tree-sitter", version = "7.0.5" }
-tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "7" }
+tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "8" }
 ```
 
 ```rust
 let mut parser = tree_sitter::Parser::new();
 parser.set_language(&tree_sitter_haskell::LANGUAGE.into())?;
 ```
+
+For `.hsc` files in Rust, select `HSC_LANGUAGE` and `HSC_NODE_TYPES`. Use `HSC_HIGHLIGHTS_QUERY` and `HSC_INJECTIONS_QUERY` for the combined queries; `TAGS_QUERY` and `LOCALS_QUERY` are shared with ordinary Haskell.
 
 ## Development
 
@@ -125,7 +129,7 @@ well (e.g. `script/tree-sitter parse file.hs`).
 `bun run generate` records a fresh generation profile from the applicable `test/corpus` cases and Git-tracked
 files in `examples/`, then generates compact parser tables. The parser also embeds metadata from `tree-sitter.json`. After changing a grammar file,
 `tree-sitter.json`, a corpus case, or a tracked example,
-regenerate and commit `src/`. Stage added or removed examples with `git add -A examples` before generation so the profile uses the intended file list.
+regenerate and commit `src/` and `hsc/src/`. Stage added or removed examples with `git add -A examples` before generation so the profile uses the intended file list.
 Profiles in `.tmp/generation-profiles/` are temporary and must not be committed. `bun run build-wasm`, `bun run build/ci`,
 and the release build regenerate the parsers before compiling them.
 

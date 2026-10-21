@@ -1,0 +1,144 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { Edit, Language, Parser, Query, type Node } from '@willbooster/web-tree-sitter';
+import { afterAll, expect, test } from 'vitest';
+import { currentWasmPath } from '../helpers/generationInputs.js';
+
+const root = path.join(import.meta.dirname, '../..');
+await Parser.init();
+const language = await Language.load(currentWasmPath(root, 'hsc'));
+const queries = ['queries', 'hsc/queries'].flatMap((directory) =>
+  fs
+    .readdirSync(path.join(root, directory))
+    .filter((file) => file.endsWith('.scm'))
+    .map((file) => new Query(language, fs.readFileSync(path.join(root, directory, file), 'utf8')))
+);
+afterAll(() => {
+  for (const query of queries) query.delete();
+});
+
+test('retains directive names, C body ranges, doubled hashes and following Haskell declarations', () => {
+  const source = fs.readFileSync(path.join(root, 'test/fixtures/hscDirectives.hsc'), 'utf8');
+  const parser = new Parser().setLanguage(language);
+  const tree = parser.parse(source)!;
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    const directives = tree.rootNode.descendantsOfType('hsc');
+    expect(directives.map((node) => node.childForFieldName('name')?.text)).toEqual([
+      'make_name',
+      'make_constructor',
+      'type',
+      'size',
+      'offset',
+      'const',
+      'const',
+      'emit2',
+      'const',
+      'co\\\nnst',
+      'const_str',
+      'const',
+      'const',
+      'const',
+      'emit_inline',
+      'defineSuffix',
+      'd',
+      'call',
+      'safety',
+      'entity',
+    ]);
+    const bodies = directives.map((node) => node.childForFieldName('body')!);
+    expect(bodies.map((node) => node.text)).toContain(String.raw` (HSC_VALUE /* } \" ' */ + 0)`);
+    for (const node of directives) {
+      const name = node.childForFieldName('name')!;
+      const body = node.childForFieldName('body')!;
+      expect(source.slice(name.startIndex, name.endIndex)).toBe(name.text);
+      expect(body.startIndex).toBe(name.endIndex);
+      expect(source.slice(body.startIndex, body.endIndex)).toBe(body.text);
+      expect(body.endIndex).toBeLessThanOrEqual(node.endIndex);
+    }
+    expect(tree.rootNode.descendantsOfType('integer').map((node) => node.text)).toContain('55##Int64');
+    expect(tree.rootNode.descendantsOfType('label').map((node) => node.text)).toEqual([
+      '##""',
+      '##"nested label"',
+      '##include',
+      '##define',
+      '##let',
+    ]);
+    expect(tree.rootNode.descendantsOfType('unboxed_tuple')).toHaveLength(1);
+    expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
+    const injected = queries
+      .flatMap((query) => query.captures(tree.rootNode))
+      .filter(({ name, node }) => name === 'injection.content' && node.type === 'hsc_args');
+    expect(injected.map(({ node }) => [node.startIndex, node.endIndex])).toEqual(
+      bodies.map((node) => [node.startIndex, node.endIndex])
+    );
+  } finally {
+    tree.delete();
+    parser.delete();
+  }
+});
+
+test('keeps arbitrary nested C arguments separate from Haskell layout through edits and undo', () => {
+  const parser = new Parser().setLanguage(language);
+  for (const depth of [0, 32, 256]) {
+    let source = `value = do\n  pure #{const ${'('.repeat(depth)}42${')'.repeat(depth)}}\nfollowing = 1\n`;
+    const original = source;
+    let tree = parser.parse(source)!;
+    const start = source.indexOf('42');
+    let length = 2;
+    try {
+      for (const replacement of ['42', 'sizeof("}\\\"")', "(42 /* } ' */)", '42']) {
+        const prefix = source.slice(0, start).split('\n');
+        const point = { row: prefix.length - 1, column: prefix.at(-1)!.length };
+        tree.edit(
+          new Edit({
+            startIndex: start,
+            oldEndIndex: start + length,
+            newEndIndex: start + replacement.length,
+            startPosition: point,
+            oldEndPosition: { ...point, column: point.column + length },
+            newEndPosition: { ...point, column: point.column + replacement.length },
+          })
+        );
+        source = source.slice(0, start) + replacement + source.slice(start + length);
+        const next = parser.parse(source, tree)!;
+        tree.delete();
+        tree = next;
+        const fresh = parser.parse(source)!;
+        try {
+          expect(tree.rootNode.hasError).toBe(false);
+          expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
+          expect(metadata(tree.rootNode)).toEqual(metadata(fresh.rootNode));
+          for (const query of queries) {
+            const captures = (node: Node): (string | number)[][] =>
+              query.captures(node).map(({ name, node: value }) => [name, value.type, value.startIndex, value.endIndex]);
+            expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
+          }
+        } finally {
+          fresh.delete();
+        }
+        length = replacement.length;
+      }
+      expect(source).toBe(original);
+    } finally {
+      tree.delete();
+    }
+  }
+  parser.delete();
+});
+
+function metadata(node: Node): unknown {
+  return [
+    node.type,
+    node.startIndex,
+    node.endIndex,
+    node.startPosition,
+    node.endPosition,
+    node.isNamed,
+    node.isExtra,
+    node.isMissing,
+    node.hasError,
+    node.childCount,
+    node.children.map((child, index) => [node.fieldNameForChild(index), metadata(child)]),
+  ];
+}

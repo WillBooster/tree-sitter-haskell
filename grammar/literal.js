@@ -9,9 +9,11 @@ const {
 const decimal = /[0-9][0-9_]*/
 const exponent = /[eE][+-]?[0-9_]+/
 const hex_exponent = /[pP][+-]?[0-9a-fA-F_]+/
-const magic_hash = rule => token(seq(rule, optional(token.immediate(/##?/))))
 
-module.exports = {
+
+module.exports = (hashSuffix = /##?/) => {
+  const magic_hash = rule => token(seq(rule, optional(token.immediate(hashSuffix))))
+  return {
 
   float: _ => magic_hash(
     seq(
@@ -99,4 +101,5 @@ module.exports = {
     $.prefix_unboxed_sum,
   ),
 
+}
 }
