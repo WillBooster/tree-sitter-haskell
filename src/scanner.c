@@ -134,8 +134,10 @@ typedef enum {
   LINEAR_ARROW,
   BAR,
   DERIVING,
-  START_COMMENT,
-  START_HADDOCK,
+  START_COMMENT_BLOCK,
+  START_HADDOCK_BLOCK,
+  START_COMMENT_LINE,
+  START_HADDOCK_LINE,
   COMMENT_CONTENT,
   CPP,
   PRAGMA,
@@ -198,8 +200,10 @@ static const char *sym_names[] = {
   "linear_arrow",
   "bar",
   "deriving",
-  "start_comment",
-  "start_haddock",
+  "start_comment_block",
+  "start_haddock_block",
+  "start_comment_line",
+  "start_haddock_line",
   "comment_content",
   "cpp",
   "pragma",
@@ -2387,24 +2391,30 @@ static void take_cpp_line(Env *env) {
 // Comments
 // --------------------------------------------------------------------------------------------------------
 
-static Symbol comment_type(Env *env) {
-  uint32_t i = 2;
-  if (peek0(env) == '-') {
-    while (peek(env, i) == '-') i++;
-  }
+static bool comment_haddock(Env *env, uint32_t i) {
   while (not_eof(env)) {
     int32_t c = peek(env, i++);
-    if (c == '|' || c == '^') return START_HADDOCK;
-    else if (!is_space_char_or_tab(c)) break;
+    if (c == '|' || c == '^') return true;
+    if (!is_space_char_or_tab(c)) break;
   }
-  return START_COMMENT;
+  return false;
 }
 
 static Symbol start_comment(Env *env, bool block) {
-  Symbol sym = comment_type(env);
+  if (block ? char0(env, '#') : symop_char(peek0(env))) return FAIL;
+  bool haddock = comment_haddock(env, 0);
+  Symbol sym = block
+    ? (haddock ? START_HADDOCK_BLOCK : START_COMMENT_BLOCK)
+    : (haddock ? START_HADDOCK_LINE : START_COMMENT_LINE);
   if (!valid(env, sym)) return FAIL;
-  env->state->comment = (Comment) {.active = true, .block = block, .haddock = sym == START_HADDOCK};
+  env->state->comment = (Comment) {.active = true, .block = block, .haddock = haddock};
   return finish(sym, "start_comment");
+}
+
+static bool next_line_haddock(Env *env) {
+  uint32_t i = 2;
+  while (peek(env, i) == '-') i++;
+  return comment_haddock(env, i);
 }
 
 static void inline_comment(Env *env) {
@@ -2420,7 +2430,7 @@ static void inline_comment(Env *env) {
       advance_while(env, 0, is_space_or_tab);
       reset_lookahead(env);
     }
-  } while (line_comment_herald(env) && (haddock || comment_type(env) == START_COMMENT));
+  } while (line_comment_herald(env) && (haddock || !next_line_haddock(env)));
 }
 
 static uint32_t consume_block_comment(Env *env, uint32_t col, bool content) {
@@ -2638,11 +2648,9 @@ static Symbol process_token_safe(Env *env, Lexed next) {
     case LPragma:
       return pragma(env);
     case LBlockComment:
-      return start_comment(env, true);
     case LBlockCommentClose:
-      return finish(COMMENT_CONTENT, "block comment close");
     case LLineComment:
-      return start_comment(env, false);
+      return finish(COMMENT_CONTENT, "comment delimiter");
     case LCppElse:
       return cpp_else(env, true);
     case LCpp:
@@ -3372,9 +3380,10 @@ static bool primitive_integer_type(TSLexer *lexer);
 static Symbol scan_main(Env *env) {
   MARK("main");
   if (env->state->comment.active) return comment_content(env);
+  if (valid(env, START_COMMENT_BLOCK) || valid(env, START_HADDOCK_BLOCK)) return start_comment(env, true);
+  if (valid(env, START_COMMENT_LINE) || valid(env, START_HADDOCK_LINE)) return start_comment(env, false);
   SEQ(pre_ws_commands(env));
   bool whitespace = skip_space(env);
-  if (valid(env, START_COMMENT) || valid(env, START_HADDOCK)) MARK("comment boundary");
 #ifdef HSC_EXT
   if (PEEK == '#' && valid(env, HSC_HASH)) MARK("hsc hash boundary");
 #endif

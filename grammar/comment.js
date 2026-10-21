@@ -1,19 +1,13 @@
 module.exports = {
 
-  comment: $ => seq(
-    $._cond_comment,
-    choice(
-      seq('{-', $.content, '-}'),
-      seq(alias(/--+/, '--'), $.content),
-    ),
+  comment: $ => choice(
+    seq('{-', $._cond_comment_block, $.content, '-}'),
+    seq(alias(/--+/, '--'), $._cond_comment_line, $.content),
   ),
 
-  haddock: $ => seq(
-    $._cond_haddock,
-    choice(
-      seq('{-', choice('|', '^'), $.content, '-}'),
-      seq(alias(/--+/, '--'), choice('|', '^'), $.content),
-    ),
+  haddock: $ => choice(
+    seq('{-', $._cond_haddock_block, choice('|', '^'), $.content, '-}'),
+    seq(alias(/--+/, '--'), $._cond_haddock_line, choice('|', '^'), $.content),
   ),
 
 }

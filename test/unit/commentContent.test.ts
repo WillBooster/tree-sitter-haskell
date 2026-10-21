@@ -46,27 +46,55 @@ for (const { name, language, queries, injections } of resources) {
     ] as const;
     const parser = new Parser().setLanguage(language);
     try {
-      for (const [comment, kind, body] of examples) {
-        const source = `before = 0\n${comment}\nfollowing = 1\n`;
-        const tree = parser.parse(source)!;
+      for (const prefix of ['before = 0\n', 'before = 0\n  ', 'before = 0\nvalue = 0   ']) {
+        for (const [comment, kind, body] of examples) {
+          const source = `${prefix}${comment}\nfollowing = 1\n`;
+          const tree = parser.parse(source)!;
+          try {
+            expect(tree.rootNode.hasError, comment).toBe(false);
+            const nodes = tree.rootNode.descendantsOfType(['comment', 'haddock']);
+            expect(nodes.map((node) => [node.type, node.text])).toEqual([[kind, comment]]);
+            const content = nodes[0]!.namedChildren;
+            expect(content.map((node) => [node.type, node.text])).toEqual([['content', body]]);
+            const start = source.indexOf(comment) + comment.length - body.length - (comment.startsWith('{-') ? 2 : 0);
+            expect([content[0]!.startIndex, content[0]!.endIndex]).toEqual([start, start + body!.length]);
+            expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
+              prefix.includes('value') ? ['before', 'value', 'following'] : ['before', 'following']
+            );
+            expect(
+              injections
+                .captures(tree.rootNode)
+                .filter((capture) => capture.name === 'injection.content')
+                .map(({ node }) => [node.type, node.text, node.startIndex, node.endIndex])
+            ).toEqual(kind === 'comment' ? [['content', body, start, start + body!.length]] : []);
+          } finally {
+            tree.delete();
+          }
+        }
+      }
+    } finally {
+      parser.delete();
+    }
+  });
+
+  test(`${name} keeps symbolic dash operators and pragmas distinct from comments`, () => {
+    const parser = new Parser().setLanguage(language);
+    try {
+      for (const operator of ['---+', '--|', '--^', '--⊕', '------>']) {
+        const tree = parser.parse(`value = a ${operator} b\nfollowing = 1\n`)!;
         try {
-          expect(tree.rootNode.hasError, comment).toBe(false);
-          const nodes = tree.rootNode.descendantsOfType(['comment', 'haddock']);
-          expect(nodes.map((node) => [node.type, node.text])).toEqual([[kind, comment]]);
-          const content = nodes[0]!.namedChildren;
-          expect(content.map((node) => [node.type, node.text])).toEqual([['content', body]]);
-          const start = source.indexOf(comment) + comment.length - body.length - (comment.startsWith('{-') ? 2 : 0);
-          expect([content[0]!.startIndex, content[0]!.endIndex]).toEqual([start, start + body!.length]);
-          expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
-            'before',
-            'following',
-          ]);
-          expect(
-            injections
-              .captures(tree.rootNode)
-              .filter((capture) => capture.name === 'injection.content')
-              .map(({ node }) => [node.type, node.text, node.startIndex, node.endIndex])
-          ).toEqual(kind === 'comment' ? [['content', body, start, start + body!.length]] : []);
+          expect(tree.rootNode.hasError).toBe(false);
+          expect(tree.rootNode.descendantsOfType(['comment', 'haddock'])).toHaveLength(0);
+          expect(tree.rootNode.descendantsOfType('operator').map((node) => node.text)).toEqual([operator]);
+        } finally {
+          tree.delete();
+        }
+      }
+      for (const operator of ['--|', '--+', '--⊕']) {
+        const tree = parser.parse(operator)!;
+        try {
+          expect(tree.rootNode.hasError).toBe(true);
+          expect(tree.rootNode.descendantsOfType(['comment', 'haddock'])).toHaveLength(0);
         } finally {
           tree.delete();
         }
