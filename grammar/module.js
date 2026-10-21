@@ -7,6 +7,28 @@ const {
   semis,
 } = require('./util.js')
 
+const declaration = ($, bindings) => choice(
+    bindings,
+    $.type_synonym,
+    $.kind_signature,
+    $.type_family,
+    $.type_instance,
+    $.role_annotation,
+    $.data_type,
+    $.newtype,
+    $.data_family,
+    $.data_instance,
+    $.class,
+    $.instance,
+    $.default_types,
+    $.deriving_instance,
+    $.pattern_synonym,
+    $.foreign_import,
+    $.foreign_export,
+    $.fixity,
+    $.top_splice,
+  )
+
 module.exports = {
 
   // ------------------------------------------------------------------------
@@ -122,29 +144,8 @@ module.exports = {
     alias($._cond_layout_end_explicit, '}'),
   ),
 
-  /**
-   * This is a supertype.
-   */
-  declaration: $ => choice(
-    $._module_decl,
-    $.type_synonym,
-    $.kind_signature,
-    $.type_family,
-    $.type_instance,
-    $.role_annotation,
-    $.data_type,
-    $.newtype,
-    $.data_family,
-    $.data_instance,
-    $.class,
-    $.instance,
-    $.default_types,
-    $.deriving_instance,
-    $.pattern_synonym,
-    $.foreign_import,
-    $.foreign_export,
-    $.fixity,
-    $.top_splice,
-  ),
+  declaration: $ => declaration($, $._module_decl),
+
+  _quoted_declaration: $ => declaration($, $.decl),
 
 }

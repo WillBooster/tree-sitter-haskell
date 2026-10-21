@@ -51,7 +51,7 @@ module.exports = {
     choice(token('|]'), '⟧'),
   ),
 
-  quoted_decls: $ => layout_sort($, $._cmd_layout_start_quote, field('declaration', $.declaration)),
+  quoted_decls: $ => layout_sort($, $._cmd_layout_start_quote, field('declaration', $._quoted_declaration)),
 
   /**
   * An "expression quotation" is valid in an expression, and its body may contain an expression, type, pattern or

@@ -16,6 +16,24 @@ test('indexes module pattern names at their lexical ranges without tagging local
   const tree = parser.parse(source)!;
   try {
     expect(tree.rootNode.hasError).toBe(false);
+    const quote = tree.rootNode.descendantsOfType('quoted_decls')[0]!;
+    expect(quote.namedChildren.map((node) => node.type)).toEqual([
+      'bind',
+      'function',
+      'bind',
+      'bind',
+      'bind',
+      'bind',
+      'data_type',
+      'type_synonym',
+    ]);
+    expect(
+      tags
+        .matches(quote)
+        .filter(({ captures }) =>
+          captures.some(({ name }) => name === 'definition.variable' || name === 'definition.function')
+        )
+    ).toEqual([]);
     const actual = tags
       .matches(tree.rootNode)
       .filter(({ captures }) => captures.some(({ name }) => name === 'definition.variable'))

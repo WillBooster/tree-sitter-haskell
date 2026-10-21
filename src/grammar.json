@@ -7581,6 +7581,87 @@
         }
       ]
     },
+    "_quoted_declaration": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "decl"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "type_synonym"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "kind_signature"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "type_family"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "type_instance"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "role_annotation"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "data_type"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "newtype"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "data_family"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "data_instance"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "class"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "instance"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "default_types"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "deriving_instance"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "pattern_synonym"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "foreign_import"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "foreign_export"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "fixity"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "top_splice"
+        }
+      ]
+    },
     "field_name": {
       "type": "SYMBOL",
       "name": "variable"
@@ -11353,7 +11434,7 @@
                       "name": "declaration",
                       "content": {
                         "type": "SYMBOL",
-                        "name": "declaration"
+                        "name": "_quoted_declaration"
                       }
                     },
                     {
@@ -11382,7 +11463,7 @@
                             "name": "declaration",
                             "content": {
                               "type": "SYMBOL",
-                              "name": "declaration"
+                              "name": "_quoted_declaration"
                             }
                           }
                         ]

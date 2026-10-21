@@ -1,4 +1,4 @@
-{-# LANGUAGE DisambiguateRecordFields, NamedFieldPuns, NoFieldSelectors, ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE DisambiguateRecordFields, NamedFieldPuns, NoFieldSelectors, ScopedTypeVariables, TemplateHaskell, ViewPatterns #-}
 module DestructuredBindings where
 
 data Packet = Packet { punned :: Int, payload :: Maybe Int }
@@ -28,3 +28,14 @@ withDo = do
 withComprehension = [compLeft | (compLeft, compRight) <- [(1 :: Int, 2 :: Int)]]
 [listFirst, listSecond] = [16 :: Int, 17]
 keepRecord Packet { punned } = punned
+
+quotedDefinitions () = [d|
+  quotedSimple = 1
+  quotedFunction (Just quotedParameter) = quotedParameter
+  (quotedFirst, quotedSecond) = (1, 2)
+  Just quotedExtracted = Just 42
+  quotedWhole@(quotedLeft, quotedRight) = (1, 2)
+  Packet { punned, payload = Just quotedField } = Packet 1 (Just 2)
+  data QuotedType = QuotedConstructor Int
+  type QuotedAlias = Int
+  |]

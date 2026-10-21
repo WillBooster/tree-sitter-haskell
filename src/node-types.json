@@ -5067,7 +5067,79 @@
         "required": false,
         "types": [
           {
-            "type": "declaration",
+            "type": "class",
+            "named": true
+          },
+          {
+            "type": "data_family",
+            "named": true
+          },
+          {
+            "type": "data_instance",
+            "named": true
+          },
+          {
+            "type": "data_type",
+            "named": true
+          },
+          {
+            "type": "decl",
+            "named": true
+          },
+          {
+            "type": "default_types",
+            "named": true
+          },
+          {
+            "type": "deriving_instance",
+            "named": true
+          },
+          {
+            "type": "fixity",
+            "named": true
+          },
+          {
+            "type": "foreign_export",
+            "named": true
+          },
+          {
+            "type": "foreign_import",
+            "named": true
+          },
+          {
+            "type": "instance",
+            "named": true
+          },
+          {
+            "type": "kind_signature",
+            "named": true
+          },
+          {
+            "type": "newtype",
+            "named": true
+          },
+          {
+            "type": "pattern_synonym",
+            "named": true
+          },
+          {
+            "type": "role_annotation",
+            "named": true
+          },
+          {
+            "type": "top_splice",
+            "named": true
+          },
+          {
+            "type": "type_family",
+            "named": true
+          },
+          {
+            "type": "type_instance",
+            "named": true
+          },
+          {
+            "type": "type_synonym",
             "named": true
           }
         ]
