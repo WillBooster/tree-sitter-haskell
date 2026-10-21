@@ -5,6 +5,8 @@ const {
   layout,
 } = require('./util.js')
 
+const foreignMacro = /[A-Z][A-Za-z_0-9]*/
+
 const binding = ($, pattern) => prec('bind', seq(
   choice(
     field('pattern', pattern),
@@ -16,10 +18,6 @@ const binding = ($, pattern) => prec('bind', seq(
 ))
 
 module.exports = {
-
-  // ------------------------------------------------------------------------
-  // fixity
-  // ------------------------------------------------------------------------
 
   _fun_arrow_prec: _ => seq('-', '1'),
 
@@ -39,10 +37,6 @@ module.exports = {
     ),
   ),
 
-  // ------------------------------------------------------------------------
-  // signature
-  // ------------------------------------------------------------------------
-
   _con_binding_list: $ => sep2(',', field('name', $._con)),
 
   _var_binding_list: $ => sep2(',', field('name', $._var)),
@@ -54,10 +48,6 @@ module.exports = {
     ),
     $._type_annotation,
   ),
-
-  // ------------------------------------------------------------------------
-  // function and pattern bind
-  // ------------------------------------------------------------------------
 
   _simple_bind_match: $ => seq('=', field('expression', $._exp)),
 
@@ -91,14 +81,6 @@ module.exports = {
     $._function_head_parens,
   ),
 
-  /**
-   * The difference between a `function` with an `infix` head and a `bind` with `pat_infix` is that the former is for
-   * _declaring_ a `varop` and the latter uses a `conop` to pattern match on the rhs expression.
-   * The former may not have a type annotation, while the latter may.
-   *
-   * > a <> b = undefined
-   * > h : t :: [Int] = undefined
-   */
   _function_head_infix: $ => seq(
     field('left_operand', $.pattern),
     optional($._cond_no_section_op),
@@ -118,10 +100,6 @@ module.exports = {
 
   _binding_name_parens: $ => parens($, choice($._var, $._binding_name_parens)),
 
-  /**
-   * The `implicit_variable` here is for:
-   * g = let ?par = Impy 5 in f
-   */
   bind: $ => binding($, $._pat),
 
   _module_bind: $ => binding($, $._binding_pat),
@@ -147,47 +125,64 @@ module.exports = {
 
   _where_binds: $ => seq($._where, optional(field('binds', $.local_binds))),
 
-  // ------------------------------------------------------------------------
-  // foreign
-  // ------------------------------------------------------------------------
-
-  calling_convention: _ => token(choice(
+  _foreign_calling_keyword: _ => token(choice(
     'ccall',
     'stdcall',
     'capi',
     'prim',
     'javascript',
-    /[A-Z_]+/, // It's common in GHC to use a cpp #define for this
+    '_',
+    foreignMacro,
   )),
 
-  safety: _ => token(choice(
+  _foreign_safety_keyword: _ => token(choice(
     'unsafe',
     'safe',
     'interruptible',
+    '_',
+    foreignMacro,
   )),
+
+  _foreign_underscore_identifier: _ => token(/_[A-Za-z_0-9]+/),
+
+  _foreign_calling_convention: $ => choice(
+    alias($._foreign_calling_keyword, $.calling_convention),
+    alias($._foreign_underscore_identifier, $.calling_convention),
+  ),
+
+  _foreign_safety: $ => choice(
+    alias($._foreign_safety_keyword, $.safety),
+    alias($._foreign_underscore_identifier, $.safety),
+  ),
+
+  _foreign_underscore_signature: $ => seq(
+    field('name', alias($._foreign_underscore_identifier, $.variable)),
+    $._type_annotation,
+  ),
+
+  _foreign_signature: $ => choice(
+    $.signature,
+    alias($._foreign_underscore_signature, $.signature),
+  ),
 
   entity: $ => $.string,
 
   foreign_import: $ => seq(
     'foreign',
     'import',
-    field('calling_convention', $.calling_convention),
-    optional(field('safety', $.safety)),
+    field('calling_convention', $._foreign_calling_convention),
+    optional(field('safety', $._foreign_safety)),
     optional(field('entity', $.entity)),
-    field('signature', $.signature),
+    field('signature', $._foreign_signature),
   ),
 
   foreign_export: $ => seq(
     'foreign',
     'export',
-    field('calling_convention', $.calling_convention),
+    field('calling_convention', $._foreign_calling_convention),
     optional(field('entity', $.entity)),
-    field('signature', $.signature),
+    field('signature', $._foreign_signature),
   ),
-
-  // ------------------------------------------------------------------------
-  // default
-  // ------------------------------------------------------------------------
 
   default_types: $ => seq('default', parens($, optional(sep1(',', field('type', $._ktype))))),
 
