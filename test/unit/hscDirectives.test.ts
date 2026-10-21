@@ -1,8 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { Edit, Language, Parser, Query, type Node } from '@willbooster/web-tree-sitter';
+import { Edit, Language, Parser, Query, type Node, type Tree } from '@willbooster/web-tree-sitter';
 import { afterAll, expect, test } from 'vitest';
 import { currentWasmPath } from '../helpers/generationInputs.js';
+
+interface ParseState {
+  source: string;
+  tree: Tree;
+}
 
 const root = path.join(import.meta.dirname, '../..');
 await Parser.init();
@@ -80,103 +85,52 @@ test('retains directive names, C body ranges, doubled hashes and following Haske
 });
 
 test('starts directive and hash-literal ranges at their hash through trivia edits and undo', () => {
-  let source = 'a = #const 42\nb = id    #{size int}\nc () =    #{const 42}##\nfollowing = 1\n';
-  const original = source;
+  const source = 'a = #const 42\nb = id    #{size int}\nc () =    #{const 42}##\nfollowing = 1\n';
   const parser = new Parser().setLanguage(language);
-  let tree = parser.parse(source)!;
+  const state = { source, tree: parser.parse(source)! };
   const start = source.indexOf('    #{const');
-  const prefix = source.slice(0, start).split('\n');
-  const point = { row: prefix.length - 1, column: prefix.at(-1)!.length };
   let length = 4;
   try {
     for (const replacement of ['    ', ' ', '\t  ', '    ']) {
-      tree.edit(
-        new Edit({
-          startIndex: start,
-          oldEndIndex: start + length,
-          newEndIndex: start + replacement.length,
-          startPosition: point,
-          oldEndPosition: { ...point, column: point.column + length },
-          newEndPosition: { ...point, column: point.column + replacement.length },
-        })
-      );
-      source = source.slice(0, start) + replacement + source.slice(start + length);
-      const next = parser.parse(source, tree)!;
-      tree.delete();
-      tree = next;
-      const fresh = parser.parse(source)!;
-      try {
-        expect(tree.rootNode.hasError).toBe(false);
-        const nodes = tree.rootNode
-          .descendantsOfType(['hsc', 'literal'])
-          .filter((node) => node.descendantsOfType('hsc_args').length > 0);
-        expect(nodes.map((node) => node.text)).toEqual(['#const 42', '#{size int}', '#{const 42}##']);
-        for (const node of nodes) expect(source[node.startIndex]).toBe('#');
-        expect(metadata(tree.rootNode)).toEqual(metadata(fresh.rootNode));
-        for (const query of queries) {
-          const captures = (node: Node): (string | number)[][] =>
-            query.captures(node).map(({ name, node: value }) => [name, value.type, value.startIndex, value.endIndex]);
-          expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
-        }
-      } finally {
-        fresh.delete();
-      }
+      replaceAndCompare(parser, state, start, length, replacement);
+      const nodes = state.tree.rootNode
+        .descendantsOfType(['hsc', 'literal'])
+        .filter((node) => node.descendantsOfType('hsc_args').length > 0);
+      expect(nodes.map((node) => node.text)).toEqual(['#const 42', '#{size int}', '#{const 42}##']);
+      for (const node of nodes) expect(state.source[node.startIndex]).toBe('#');
       length = replacement.length;
     }
-    expect(source).toBe(original);
+    expect(state.source).toBe(source);
   } finally {
-    tree.delete();
+    state.tree.delete();
     parser.delete();
   }
 });
 
 test('keeps arbitrary nested C arguments separate from Haskell layout through edits and undo', () => {
   const parser = new Parser().setLanguage(language);
-  for (const depth of [0, 32, 256]) {
-    let source = `value = do\n  pure #{const ${'('.repeat(depth)}42${')'.repeat(depth)}}\nfollowing = 1\n`;
-    const original = source;
-    let tree = parser.parse(source)!;
-    const start = source.indexOf('42');
-    let length = 2;
-    try {
-      for (const replacement of ['42', 'sizeof("}\\\"")', "(42 /* } ' */)", '42']) {
-        const prefix = source.slice(0, start).split('\n');
-        const point = { row: prefix.length - 1, column: prefix.at(-1)!.length };
-        tree.edit(
-          new Edit({
-            startIndex: start,
-            oldEndIndex: start + length,
-            newEndIndex: start + replacement.length,
-            startPosition: point,
-            oldEndPosition: { ...point, column: point.column + length },
-            newEndPosition: { ...point, column: point.column + replacement.length },
-          })
-        );
-        source = source.slice(0, start) + replacement + source.slice(start + length);
-        const next = parser.parse(source, tree)!;
-        tree.delete();
-        tree = next;
-        const fresh = parser.parse(source)!;
-        try {
-          expect(tree.rootNode.hasError).toBe(false);
-          expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
-          expect(metadata(tree.rootNode)).toEqual(metadata(fresh.rootNode));
-          for (const query of queries) {
-            const captures = (node: Node): (string | number)[][] =>
-              query.captures(node).map(({ name, node: value }) => [name, value.type, value.startIndex, value.endIndex]);
-            expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
-          }
-        } finally {
-          fresh.delete();
+  try {
+    for (const depth of [0, 32, 256]) {
+      const source = `value = do\n  pure #{const ${'('.repeat(depth)}42${')'.repeat(depth)}}\nfollowing = 1\n`;
+      const state = { source, tree: parser.parse(source)! };
+      const start = source.indexOf('42');
+      let length = 2;
+      try {
+        for (const replacement of ['42', 'sizeof("}\\\"")', "(42 /* } ' */)", '42']) {
+          replaceAndCompare(parser, state, start, length, replacement);
+          expect(state.tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe(
+            'following'
+          );
+          length = replacement.length;
         }
-        length = replacement.length;
+        expect(state.source).toBe(source);
+      } finally {
+        state.tree.delete();
       }
-      expect(source).toBe(original);
-    } finally {
-      tree.delete();
     }
+  } finally {
+    parser.delete();
   }
-  parser.delete();
 });
 
 for (const [fixture, target, replacements, names] of [
@@ -214,18 +168,17 @@ for (const [fixture, target, replacements, names] of [
 ] as const) {
   test(`retains ${fixture} boundaries through edits and undo`, () => {
     const parser = new Parser().setLanguage(language);
-    let source = fs.readFileSync(path.join(root, 'test/fixtures', fixture), 'utf8');
-    const original = source;
-    let tree = parser.parse(source)!;
+    const source = fs.readFileSync(path.join(root, 'test/fixtures', fixture), 'utf8');
+    const state = { source, tree: parser.parse(source)! };
     const start = source.indexOf(target);
     let length = target.length;
     try {
-      expect(tree.rootNode.hasError).toBe(false);
-      expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
+      expect(state.tree.rootNode.hasError).toBe(false);
+      expect(state.tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
         names
       );
       if (fixture === 'hscWhitespaceBoundaries.hsc') {
-        expect(tree.rootNode.descendantsOfType('hsc_args').map((node) => node.text.trim())).toEqual([
+        expect(state.tree.rootNode.descendantsOfType('hsc_args').map((node) => node.text.trim())).toEqual([
           '2\r+3',
           '4\f+5',
           '6 // ignored\f} +999',
@@ -233,57 +186,64 @@ for (const [fixture, target, replacements, names] of [
       }
       if (fixture === 'hscHashOperators.hsc') {
         expect(
-          tree.rootNode.descendantsOfType('infix').map((node) => node.childForFieldName('operator')?.text)
+          state.tree.rootNode.descendantsOfType('infix').map((node) => node.childForFieldName('operator')?.text)
         ).toEqual(['##+', '##|+', '####+', '+##']);
       }
       for (const replacement of replacements) {
-        const prefix = source.slice(0, start).split('\n');
-        const point = { row: prefix.length - 1, column: prefix.at(-1)!.length };
-        const lines = replacement.split('\n');
-        const oldLines = source.slice(start, start + length).split('\n');
-        tree.edit(
-          new Edit({
-            startIndex: start,
-            oldEndIndex: start + length,
-            newEndIndex: start + replacement.length,
-            startPosition: point,
-            oldEndPosition: {
-              row: point.row + oldLines.length - 1,
-              column: oldLines.length === 1 ? point.column + length : oldLines.at(-1)!.length,
-            },
-            newEndPosition: {
-              row: point.row + lines.length - 1,
-              column: lines.length === 1 ? point.column + replacement.length : lines.at(-1)!.length,
-            },
-          })
-        );
-        source = source.slice(0, start) + replacement + source.slice(start + length);
-        const next = parser.parse(source, tree)!;
-        tree.delete();
-        tree = next;
-        const fresh = parser.parse(source)!;
-        try {
-          expect(tree.rootNode.hasError).toBe(false);
-          expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
-            names
-          );
-          expect(metadata(tree.rootNode)).toEqual(metadata(fresh.rootNode));
-          for (const query of queries) {
-            const captures = (node: Node): (string | number)[][] =>
-              query.captures(node).map(({ name, node: value }) => [name, value.type, value.startIndex, value.endIndex]);
-            expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
-          }
-        } finally {
-          fresh.delete();
-        }
+        replaceAndCompare(parser, state, start, length, replacement);
+        expect(
+          state.tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)
+        ).toEqual(names);
         length = replacement.length;
       }
-      expect(source).toBe(original);
+      expect(state.source).toBe(source);
     } finally {
-      tree.delete();
+      state.tree.delete();
       parser.delete();
     }
   });
+}
+
+function replaceAndCompare(
+  parser: Parser,
+  state: ParseState,
+  start: number,
+  length: number,
+  replacement: string
+): void {
+  const startPosition = positionAt(state.source, start);
+  const oldEndPosition = positionAt(state.source, start + length);
+  state.source = state.source.slice(0, start) + replacement + state.source.slice(start + length);
+  state.tree.edit(
+    new Edit({
+      startIndex: start,
+      oldEndIndex: start + length,
+      newEndIndex: start + replacement.length,
+      startPosition,
+      oldEndPosition,
+      newEndPosition: positionAt(state.source, start + replacement.length),
+    })
+  );
+  const previous = state.tree;
+  state.tree = parser.parse(state.source, previous)!;
+  previous.delete();
+  const fresh = parser.parse(state.source)!;
+  try {
+    expect(state.tree.rootNode.hasError).toBe(false);
+    expect(metadata(state.tree.rootNode)).toEqual(metadata(fresh.rootNode));
+    for (const query of queries) expect(captures(query, state.tree.rootNode)).toEqual(captures(query, fresh.rootNode));
+  } finally {
+    fresh.delete();
+  }
+}
+
+function positionAt(source: string, index: number): { row: number; column: number } {
+  const lines = source.slice(0, index).split('\n');
+  return { row: lines.length - 1, column: lines.at(-1)!.length };
+}
+
+function captures(query: Query, node: Node): (string | number)[][] {
+  return query.captures(node).map(({ name, node: value }) => [name, value.type, value.startIndex, value.endIndex]);
 }
 
 function metadata(node: Node): unknown {
