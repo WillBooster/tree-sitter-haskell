@@ -14,7 +14,9 @@ languages=$(node -e 'const {grammars} = require("./tree-sitter.json"); console.l
 while IFS=$'\t' read -r language grammar; do
   parser=$(mktemp ".tmp/fuzz/$language.XXXXXX")
   script/tree-sitter build "$grammar" -o "$parser"
-  script/tree-sitter fuzz --lib-path "$parser" --lang-name "$language"
+  corpus_filter=".*"
+  if [[ $grammar != . ]]; then corpus_filter=" - $language - "; fi
+  script/tree-sitter fuzz --lib-path "$parser" --lang-name "$language" --include "$corpus_filter"
   rm -f "$parser"
   parser=
 done <<< "$languages"

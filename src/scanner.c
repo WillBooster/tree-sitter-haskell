@@ -1267,6 +1267,7 @@ static bool is_space_or_tab(int32_t c) {
   return c == ' ' || c == '\t';
 }
 
+#ifndef HSC_EXT
 /**
  * Advance until the next newline or EOF, used to consume the body of a cpp directive.
  * Escaped newlines are treated as line continuations, which allow spaces and tabs between backslash and newline.
@@ -1285,6 +1286,8 @@ static void take_line_escaped_newline(Env *env) {
     else return;
   }
 }
+
+#endif
 
 /**
  * Skip the lexer until the following character is neither space nor tab.
@@ -3351,6 +3354,9 @@ static Symbol scan_main(Env *env) {
   MARK("main");
   SEQ(pre_ws_commands(env));
   bool whitespace = skip_space(env);
+#ifdef HSC_EXT
+  if (PEEK == '#' && valid(env, HSC_HASH)) MARK("hsc hash boundary");
+#endif
   if (valid(env, UNBOXED_LABEL_START) && char0(env, '(')) return unboxed_label_start(env, whitespace);
   if (is_newline(PEEK)) return newline_start(env);
   else if (not_eof(env)) return interior(env, whitespace);

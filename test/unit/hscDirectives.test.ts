@@ -49,6 +49,7 @@ test('retains directive names, C body ranges, doubled hashes and following Haske
     const bodies = directives.map((node) => node.childForFieldName('body')!);
     expect(bodies.map((node) => node.text)).toContain(String.raw` (HSC_VALUE /* } \" ' */ + 0)`);
     for (const node of directives) {
+      expect(node.text.startsWith('#')).toBe(true);
       const name = node.childForFieldName('name')!;
       const body = node.childForFieldName('body')!;
       expect(source.slice(name.startIndex, name.endIndex)).toBe(name.text);
@@ -72,6 +73,57 @@ test('retains directive names, C body ranges, doubled hashes and following Haske
     expect(injected.map(({ node }) => [node.startIndex, node.endIndex])).toEqual(
       bodies.map((node) => [node.startIndex, node.endIndex])
     );
+  } finally {
+    tree.delete();
+    parser.delete();
+  }
+});
+
+test('starts directive and hash-literal ranges at their hash through trivia edits and undo', () => {
+  let source = 'a = #const 42\nb = id    #{size int}\nc () =    #{const 42}##\nfollowing = 1\n';
+  const original = source;
+  const parser = new Parser().setLanguage(language);
+  let tree = parser.parse(source)!;
+  const start = source.indexOf('    #{const');
+  const prefix = source.slice(0, start).split('\n');
+  const point = { row: prefix.length - 1, column: prefix.at(-1)!.length };
+  let length = 4;
+  try {
+    for (const replacement of ['    ', ' ', '\t  ', '    ']) {
+      tree.edit(
+        new Edit({
+          startIndex: start,
+          oldEndIndex: start + length,
+          newEndIndex: start + replacement.length,
+          startPosition: point,
+          oldEndPosition: { ...point, column: point.column + length },
+          newEndPosition: { ...point, column: point.column + replacement.length },
+        })
+      );
+      source = source.slice(0, start) + replacement + source.slice(start + length);
+      const next = parser.parse(source, tree)!;
+      tree.delete();
+      tree = next;
+      const fresh = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError).toBe(false);
+        const nodes = tree.rootNode
+          .descendantsOfType(['hsc', 'literal'])
+          .filter((node) => node.descendantsOfType('hsc_args').length > 0);
+        expect(nodes.map((node) => node.text)).toEqual(['#const 42', '#{size int}', '#{const 42}##']);
+        for (const node of nodes) expect(source[node.startIndex]).toBe('#');
+        expect(metadata(tree.rootNode)).toEqual(metadata(fresh.rootNode));
+        for (const query of queries) {
+          const captures = (node: Node): (string | number)[][] =>
+            query.captures(node).map(({ name, node: value }) => [name, value.type, value.startIndex, value.endIndex]);
+          expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
+        }
+      } finally {
+        fresh.delete();
+      }
+      length = replacement.length;
+    }
+    expect(source).toBe(original);
   } finally {
     tree.delete();
     parser.delete();
