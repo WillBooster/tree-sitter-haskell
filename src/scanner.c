@@ -1126,7 +1126,7 @@ static void debug_contexts(Env *env) {
   }
 }
 
-void debug_newline(Env *env) {
+static void debug_newline(Env *env) {
   switch (env->state->newline.state) {
     case NInactive:
       dbg("no");
@@ -1178,7 +1178,7 @@ static void debug_init(Env *env) {
   dbg("\n");
 }
 
-void debug_finish(Env *env, Symbol result) {
+static void debug_finish(Env *env, Symbol result) {
   dbg("result: ");
   if (result) dbg("%s, ", sym_names[result]);
   else dbg("<skipped>, ");
