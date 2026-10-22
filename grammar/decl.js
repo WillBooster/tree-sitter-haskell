@@ -33,6 +33,7 @@ module.exports = {
     seq(
       field('associativity', choice('infixl', 'infixr', 'infix')),
       field('precedence', optional($.integer)),
+      optional(field('namespace', alias(choice('type', 'data'), $.namespace))),
       field('operator', sep1(',', choice($._operator_minus, $._varop, $._conop))),
     ),
   ),
@@ -186,6 +187,6 @@ module.exports = {
     field('signature', $._foreign_signature),
   ),
 
-  default_types: $ => seq('default', parens($, optional(sep1(',', field('type', $._ktype))))),
+  default_types: $ => seq('default', optional(field('class', $._tyconids)), parens($, optional(sep1(',', field('type', $._ktype))))),
 
 }

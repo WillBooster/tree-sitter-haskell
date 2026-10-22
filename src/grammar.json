@@ -7096,16 +7096,42 @@
         }
       ]
     },
-    "_child_type": {
-      "type": "SEQ",
+    "_ie_value": {
+      "type": "CHOICE",
       "members": [
         {
           "type": "FIELD",
-          "name": "namespace",
+          "name": "variable",
           "content": {
-            "type": "STRING",
-            "value": "type"
+            "type": "SYMBOL",
+            "name": "_varids"
           }
+        },
+        {
+          "type": "FIELD",
+          "name": "operator",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_sym_prefix"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_pqsym"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "_ie_name": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_ie_value"
         },
         {
           "type": "FIELD",
@@ -7117,6 +7143,81 @@
         }
       ]
     },
+    "_ie_data": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "namespace",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "STRING",
+              "value": "data"
+            },
+            "named": true,
+            "value": "namespace"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_ie_value"
+            },
+            {
+              "type": "FIELD",
+              "name": "constructor",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_qconid"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_constructor"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "_child_namespaced": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "namespace",
+              "content": {
+                "type": "ALIAS",
+                "content": {
+                  "type": "STRING",
+                  "value": "type"
+                },
+                "named": true,
+                "value": "namespace"
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_ie_name"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_ie_data"
+        }
+      ]
+    },
     "_child": {
       "type": "CHOICE",
       "members": [
@@ -7124,10 +7225,10 @@
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
-            "name": "_child_type"
+            "name": "_child_namespaced"
           },
           "named": true,
-          "value": "associated_type"
+          "value": "namespaced_child"
         },
         {
           "type": "SYMBOL",
@@ -7218,77 +7319,52 @@
       ]
     },
     "_ie_entity": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "CHOICE",
+          "type": "SEQ",
           "members": [
             {
-              "type": "FIELD",
-              "name": "namespace",
-              "content": {
-                "type": "SYMBOL",
-                "name": "namespace"
-              }
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "variable",
-              "content": {
-                "type": "SYMBOL",
-                "name": "_varids"
-              }
-            },
-            {
-              "type": "FIELD",
-              "name": "type",
-              "content": {
-                "type": "SYMBOL",
-                "name": "_tyconids"
-              }
-            },
-            {
-              "type": "FIELD",
-              "name": "operator",
-              "content": {
-                "type": "CHOICE",
-                "members": [
-                  {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "namespace",
+                  "content": {
                     "type": "SYMBOL",
-                    "name": "_sym_prefix"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "_pqsym"
+                    "name": "namespace"
                   }
-                ]
-              }
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_ie_name"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "children",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "children"
+                  }
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
             }
           ]
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "children",
-              "content": {
-                "type": "SYMBOL",
-                "name": "children"
-              }
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "_ie_data"
         }
       ]
     },
@@ -7505,6 +7581,23 @@
         }
       ]
     },
+    "default_export": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "default"
+        },
+        {
+          "type": "FIELD",
+          "name": "class",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_tyconids"
+          }
+        }
+      ]
+    },
     "exports": {
       "type": "SEQ",
       "members": [
@@ -7537,6 +7630,10 @@
                     {
                       "type": "SYMBOL",
                       "name": "module_export"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "default_export"
                     }
                   ]
                 },
@@ -7568,6 +7665,10 @@
                           {
                             "type": "SYMBOL",
                             "name": "module_export"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "default_export"
                           }
                         ]
                       }
@@ -10362,6 +10463,36 @@
               }
             },
             {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "namespace",
+                  "content": {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "type"
+                        },
+                        {
+                          "type": "STRING",
+                          "value": "data"
+                        }
+                      ]
+                    },
+                    "named": true,
+                    "value": "namespace"
+                  }
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
               "type": "FIELD",
               "name": "operator",
               "content": {
@@ -11418,6 +11549,22 @@
         {
           "type": "STRING",
           "value": "default"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "class",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_tyconids"
+              }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
           "type": "SEQ",

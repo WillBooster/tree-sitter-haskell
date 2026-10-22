@@ -105,6 +105,7 @@
   "as"
   "hiding"
   "deriving"
+  "default"
   "via"
   "stock"
   "anyclass"
@@ -115,6 +116,8 @@
   "infixl"
   "infixr"
 ] @keyword
+
+(namespace) @keyword
 
 [
   (function name: (variable) @function)

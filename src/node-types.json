@@ -1158,36 +1158,6 @@
     }
   },
   {
-    "type": "associated_type",
-    "named": true,
-    "fields": {
-      "namespace": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "type",
-            "named": false
-          }
-        ]
-      },
-      "type": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "name",
-            "named": true
-          },
-          {
-            "type": "qualified",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "bind",
     "named": true,
     "fields": {
@@ -1389,11 +1359,11 @@
             "named": true
           },
           {
-            "type": "associated_type",
+            "type": "constructor",
             "named": true
           },
           {
-            "type": "constructor",
+            "type": "namespaced_child",
             "named": true
           },
           {
@@ -2011,6 +1981,26 @@
     }
   },
   {
+    "type": "default_export",
+    "named": true,
+    "fields": {
+      "class": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          },
+          {
+            "type": "qualified",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "default_signature",
     "named": true,
     "fields": {
@@ -2030,6 +2020,20 @@
     "type": "default_types",
     "named": true,
     "fields": {
+      "class": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          },
+          {
+            "type": "qualified",
+            "named": true
+          }
+        ]
+      },
       "type": {
         "multiple": true,
         "required": false,
@@ -2458,6 +2462,20 @@
           }
         ]
       },
+      "constructor": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "constructor",
+            "named": true
+          },
+          {
+            "type": "qualified",
+            "named": true
+          }
+        ]
+      },
       "namespace": {
         "multiple": false,
         "required": false,
@@ -2527,6 +2545,10 @@
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "default_export",
+          "named": true
+        },
         {
           "type": "module_export",
           "named": true
@@ -2788,6 +2810,16 @@
           {
             "type": "infixr",
             "named": false
+          }
+        ]
+      },
+      "namespace": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "namespace",
+            "named": true
           }
         ]
       },
@@ -3516,6 +3548,20 @@
         "types": [
           {
             "type": "children",
+            "named": true
+          }
+        ]
+      },
+      "constructor": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "constructor",
+            "named": true
+          },
+          {
+            "type": "qualified",
             "named": true
           }
         ]
@@ -4487,6 +4533,74 @@
     "type": "namespace",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "namespaced_child",
+    "named": true,
+    "fields": {
+      "constructor": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "constructor",
+            "named": true
+          },
+          {
+            "type": "qualified",
+            "named": true
+          }
+        ]
+      },
+      "namespace": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "namespace",
+            "named": true
+          }
+        ]
+      },
+      "operator": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "prefix_id",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          },
+          {
+            "type": "qualified",
+            "named": true
+          }
+        ]
+      },
+      "variable": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "qualified",
+            "named": true
+          },
+          {
+            "type": "variable",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "negation",
