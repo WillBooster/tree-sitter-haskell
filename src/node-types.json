@@ -886,7 +886,7 @@
         "required": false,
         "types": [
           {
-            "type": "local_binds",
+            "type": "where_clause",
             "named": true
           }
         ]
@@ -1180,7 +1180,7 @@
         "required": false,
         "types": [
           {
-            "type": "local_binds",
+            "type": "where_clause",
             "named": true
           }
         ]
@@ -1566,7 +1566,7 @@
         "required": false,
         "types": [
           {
-            "type": "local_binds",
+            "type": "where_clause",
             "named": true
           }
         ]
@@ -3052,7 +3052,7 @@
         "required": false,
         "types": [
           {
-            "type": "local_binds",
+            "type": "where_clause",
             "named": true
           }
         ]
@@ -6725,6 +6725,22 @@
           },
           {
             "type": "view_pattern",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "where_clause",
+    "named": true,
+    "fields": {
+      "binds": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "local_binds",
             "named": true
           }
         ]

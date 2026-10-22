@@ -38,11 +38,12 @@ a = do
         expression: (do
           statement: (exp
             (variable))))
-      binds: (local_binds
-        decl: (bind
-          name: (variable)
-          match: (match
-            expression: (variable)))))))
+      binds: (where_clause
+        binds: (local_binds
+          decl: (bind
+            name: (variable)
+            match: (match
+              expression: (variable))))))))
 
 ================================================================================
 decl: empty where
@@ -59,7 +60,8 @@ a =
     (bind
       (variable)
       (match
-        (variable)))))
+        (variable))
+      (where_clause))))
 
 ================================================================================
 decl: where
@@ -80,24 +82,26 @@ a =
       (variable)
       (match
         (variable))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))
     (bind
       (variable)
       (match
         (variable))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))
-        (bind
-          (variable)
-          (match
-            (variable)))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable)))
+          (bind
+            (variable)
+            (match
+              (variable))))))))
 
 ================================================================================
 decl: case and where
@@ -129,17 +133,18 @@ a = case a of
               (constructor)
               (match
                 (variable))))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (literal
-              (integer))))
-        (bind
-          (variable)
-          (match
-            (literal
-              (integer))))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (literal
+                (integer))))
+          (bind
+            (variable)
+            (match
+              (literal
+                (integer)))))))))
 
 ================================================================================
 decl: do, let, where
@@ -173,18 +178,19 @@ a a = do
                   (variable)))))
           (exp
             (variable))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (apply
-              (variable)
-              (variable))))
-        (bind
-          (variable)
-          (match
-            (literal
-              (integer))))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (apply
+                (variable)
+                (variable))))
+          (bind
+            (variable)
+            (match
+              (literal
+                (integer)))))))))
 
 ================================================================================
 decl: variable binding list
@@ -560,11 +566,12 @@ a = a
       name: (variable)
       match: (match
         expression: (variable))
-      binds: (local_binds
-        decl: (bind
-          implicit: (implicit_variable)
-          match: (match
-            expression: (variable)))))))
+      binds: (where_clause
+        binds: (local_binds
+          decl: (bind
+            implicit: (implicit_variable)
+            match: (match
+              expression: (variable))))))))
 
 ================================================================================
 decl: implicit parameter in do-let
@@ -644,17 +651,18 @@ a = a where
       (variable)
       (match
         (variable))
-      (local_binds
-        (function
-          (infix
-            (variable)
-            (operator)
-            (variable))
-          (match
-            (variable)))
-        (fixity
-          (integer)
-          (operator))))))
+      (where_clause
+        (local_binds
+          (function
+            (infix
+              (variable)
+              (operator)
+              (variable))
+            (match
+              (variable)))
+          (fixity
+            (integer)
+            (operator)))))))
 
 ================================================================================
 decl: regression test for ambiguity bug
