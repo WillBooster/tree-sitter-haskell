@@ -15,3 +15,43 @@ default (A, A :: A)
       (signature
         (name)
         (name)))))
+
+================================================================================
+default: named default decl
+================================================================================
+
+module A (default A, default A.B, A) where
+default A ([A])
+default A.A (A, A)
+default A ()
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (header
+    (module
+      (module_id))
+    (exports
+      (default_export
+        (name))
+      (default_export
+        (qualified
+          (module
+            (module_id))
+          (name)))
+      (export
+        (name))))
+  (declarations
+    (default_types
+      (name)
+      (list
+        (name)))
+    (default_types
+      (qualified
+        (module
+          (module_id))
+        (name))
+      (name)
+      (name))
+    (default_types
+      (name))))

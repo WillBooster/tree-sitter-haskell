@@ -2029,6 +2029,26 @@
     }
   },
   {
+    "type": "default_export",
+    "named": true,
+    "fields": {
+      "class": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          },
+          {
+            "type": "qualified",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "default_signature",
     "named": true,
     "fields": {
@@ -2048,6 +2068,20 @@
     "type": "default_types",
     "named": true,
     "fields": {
+      "class": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          },
+          {
+            "type": "qualified",
+            "named": true
+          }
+        ]
+      },
       "type": {
         "multiple": true,
         "required": false,
@@ -2581,6 +2615,10 @@
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "default_export",
+          "named": true
+        },
         {
           "type": "module_export",
           "named": true
