@@ -81,32 +81,32 @@ test.each(grammars.flatMap((grammar) => examples.map((example) => ({ ...example,
   }
 );
 
-test('preserves deep patterns and following-name ranges in optimized and debug native builds', () => {
-  const workspace = fs.mkdtempSync(path.join(root, '.tmp/deep-scanner-'));
-  try {
-    const input = path.join(workspace, 'input.hs');
-    const query = path.join(workspace, 'names.scm');
-    fs.writeFileSync(query, '(declarations (bind name: (variable) @name))');
-    for (const name of languages) {
-      for (const debug of [false, true]) {
-        const library = path.join(workspace, `${name}-${debug ? 'debug' : 'optimized'}.dylib`);
-        run(['build', ...(debug ? ['-0'] : []), '-o', library, name === 'hsc' ? 'hsc' : '.']);
-        for (const { label, source } of examples) {
-          fs.writeFileSync(input, source);
-          const arguments_ = ['--lib-path', library, '--lang-name', name];
-          run(['parse', ...arguments_, '--quiet', input]);
-          const output = run(['query', ...arguments_, query, input]);
-          const row = source.split('\n').length - 2;
-          expect(output, `${name} ${label}, debug ${debug}`).toContain(
-            `capture: 0 - name, start: (${row}, 0), end: (${row}, 9), text: \`following\``
-          );
-        }
+test.each(languages.flatMap((name) => [false, true].map((debug) => ({ name, debug }))))(
+  'preserves deep $name patterns and following-name ranges in native builds with debug=$debug',
+  ({ name, debug }) => {
+    const workspace = fs.mkdtempSync(path.join(root, '.tmp/deep-scanner-'));
+    try {
+      const input = path.join(workspace, 'input.hs');
+      const query = path.join(workspace, 'names.scm');
+      fs.writeFileSync(query, '(declarations (bind name: (variable) @name))');
+      const library = path.join(workspace, `${name}-${debug ? 'debug' : 'optimized'}.dylib`);
+      run(['build', ...(debug ? ['-0'] : []), '-o', library, name === 'hsc' ? 'hsc' : '.']);
+      for (const { label, source } of examples) {
+        fs.writeFileSync(input, source);
+        const arguments_ = ['--lib-path', library, '--lang-name', name];
+        run(['parse', ...arguments_, '--quiet', input]);
+        const output = run(['query', ...arguments_, query, input]);
+        const row = source.split('\n').length - 2;
+        expect(output, `${name} ${label}, debug ${debug}`).toContain(
+          `capture: 0 - name, start: (${row}, 0), end: (${row}, 9), text: \`following\``
+        );
       }
+    } finally {
+      fs.rmSync(workspace, { recursive: true, force: true });
     }
-  } finally {
-    fs.rmSync(workspace, { recursive: true, force: true });
-  }
-}, 300_000);
+  },
+  300_000
+);
 
 function patternSource(depth: number): string {
   return `(${'Box ('.repeat(depth)}deep${')'.repeat(depth)}) = value\nfollowing = 1\n`;
