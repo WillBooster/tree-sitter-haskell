@@ -21,11 +21,12 @@ a =
               (variable)
               (match
                 (variable))))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))))
 
 ================================================================================
 layout: error: where on same level as case alt with following alt
@@ -39,27 +40,7 @@ a = case a of
 
 --------------------------------------------------------------------------------
 
-(haskell
-  (ERROR
-    (bind
-      (variable)
-      (match
-        (case
-          (variable)
-          (alternatives
-            (alternative
-              (variable)
-              (match
-                (variable))))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))
-    (variable))
-  (declarations
-    (top_splice
-      (variable))))
+(haskell (ERROR (bind (variable) (match (case (variable) (alternatives (alternative (variable) (match (variable)))))) (where_clause (local_binds (bind (variable) (match (variable)))))) (variable)) (declarations (top_splice (variable))))
 
 ================================================================================
 layout: where on deeper level than case alt with following alt
@@ -85,11 +66,12 @@ a = case a of
               (variable)
               (match
                 (variable))
-              (local_binds
-                (bind
-                  (variable)
-                  (match
-                    (variable)))))
+              (where_clause
+                (local_binds
+                  (bind
+                    (variable)
+                    (match
+                      (variable))))))
             (alternative
               (variable)
               (match
@@ -112,11 +94,12 @@ a = a
       (variable)
       (match
         (variable))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))
     (bind
       (variable)
       (match
@@ -138,7 +121,8 @@ a = a
     (bind
       (variable)
       (match
-        (variable)))
+        (variable))
+      (where_clause))
     (bind
       (variable)
       (match
@@ -174,16 +158,18 @@ x = do
                   (wildcard)
                   (match
                     (variable))
-                  (local_binds
-                    (bind
-                      (variable)
-                      (match
-                        (variable))))))))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))))
+                  (where_clause
+                    (local_binds
+                      (bind
+                        (variable)
+                        (match
+                          (variable)))))))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))))
 
 ================================================================================
 layout: double where in lambda case in do
@@ -209,16 +195,18 @@ x = do \case
                   (wildcard)
                   (match
                     (variable))
-                  (local_binds
-                    (bind
-                      (variable)
-                      (match
-                        (variable))))))))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))))
+                  (where_clause
+                    (local_binds
+                      (bind
+                        (variable)
+                        (match
+                          (variable)))))))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))))
 
 ================================================================================
 layout: double where in lambda cases in do
@@ -246,16 +234,18 @@ x = do \cases
                     (wildcard))
                   (match
                     (variable))
-                  (local_binds
-                    (bind
-                      (variable)
-                      (match
-                        (variable))))))))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))))
+                  (where_clause
+                    (local_binds
+                      (bind
+                        (variable)
+                        (match
+                          (variable)))))))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))))
 
 ================================================================================
 layout: where after case alt in do, then immediate toplevel where at do indent
@@ -283,16 +273,18 @@ a = do
                   (variable)
                   (match
                     (variable))
-                  (local_binds
-                    (bind
-                      (variable)
-                      (match
-                        (variable))))))))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))))
+                  (where_clause
+                    (local_binds
+                      (bind
+                        (variable)
+                        (match
+                          (variable)))))))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))))
 
 ================================================================================
 layout: where after case alt inline, then immediate toplevel where at case indent
@@ -315,16 +307,18 @@ f = case a of
               (variable)
               (match
                 (variable))
-              (local_binds
-                (bind
-                  (variable)
-                  (match
-                    (variable))))))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))))
+              (where_clause
+                (local_binds
+                  (bind
+                    (variable)
+                    (match
+                      (variable)))))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))))
 
 ================================================================================
 layout: where inline after do statement
@@ -344,11 +338,12 @@ a = do
         (do
           (exp
             (variable))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))))
 
 ================================================================================
 layout: do nested
@@ -411,11 +406,12 @@ a = do
         (do
           (exp
             (variable))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))))
 
 ================================================================================
 layout: if and indented where
@@ -438,11 +434,12 @@ a = if
               (boolean
                 (variable)))
             (variable))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))))
 
 ================================================================================
 layout: do and empty line
@@ -556,7 +553,8 @@ a =
             (alternative
               (variable)
               (match
-                (variable)))))))))
+                (variable))))))
+      (where_clause))))
 
 ================================================================================
 layout: identifier named "whe" in place of valid "where" as topdecl
@@ -819,11 +817,12 @@ a = do
                 (variable)
                 (match
                   (variable))
-                (local_binds
-                  (bind
-                    (variable)
-                    (match
-                      (variable)))))))
+                (where_clause
+                  (local_binds
+                    (bind
+                      (variable)
+                      (match
+                        (variable))))))))
           (exp
             (variable)))))
     (bind
@@ -835,7 +834,8 @@ a = do
               (bind
                 (variable)
                 (match
-                  (variable)))))
+                  (variable))
+                (where_clause))))
           (exp
             (variable)))))))
 
@@ -879,22 +879,24 @@ a = do
         (do
           (exp
             (variable))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))
     (bind
       (variable)
       (match
         (do
           (exp
             (variable))))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))))
 
 ================================================================================
 layout: empty where, then indented binds after inline where
@@ -912,16 +914,18 @@ i = j
     (bind
       (variable)
       (match
-        (variable)))
+        (variable))
+      (where_clause))
     (bind
       (variable)
       (match
         (variable))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))
     (bind
       (variable)
       (match
@@ -1005,56 +1009,61 @@ a = b where -1 = a
       (variable)
       (match
         (variable))
-      (comment
-        (content))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))
+      (where_clause
+        (comment
+          (content))
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))
     (bind
       (variable)
       (match
         (variable))
-      (comment
-        (content))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))
+      (where_clause
+        (comment
+          (content))
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))
     (bind
       (variable)
       (match
         (variable))
-      (comment
-        (content))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))
+      (where_clause
+        (comment
+          (content))
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))
     (bind
       (variable)
       (match
         (variable))
-      (comment
-        (content))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))
+      (where_clause
+        (comment
+          (content))
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))
     (bind
       (variable)
       (match
         (variable))
-      (local_binds
-        (bind
-          (negation
-            (integer))
-          (match
-            (variable)))))))
+      (where_clause
+        (local_binds
+          (bind
+            (negation
+              (integer))
+            (match
+              (variable))))))))
 
 ================================================================================
 layout: comment in empty where on next line indented
@@ -1078,19 +1087,22 @@ c = d
     (bind
       (variable)
       (match
-        (variable)))
+        (variable))
+      (where_clause))
     (comment
       (content))
     (bind
       (variable)
       (match
-        (variable)))
+        (variable))
+      (where_clause))
     (comment
       (content))
     (bind
       (variable)
       (match
-        (variable)))
+        (variable))
+      (where_clause))
     (comment
       (content))
     (bind
@@ -2482,28 +2494,29 @@ a =
       (variable)
       (match
         (variable))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (operator_chain
-              (do
-                (let
-                  (local_binds
-                    (bind
-                      (variable)
-                      (match
-                        (variable)))))
-                (exp
-                  (variable)))
-              (infix_id
-                (variable))
-              (conditional
-                (variable)
-                (variable)
-                (apply
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (operator_chain
+                (do
+                  (let
+                    (local_binds
+                      (bind
+                        (variable)
+                        (match
+                          (variable)))))
+                  (exp
+                    (variable)))
+                (infix_id
+                  (variable))
+                (conditional
                   (variable)
-                  (variable))))))))))
+                  (variable)
+                  (apply
+                    (variable)
+                    (variable)))))))))))
 
 ================================================================================
 layout: space at eof
@@ -3416,21 +3429,7 @@ a = a
 
 --------------------------------------------------------------------------------
 
-(haskell
-  (declarations
-    (bind
-      (variable)
-      (match
-        (variable))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))
-        (comment
-          (content))
-        (ERROR
-          (variable))))))
+(haskell (declarations (bind (variable) (match (variable)) (where_clause (local_binds (bind (variable) (match (variable))) (comment (content)) (ERROR (variable)))))))
 
 ================================================================================
 layout: typed hole in do before function signature

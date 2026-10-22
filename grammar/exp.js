@@ -209,13 +209,13 @@ module.exports = {
   alternative: $ => seq(
     field('pattern', $._pat),
     $._matches,
-    optional($._where_binds),
+    optional(field('binds', $.where_clause)),
   ),
 
   _nalt: $ => seq(
     field('patterns', $.patterns),
     $._matches,
-    optional($._where_binds),
+    optional(field('binds', $.where_clause)),
   ),
 
   alternatives: $ => layout_sort($, $._cmd_layout_start_case, field('alternative', $.alternative)),

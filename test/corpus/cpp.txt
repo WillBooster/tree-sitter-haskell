@@ -492,12 +492,13 @@ a = a
       (variable)
       (match
         (variable))
-      (cpp)
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (variable)))))
+      (where_clause
+        (cpp)
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (variable))))))
     (cpp)
     (cpp)))
 

@@ -458,7 +458,7 @@ enum ts_symbol_identifiers {
   sym_decl = 434,
   sym__local_decl = 435,
   sym_local_binds = 436,
-  sym__where_binds = 437,
+  sym_where_clause = 437,
   sym__foreign_calling_convention = 438,
   sym__foreign_safety = 439,
   sym__foreign_underscore_signature = 440,
@@ -1075,7 +1075,7 @@ static const char * const ts_symbol_names[] = {
   [sym_decl] = "decl",
   [sym__local_decl] = "_local_decl",
   [sym_local_binds] = "local_binds",
-  [sym__where_binds] = "_where_binds",
+  [sym_where_clause] = "where_clause",
   [sym__foreign_calling_convention] = "_foreign_calling_convention",
   [sym__foreign_safety] = "_foreign_safety",
   [sym__foreign_underscore_signature] = "signature",
@@ -1692,7 +1692,7 @@ static const TSSymbol ts_symbol_map[] = {
   [sym_decl] = sym_decl,
   [sym__local_decl] = sym__local_decl,
   [sym_local_binds] = sym_local_binds,
-  [sym__where_binds] = sym__where_binds,
+  [sym_where_clause] = sym_where_clause,
   [sym__foreign_calling_convention] = sym__foreign_calling_convention,
   [sym__foreign_safety] = sym__foreign_safety,
   [sym__foreign_underscore_signature] = sym_signature,
@@ -3638,8 +3638,8 @@ static const TSSymbolMetadata ts_symbol_metadata[] = {
     .visible = true,
     .named = true,
   },
-  [sym__where_binds] = {
-    .visible = false,
+  [sym_where_clause] = {
+    .visible = true,
     .named = true,
   },
   [sym__foreign_calling_convention] = {
@@ -5662,7 +5662,7 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_operator, 1},
     {field_operator, 2},
   [373] =
-    {field_binds, 1, .inherited = true},
+    {field_binds, 1},
     {field_expression, 0, .inherited = true},
     {field_match, 0},
   [376] =
@@ -5675,7 +5675,7 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_name, 0, .inherited = true},
     {field_name, 1, .inherited = true},
   [382] =
-    {field_binds, 1, .inherited = true},
+    {field_binds, 1},
     {field_match, 0, .inherited = true},
   [384] =
     {field_match, 0, .inherited = true},
@@ -7110,7 +7110,7 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
   [1507] =
     {field_alternative, 2},
   [1508] =
-    {field_binds, 2, .inherited = true},
+    {field_binds, 2},
     {field_match, 1, .inherited = true},
     {field_pattern, 0},
   [1511] =
@@ -7125,7 +7125,7 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_match, 1, .inherited = true},
     {field_patterns, 1, .inherited = true},
   [1520] =
-    {field_binds, 2, .inherited = true},
+    {field_binds, 2},
     {field_match, 1, .inherited = true},
     {field_patterns, 0},
   [1523] =
@@ -28228,7 +28228,7 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
   [STATE(10)] = {
     [sym_comment] = STATE(10),
     [sym_haddock] = STATE(10),
-    [sym__where_binds] = STATE(264),
+    [sym_where_clause] = STATE(264),
     [sym__where] = STATE(156),
     [anon_sym_SEMI] = ACTIONS(226),
     [anon_sym_LBRACE_DASH] = ACTIONS(5),
@@ -109409,8 +109409,8 @@ static const TSParseActionEntry ts_parse_actions[] = {
   [1124] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym_module, 1, 0, 36),
   [1126] = {.entry = {.count = 1, .reusable = false}}, REDUCE(sym__type_apply, 2, 0, 114),
   [1128] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym__type_apply, 2, 0, 114),
-  [1130] = {.entry = {.count = 1, .reusable = false}}, REDUCE(sym__where_binds, 1, 0, 0),
-  [1132] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym__where_binds, 1, 0, 0),
+  [1130] = {.entry = {.count = 1, .reusable = false}}, REDUCE(sym_where_clause, 1, 0, 0),
+  [1132] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym_where_clause, 1, 0, 0),
   [1134] = {.entry = {.count = 1, .reusable = true}}, SHIFT(157),
   [1136] = {.entry = {.count = 1, .reusable = false}}, SHIFT(65),
   [1138] = {.entry = {.count = 1, .reusable = false}}, SHIFT(4392),
@@ -109625,8 +109625,8 @@ static const TSParseActionEntry ts_parse_actions[] = {
   [1581] = {.entry = {.count = 1, .reusable = true}}, SHIFT(262),
   [1583] = {.entry = {.count = 1, .reusable = false}}, REDUCE(sym_local_binds, 3, 0, 201),
   [1585] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym_local_binds, 3, 0, 201),
-  [1587] = {.entry = {.count = 1, .reusable = false}}, REDUCE(sym__where_binds, 2, 0, 291),
-  [1589] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym__where_binds, 2, 0, 291),
+  [1587] = {.entry = {.count = 1, .reusable = false}}, REDUCE(sym_where_clause, 2, 0, 291),
+  [1589] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym_where_clause, 2, 0, 291),
   [1591] = {.entry = {.count = 1, .reusable = false}}, REDUCE(sym__bind_matches, 2, 0, 154),
   [1593] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym__bind_matches, 2, 0, 154),
   [1595] = {.entry = {.count = 1, .reusable = false}}, SHIFT(149),

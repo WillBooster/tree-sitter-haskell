@@ -64,7 +64,7 @@ module.exports = {
       field('match', alias($._simple_bind_match, $.match)),
       repeat1(field('match', alias($._bind_match, $.match))),
     ),
-    optional($._where_binds),
+    optional(field('binds', $.where_clause)),
   ),
 
   _function_name: $ => field('name', $._var),
@@ -124,7 +124,7 @@ module.exports = {
 
   local_binds: $ => layout($, field('decl', $._local_decl)),
 
-  _where_binds: $ => seq($._where, optional(field('binds', $.local_binds))),
+  where_clause: $ => seq($._where, optional(field('binds', $.local_binds))),
 
   _foreign_calling_keyword: _ => token(choice(
     'ccall',

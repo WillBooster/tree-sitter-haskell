@@ -508,19 +508,20 @@ a = a
       (variable)
       (match
         (variable))
-      (local_binds
-        (bind
-          (variable)
-          (match
-            (quote
-              (quoted_decls
-                (instance
-                  (name)
-                  (instance_declarations
-                    (bind
-                      (variable)
-                      (match
-                        (variable)))))))))))
+      (where_clause
+        (local_binds
+          (bind
+            (variable)
+            (match
+              (quote
+                (quoted_decls
+                  (instance
+                    (name)
+                    (instance_declarations
+                      (bind
+                        (variable)
+                        (match
+                          (variable))))))))))))
     (bind
       (variable)
       (match
