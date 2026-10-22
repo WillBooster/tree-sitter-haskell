@@ -36,11 +36,28 @@ test('scanner diagnostics preserve long-line trees and incremental edits', () =>
       expect(debug.stdout).toBe(optimized.stdout);
       expect(debug.stderr).toContain('contexts =');
       expect(debug.stderr).toContain('result:');
+      expectBoundedSnapshots(debug.stderr);
       const edited = parse(debugLibrary, ['--edits', '9 0 yy']);
       fs.writeFileSync(input, source.slice(0, 9) + 'yy' + source.slice(9));
       expect(edited.stdout).toBe(parse(optimizedLibrary).stdout);
     }
+    const input = path.join(workspace, 'deep.hs');
+    fs.writeFileSync(input, `(${'Box ('.repeat(512)}deep${')'.repeat(512)}) = value\nfollowing = 1\n`);
+    const arguments_ = ['--lang-name', 'haskell', input];
+    const optimized = run(['parse', '--lib-path', optimizedLibrary, ...arguments_]);
+    const debug = run(['parse', '--lib-path', debugLibrary, ...arguments_]);
+    expect(debug.stdout).toBe(optimized.stdout);
+    expect(debug.stderr).toContain('contexts omitted');
+    expectBoundedSnapshots(debug.stderr);
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });
   }
 }, 300_000);
+
+function expectBoundedSnapshots(output: string): void {
+  const snapshots = output
+    .split('\n')
+    .filter((line) => line.startsWith('  contexts = ') || line.startsWith('lookahead from '));
+  expect(snapshots.length).toBeGreaterThan(0);
+  for (const snapshot of snapshots) expect(snapshot.length).toBeLessThan(512);
+}
