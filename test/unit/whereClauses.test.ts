@@ -4,7 +4,20 @@ import { expect, test } from 'vitest';
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 const root = path.join(import.meta.dirname, '../..');
-const fixtures = [
+interface ClauseEdit {
+  before: string;
+  after: string;
+  clauses: string[];
+  bodyDeclarations?: (string[] | undefined)[];
+}
+interface Fixture {
+  name: string;
+  source: string;
+  clauses: string[];
+  bodyDeclarations?: (string[] | undefined)[];
+  edits?: ClauseEdit[];
+}
+const fixtures: Fixture[] = [
   {
     name: 'multiline binding',
     source: 'outer = local\n  where\n    local = 1\nfollowing = 2\n',
@@ -44,11 +57,29 @@ const fixtures = [
     name: 'empty explicit bindings',
     source: 'outer = 1 where {}\nfollowing = 2\n',
     clauses: ['where {}'],
+    bodyDeclarations: [[]],
+    edits: [
+      {
+        before: '{}',
+        after: '{ local = 3 }',
+        clauses: ['where { local = 3 }'],
+        bodyDeclarations: [['local = 3']],
+      },
+    ],
   },
   {
     name: 'empty implicit bindings',
     source: 'outer = 1 where\nfollowing = 2\n',
     clauses: ['where'],
+    bodyDeclarations: [undefined],
+    edits: [
+      {
+        before: 'where',
+        after: 'where\n  local = 3',
+        clauses: ['where\n  local = 3'],
+        bodyDeclarations: [['local = 3']],
+      },
+    ],
   },
 ];
 
@@ -62,49 +93,60 @@ const languages = await Promise.all(
 
 test.each(languages.flatMap((language) => fixtures.map((fixture) => ({ ...fixture, ...language }))))(
   '$dialect exposes $name as selectable where clauses through edits and undo',
-  ({ language, source: originalSource, clauses: expectedClauses }) => {
+  ({ language, source: originalSource, clauses: expectedClauses, bodyDeclarations, edits = [] }) => {
     const parser = new Parser().setLanguage(language);
     const query = new Query(language, '(("where" @keyword) (local_binds) @body)');
     let source = originalSource;
     let tree = parser.parse(source)!;
     try {
-      expectClauses(tree.rootNode, query, source, expectedClauses);
+      expectClauses(tree.rootNode, query, source, expectedClauses, bodyDeclarations);
       const original = snapshot(tree.rootNode);
-      const startIndex = source.indexOf('1');
-      const startPosition = position(source, startIndex);
-      let previous = '1';
-      for (const replacement of ['22', '1']) {
-        const oldEndIndex = startIndex + previous.length;
-        tree.edit(
-          new Edit({
-            startIndex,
-            oldEndIndex,
-            newEndIndex: startIndex + replacement.length,
-            startPosition,
-            oldEndPosition: position(source, oldEndIndex),
-            newEndPosition: { row: startPosition.row, column: startPosition.column + replacement.length },
-          })
-        );
-        source = source.slice(0, startIndex) + replacement + source.slice(oldEndIndex);
-        previous = replacement;
-        const next = parser.parse(source, tree)!;
-        tree.delete();
-        tree = next;
-        const fresh = parser.parse(source)!;
-        try {
-          expectClauses(
-            tree.rootNode,
-            query,
-            source,
-            expectedClauses.map((text) => text.replace('1', replacement))
+      const roundTrips: ClauseEdit[] = [
+        {
+          before: '1',
+          after: '22',
+          clauses: expectedClauses.map((text) => text.replace('1', '22')),
+          bodyDeclarations,
+        },
+        ...edits,
+      ];
+      for (const edit of roundTrips) {
+        const startIndex = source.indexOf(edit.before);
+        expect(startIndex).toBeGreaterThanOrEqual(0);
+        let previous = edit.before;
+        for (const [replacement, clauses, bodies] of [
+          [edit.after, edit.clauses, edit.bodyDeclarations],
+          [edit.before, expectedClauses, bodyDeclarations],
+        ] as const) {
+          const oldEndIndex = startIndex + previous.length;
+          const newEndIndex = startIndex + replacement.length;
+          const newSource = source.slice(0, startIndex) + replacement + source.slice(oldEndIndex);
+          tree.edit(
+            new Edit({
+              startIndex,
+              oldEndIndex,
+              newEndIndex,
+              startPosition: position(source, startIndex),
+              oldEndPosition: position(source, oldEndIndex),
+              newEndPosition: position(newSource, newEndIndex),
+            })
           );
-          expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-        } finally {
-          fresh.delete();
+          source = newSource;
+          previous = replacement;
+          const next = parser.parse(source, tree)!;
+          tree.delete();
+          tree = next;
+          const fresh = parser.parse(source)!;
+          try {
+            expectClauses(tree.rootNode, query, source, clauses, bodies);
+            expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
+          } finally {
+            fresh.delete();
+          }
         }
+        expect(source).toBe(originalSource);
+        expect(snapshot(tree.rootNode)).toEqual(original);
       }
-      expect(source).toBe(originalSource);
-      expect(snapshot(tree.rootNode)).toEqual(original);
     } finally {
       tree.delete();
       query.delete();
@@ -113,15 +155,24 @@ test.each(languages.flatMap((language) => fixtures.map((fixture) => ({ ...fixtur
   }
 );
 
-function expectClauses(rootNode: Node, query: Query, source: string, expected: string[]): void {
+function expectClauses(
+  rootNode: Node,
+  query: Query,
+  source: string,
+  expected: string[],
+  bodyDeclarations?: (string[] | undefined)[]
+): void {
   expect(rootNode.hasError).toBe(false);
   const clauses = rootNode.descendantsOfType('where_clause');
   expect(clauses.map((node) => node.text)).toEqual(expected);
-  for (const clause of clauses) {
+  for (const [index, clause] of clauses.entries()) {
     expect(clause.parent?.childForFieldName('binds')?.type).toBe('where_clause');
     expect(rootNode.namedDescendantForIndex(clause.startIndex, clause.startIndex + 1)?.type).toBe('where_clause');
     const body = clause.childForFieldName('binds');
     if (body) expect(body.type).toBe('local_binds');
+    if (bodyDeclarations) {
+      expect(body?.childrenForFieldName('decl').map((node) => node.text)).toEqual(bodyDeclarations[index]);
+    }
     expect(clause.startPosition).toEqual(position(source, clause.startIndex));
     expect(clause.endPosition).toEqual(position(source, clause.endIndex));
   }
