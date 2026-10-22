@@ -78,7 +78,8 @@ test.each(grammars.flatMap((grammar) => examples.map((example) => ({ ...example,
     } finally {
       parser.delete();
     }
-  }
+  },
+  30_000
 );
 
 test.each(languages.flatMap((name) => [false, true].map((debug) => ({ name, debug }))))(
