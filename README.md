@@ -22,6 +22,7 @@ the supported language extensions. The fork's node and query contracts are descr
 The fork's main differences from upstream 0.23.1 are:
 
 - **Whitespace**: horizontal tabs separate tokens, are accepted before Haddock markers, and advance layout to the next eight-column tab stop.
+- **OrPatterns**: parenthesized alternatives separated by semicolons, such as `(A; B)`, parse as an `or_pattern` node with an `alternative` field for each pattern.
 - **MultilineStrings**: triple-quoted literals retain their complete source as a single `string` node, including embedded quotes, escapes, and string gaps.
 - **Comment scanning**: comments and Haddock nodes expose a named `content` child, preserving body whitespace and excluding outer delimiters. Ordinary comment injection captures this child.
   Empty block comments such as `{--}` terminate at their closing delimiter and preserve following code.

@@ -46,6 +46,10 @@
         "named": true
       },
       {
+        "type": "or_pattern",
+        "named": true
+      },
+      {
         "type": "parens",
         "named": true
       },
@@ -601,6 +605,10 @@
       },
       {
         "type": "negation",
+        "named": true
+      },
+      {
+        "type": "or_pattern",
         "named": true
       },
       {
@@ -4868,6 +4876,38 @@
         "types": [
           {
             "type": "prefix_negation",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "or_pattern",
+    "named": true,
+    "fields": {
+      "alternative": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "binding_pattern_operand",
+            "named": true
+          },
+          {
+            "type": "infix_chain",
+            "named": true
+          },
+          {
+            "type": "pattern_operand",
+            "named": true
+          },
+          {
+            "type": "signature",
+            "named": true
+          },
+          {
+            "type": "view_pattern",
             "named": true
           }
         ]

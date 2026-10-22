@@ -1193,3 +1193,114 @@ a (type a) (type (A a)) = a
               (variable)))))
       (match
         (variable)))))
+
+================================================================================
+pat: or-patterns
+================================================================================
+
+a (A; B) = a
+a ((== a) -> True; show -> "yes") = a
+a (abs -> (0; 1); 2) = a
+a = case a of
+  (A
+   ; B a) -> a
+  (_; True) | a -> a
+a = do
+  (A; B) <- a
+  a
+a = \(A; B) -> a
+pattern A <- (B []; C)
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (function
+      (variable)
+      (patterns
+        (or_pattern
+          (constructor)
+          (constructor)))
+      (match
+        (variable)))
+    (function
+      (variable)
+      (patterns
+        (or_pattern
+          (view_pattern
+            (right_section
+              (operator)
+              (variable))
+            (constructor))
+          (view_pattern
+            (variable)
+            (literal
+              (string)))))
+      (match
+        (variable)))
+    (function
+      (variable)
+      (patterns
+        (or_pattern
+          (view_pattern
+            (variable)
+            (or_pattern
+              (literal
+                (integer))
+              (literal
+                (integer))))
+          (literal
+            (integer))))
+      (match
+        (variable)))
+    (bind
+      (variable)
+      (match
+        (case
+          (variable)
+          (alternatives
+            (alternative
+              (or_pattern
+                (constructor)
+                (apply
+                  (constructor)
+                  (variable)))
+              (match
+                (variable)))
+            (alternative
+              (or_pattern
+                (wildcard)
+                (constructor))
+              (match
+                (guards
+                  (boolean
+                    (variable)))
+                (variable)))))))
+    (bind
+      (variable)
+      (match
+        (do
+          (bind
+            (or_pattern
+              (constructor)
+              (constructor))
+            (variable))
+          (exp
+            (variable)))))
+    (bind
+      (variable)
+      (match
+        (lambda
+          (patterns
+            (or_pattern
+              (constructor)
+              (constructor)))
+          (variable))))
+    (pattern_synonym
+      (equation
+        (constructor)
+        (or_pattern
+          (apply
+            (constructor)
+            (list))
+          (constructor))))))

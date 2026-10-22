@@ -23,6 +23,8 @@ const patternRules = (name, recordField) => {
 
     [name('_pat_tuple')]: $ => parens($, rule($, '_pat_tuple_elems')),
 
+    [name('_pat_or')]: $ => parens($, sep2(';', field('alternative', rule($, '_pat_texp')))),
+
     [name('_pat_unboxed_tuple')]: $ => unboxed_tuple_full($, rule($, '_pat_texp')),
 
     [name('_pat_unboxed_sum')]: $ => unboxed_sum_single($, rule($, '_pat_texp')),
@@ -120,6 +122,7 @@ const patternRules = (name, recordField) => {
       alias(rule($, '_pat_wildcard'), $.wildcard),
       alias(rule($, '_pat_parens'), $.parens),
       alias(rule($, '_pat_tuple'), $.tuple),
+      alias(rule($, '_pat_or'), $.or_pattern),
       alias(rule($, '_pat_unboxed_tuple'), $.unboxed_tuple),
       alias(rule($, '_pat_unboxed_sum'), $.unboxed_sum),
       alias(rule($, '_pat_list'), $.list),
