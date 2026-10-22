@@ -5292,6 +5292,52 @@
         }
       ]
     },
+    "_pat_or": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_paren_open"
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "alternative",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_pat_texp"
+              }
+            },
+            {
+              "type": "REPEAT1",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": ";"
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "alternative",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_pat_texp"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_paren_close"
+        }
+      ]
+    },
     "_pat_unboxed_tuple": {
       "type": "SEQ",
       "members": [
@@ -5859,6 +5905,15 @@
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
+            "name": "_pat_or"
+          },
+          "named": true,
+          "value": "or_pattern"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
             "name": "_pat_unboxed_tuple"
           },
           "named": true,
@@ -6083,6 +6138,52 @@
         {
           "type": "SYMBOL",
           "name": "_binding_pat_tuple_elems"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_paren_close"
+        }
+      ]
+    },
+    "_binding_pat_or": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_paren_open"
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "alternative",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_binding_pat_texp"
+              }
+            },
+            {
+              "type": "REPEAT1",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": ";"
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "alternative",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_binding_pat_texp"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
         },
         {
           "type": "SYMBOL",
@@ -6631,6 +6732,15 @@
           },
           "named": true,
           "value": "tuple"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_binding_pat_or"
+          },
+          "named": true,
+          "value": "or_pattern"
         },
         {
           "type": "ALIAS",
