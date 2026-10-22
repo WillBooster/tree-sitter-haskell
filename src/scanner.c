@@ -3503,15 +3503,29 @@ static bool scan(Env *env) {
 enum {
   ContextRepeat = 1 << 4,
   ContextIndent = 1 << 5,
+  ContextReference = 1 << 6,
+  ContextSearchWindow = 64,
   ContextSortMask = ContextRepeat - 1,
 };
 
 _Static_assert(NoContext <= ContextSortMask, "Context sorts must fit in the serialized tag");
 _Static_assert(NResume < 4, "Newline states must fit in the serialized flags");
 
+typedef struct {
+  uint32_t count;
+  uint32_t distance;
+  int32_t indent_delta;
+} ContextMatch;
+
+static bool serialize_contexts(const Contexts *contexts, char *buffer, unsigned *length, bool compress);
+static bool serialize_context(char *buffer, unsigned *length, Context context, uint32_t count);
+static bool serialize_context_reference(char *buffer, unsigned *length, ContextMatch match);
+static void deserialize_context_reference(Contexts *contexts, const char **cursor, const char *end);
 static bool serialize_uint(char *buffer, unsigned *length, uint32_t value);
 static uint32_t deserialize_uint(const char **cursor, const char *end);
 static uint32_t context_run_length(const Contexts *contexts, uint32_t start);
+static ContextMatch context_match(const Contexts *contexts, uint32_t start);
+static ContextMatch context_match_at_distance(const Contexts *contexts, uint32_t start, uint32_t distance);
 
 void *tree_sitter_haskell_external_scanner_create() {
   State *state = ts_calloc(1, sizeof(State));
@@ -3535,16 +3549,10 @@ unsigned tree_sitter_haskell_external_scanner_serialize(void *payload, char *buf
   if (!serialize_uint(buffer, &length, flags)
       || !serialize_uint(buffer, &length, newline.end)
       || !serialize_uint(buffer, &length, newline.indent)) return 0;
-  for (uint32_t i = 0; i < state->contexts.size;) {
-    Context context = *array_get(&state->contexts, i);
-    uint32_t count = context_run_length(&state->contexts, i);
-    uint32_t tag = context.sort | (count > 1 ? ContextRepeat : 0) | (context.indent > 0 ? ContextIndent : 0);
-    if (!serialize_uint(buffer, &length, tag)
-        || (count > 1 && !serialize_uint(buffer, &length, count - 1))
-        || (context.indent > 0 && !serialize_uint(buffer, &length, context.indent))) return 0;
-    i += count;
-  }
-  return length;
+  unsigned prefix = length;
+  if (serialize_contexts(&state->contexts, buffer, &length, false)) return length;
+  length = prefix;
+  return serialize_contexts(&state->contexts, buffer, &length, true) ? length : 0;
 }
 
 void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
@@ -3570,6 +3578,10 @@ void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char 
     };
     while (cursor < end) {
       uint32_t tag = deserialize_uint(&cursor, end);
+      if (tag == ContextReference) {
+        deserialize_context_reference(&state->contexts, &cursor, end);
+        continue;
+      }
       uint32_t count = (tag & ContextRepeat) ? deserialize_uint(&cursor, end) + 1 : 1;
       Context context = {
         .sort = tag & ContextSortMask,
@@ -3588,6 +3600,52 @@ void tree_sitter_haskell_external_scanner_destroy(void *payload) {
   array_delete(&state->contexts);
   array_delete(&state->lookahead);
   ts_free(state);
+}
+
+static bool serialize_contexts(const Contexts *contexts, char *buffer, unsigned *length, bool compress) {
+  for (uint32_t i = 0; i < contexts->size;) {
+    uint32_t count = context_run_length(contexts, i);
+    ContextMatch match = {.count = count};
+    if (compress && count == 1) match = context_match(contexts, i);
+    bool written = match.distance
+      ? serialize_context_reference(buffer, length, match)
+      : serialize_context(buffer, length, *array_get(contexts, i), count);
+    if (!written) return false;
+    i += match.count;
+  }
+  return true;
+}
+
+static bool serialize_context(char *buffer, unsigned *length, Context context, uint32_t count) {
+  uint32_t tag = context.sort | (count > 1 ? ContextRepeat : 0) | (context.indent > 0 ? ContextIndent : 0);
+  return serialize_uint(buffer, length, tag)
+    && (count == 1 || serialize_uint(buffer, length, count - 1))
+    && (context.indent == 0 || serialize_uint(buffer, length, context.indent));
+}
+
+static bool serialize_context_reference(char *buffer, unsigned *length, ContextMatch match) {
+  uint32_t delta = ((uint32_t) match.indent_delta << 1) ^ -(uint32_t) (match.indent_delta < 0);
+  return serialize_uint(buffer, length, ContextReference)
+    && serialize_uint(buffer, length, match.distance)
+    && serialize_uint(buffer, length, match.count)
+    && serialize_uint(buffer, length, delta);
+}
+
+static void deserialize_context_reference(Contexts *contexts, const char **cursor, const char *end) {
+  uint32_t distance = deserialize_uint(cursor, end);
+  uint32_t count = deserialize_uint(cursor, end);
+  uint32_t encoded_delta = deserialize_uint(cursor, end);
+  int64_t delta = encoded_delta & 1 ? -(int64_t) (encoded_delta >> 1) - 1 : encoded_delta >> 1;
+  assert(distance > 0 && distance <= contexts->size);
+  for (uint32_t i = 0; i < count; i++) {
+    Context context = *array_get(contexts, contexts->size - distance);
+    if (context.indent) {
+      int64_t indent = (int64_t) context.indent + delta;
+      assert(indent > 0 && indent <= UINT32_MAX);
+      context.indent = (uint32_t) indent;
+    }
+    array_push(contexts, context);
+  }
 }
 
 static bool serialize_uint(char *buffer, unsigned *length, uint32_t value) {
@@ -3622,4 +3680,31 @@ static uint32_t context_run_length(const Contexts *contexts, uint32_t start) {
     end++;
   }
   return end - start;
+}
+
+static ContextMatch context_match(const Contexts *contexts, uint32_t start) {
+  for (uint32_t distance = 1; distance <= start && distance <= ContextSearchWindow; distance++) {
+    ContextMatch match = context_match_at_distance(contexts, start, distance);
+    if (match.count >= 5) return match;
+  }
+  return (ContextMatch) {.count = 1};
+}
+
+static ContextMatch context_match_at_distance(const Contexts *contexts, uint32_t start, uint32_t distance) {
+  ContextMatch match = {.distance = distance};
+  bool matched_indent = false;
+  while (match.count < contexts->size - start) {
+    Context current = *array_get(contexts, start + match.count);
+    Context previous = *array_get(contexts, start + match.count - distance);
+    if (current.sort != previous.sort || (current.indent == 0) != (previous.indent == 0)) break;
+    if (current.indent) {
+      int64_t difference = (int64_t) current.indent - previous.indent;
+      if (difference < INT32_MIN || difference > INT32_MAX
+          || (matched_indent && difference != match.indent_delta)) break;
+      match.indent_delta = (int32_t) difference;
+      matched_indent = true;
+    }
+    match.count++;
+  }
+  return match;
 }

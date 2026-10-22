@@ -7,20 +7,27 @@ import { currentWasmPath } from '../helpers/generationInputs.js';
 
 const root = path.join(import.meta.dirname, '../..');
 const depths = [125, 126, 127, 128, 256, 1024];
+const languages = ['haskell', 'hsc'] as const;
 const examples = [
   ...depths.map((depth) => ({ label: `constructor pattern ${depth}`, source: patternSource(depth) })),
   ...[128, 256].flatMap((depth) => [
     { label: `implicit layouts ${depth}`, source: layoutSource(depth) },
     { label: `alternating braces and parentheses ${depth}`, source: bracedSource(depth) },
   ]),
+  ...[384, 512, 1024].map((depth) => ({
+    label: `alternating braces and parentheses ${depth}`,
+    source: bracedSource(depth),
+  })),
 ];
 
 await Parser.init();
-const language = await Language.load(currentWasmPath(root));
+const grammars = await Promise.all(
+  languages.map(async (name) => ({ name, language: await Language.load(currentWasmPath(root, name)) }))
+);
 
-test.each(examples)(
-  'preserves $label and later declarations through Wasm edits and undo',
-  ({ label, source: initialSource }) => {
+test.each(grammars.flatMap((grammar) => examples.map((example) => ({ ...example, ...grammar }))))(
+  'preserves $name $label and later declarations through Wasm edits and undo',
+  ({ label, source: initialSource, language }) => {
     const parser = new Parser().setLanguage(language);
     try {
       let source = initialSource;
@@ -80,18 +87,20 @@ test('preserves deep patterns and following-name ranges in optimized and debug n
     const input = path.join(workspace, 'input.hs');
     const query = path.join(workspace, 'names.scm');
     fs.writeFileSync(query, '(declarations (bind name: (variable) @name))');
-    for (const debug of [false, true]) {
-      const library = path.join(workspace, debug ? 'debug.dylib' : 'optimized.dylib');
-      run(['build', ...(debug ? ['-0'] : []), '-o', library]);
-      for (const { label, source } of examples) {
-        fs.writeFileSync(input, source);
-        const arguments_ = ['--lib-path', library, '--lang-name', 'haskell'];
-        run(['parse', ...arguments_, '--quiet', input]);
-        const output = run(['query', ...arguments_, query, input]);
-        const row = source.split('\n').length - 2;
-        expect(output, `${label}, debug ${debug}`).toContain(
-          `capture: 0 - name, start: (${row}, 0), end: (${row}, 9), text: \`following\``
-        );
+    for (const name of languages) {
+      for (const debug of [false, true]) {
+        const library = path.join(workspace, `${name}-${debug ? 'debug' : 'optimized'}.dylib`);
+        run(['build', ...(debug ? ['-0'] : []), '-o', library, name === 'hsc' ? 'hsc' : '.']);
+        for (const { label, source } of examples) {
+          fs.writeFileSync(input, source);
+          const arguments_ = ['--lib-path', library, '--lang-name', name];
+          run(['parse', ...arguments_, '--quiet', input]);
+          const output = run(['query', ...arguments_, query, input]);
+          const row = source.split('\n').length - 2;
+          expect(output, `${name} ${label}, debug ${debug}`).toContain(
+            `capture: 0 - name, start: (${row}, 0), end: (${row}, 9), text: \`following\``
+          );
+        }
       }
     }
   } finally {
