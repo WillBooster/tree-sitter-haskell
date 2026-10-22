@@ -1141,39 +1141,50 @@ static const char * show_char(int32_t c) {
   }
 }
 
+enum { DebugContextLimit = 16, DebugLookaheadLimit = 64 };
+
+static void debug_context(Context ctx);
+
 static void print_lookahead_chars_from(Env *env, uint32_t start) {
-  if (start < env->state->lookahead.size) {
+  uint32_t size = env->state->lookahead.size;
+  if (start < size) {
     dbg("lookahead from %d: ", start);
-    for (; start < env->state->lookahead.size; start++) {
+    uint32_t end = size - start > DebugLookaheadLimit ? start + DebugLookaheadLimit : size;
+    for (; start < end; start++) {
       int32_t c = env->state->lookahead.contents[start];
-      const char * s = show_char(c);
+      const char *s = show_char(c);
       if (s == NULL) dbg("%lc", c);
       else dbg("%s", s);
     }
+    if (end < size) dbg("... (%u characters omitted)", size - end);
     dbg("\n");
   }
   else
-    dbg("print_lookahead_chars_from: Too large (%d / %d)", start, env->state->lookahead.size);
+    dbg("print_lookahead_chars_from: Too large (%d / %d)", start, size);
 }
 
 static void debug_contexts(Env *env) {
-  if (env->state->contexts.size == 0) dbg("empty");
-  bool empty = true;
-  for (size_t i = 0; i < env->state->contexts.size; i++) {
-    if (!empty) dbg("-");
-	Context ctx = *array_get(&env->state->contexts, i);
-    if (ctx.sort == ModuleHeader) dbg("pre");
-    else if (ctx.sort == Braces) dbg("brace");
-    else if (ctx.sort == TExp) dbg("texp");
-    else {
-      if (ctx.sort == DoLayout) dbg("do ");
-      else if (ctx.sort == LetLayout) dbg("let ");
-      else if (ctx.sort == CaseLayout) dbg("case ");
-      else if (ctx.sort == MultiWayIfLayout) dbg("if ");
-      else if (ctx.sort == QuoteLayout) dbg("quote ");
-      dbg("%d", ctx.indent);
-    }
-    empty = false;
+  uint32_t size = env->state->contexts.size;
+  uint32_t start = size > DebugContextLimit ? size - DebugContextLimit : 0;
+  if (size == 0) dbg("empty");
+  if (start > 0) dbg("... (%u contexts omitted)-", start);
+  for (uint32_t i = start; i < size; i++) {
+    if (i > start) dbg("-");
+    debug_context(*array_get(&env->state->contexts, i));
+  }
+}
+
+static void debug_context(Context ctx) {
+  if (ctx.sort == ModuleHeader) dbg("pre");
+  else if (ctx.sort == Braces) dbg("brace");
+  else if (ctx.sort == TExp) dbg("texp");
+  else {
+    if (ctx.sort == DoLayout) dbg("do ");
+    else if (ctx.sort == LetLayout) dbg("let ");
+    else if (ctx.sort == CaseLayout) dbg("case ");
+    else if (ctx.sort == MultiWayIfLayout) dbg("if ");
+    else if (ctx.sort == QuoteLayout) dbg("quote ");
+    dbg("%d", ctx.indent);
   }
 }
 
