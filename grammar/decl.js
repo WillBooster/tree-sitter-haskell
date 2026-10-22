@@ -33,6 +33,7 @@ module.exports = {
     seq(
       field('associativity', choice('infixl', 'infixr', 'infix')),
       field('precedence', optional($.integer)),
+      optional(field('namespace', alias(choice('type', 'data'), $.namespace))),
       field('operator', sep1(',', choice($._operator_minus, $._varop, $._conop))),
     ),
   ),

@@ -464,10 +464,11 @@ import A (type (++)(..))
             (all_names)))))))
 
 ================================================================================
-import: namespace for type child
+import: namespace for child
 ================================================================================
 
 import A (A (type A, A, ..))
+import A (A (type (#), data A, data a), data A, data a, data (+))
 
 --------------------------------------------------------------------------------
 
@@ -480,10 +481,38 @@ import A (A (type A, A, ..))
         (import_name
           (name)
           (children
-            (associated_type
+            (namespaced_child
+              (namespace)
               (name))
             (constructor)
-            (all_names)))))))
+            (all_names)))))
+    (import
+      (module
+        (module_id))
+      (import_list
+        (import_name
+          (name)
+          (children
+            (namespaced_child
+              (namespace)
+              (prefix_id
+                (operator)))
+            (namespaced_child
+              (namespace)
+              (constructor))
+            (namespaced_child
+              (namespace)
+              (variable))))
+        (import_name
+          (namespace)
+          (constructor))
+        (import_name
+          (namespace)
+          (variable))
+        (import_name
+          (namespace)
+          (prefix_id
+            (operator)))))))
 
 ================================================================================
 import: partially typed import before the end of the block
