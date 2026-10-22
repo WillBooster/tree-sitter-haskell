@@ -105,6 +105,7 @@
   "as"
   "hiding"
   "deriving"
+  "default"
   "via"
   "stock"
   "anyclass"

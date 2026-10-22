@@ -111,9 +111,11 @@ module.exports = {
 
   module_export: $ => seq('module', field('module', $.module)),
 
+  default_export: $ => seq('default', field('class', $._tyconids)),
+
   exports: $ => parens(
     $,
-    optional(sep1(',', choice(field('export', alias($._ie_entity, $.export)), $.module_export))),
+    optional(sep1(',', choice(field('export', alias($._ie_entity, $.export)), $.module_export, $.default_export))),
     optional(','),
   ),
 
