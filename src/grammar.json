@@ -7197,8 +7197,13 @@
               "type": "FIELD",
               "name": "namespace",
               "content": {
-                "type": "SYMBOL",
-                "name": "namespace"
+                "type": "ALIAS",
+                "content": {
+                  "type": "STRING",
+                  "value": "type"
+                },
+                "named": true,
+                "value": "namespace"
               }
             },
             {

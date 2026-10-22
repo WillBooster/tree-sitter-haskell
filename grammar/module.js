@@ -62,7 +62,7 @@ module.exports = {
   ),
 
   _child_namespaced: $ => choice(
-    seq(field('namespace', $.namespace), $._ie_name),
+    seq(field('namespace', alias('type', $.namespace)), $._ie_name),
     $._ie_data,
   ),
 
