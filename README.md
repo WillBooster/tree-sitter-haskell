@@ -107,7 +107,7 @@ fuzzed with:
 ```toml
 [dependencies]
 tree-sitter = { package = "willbooster-tree-sitter", version = "13.0.0" }
-tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "12" }
+tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "15" }
 ```
 
 ```rust
