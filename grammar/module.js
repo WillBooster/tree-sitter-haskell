@@ -49,23 +49,37 @@ module.exports = {
 
   namespace: _ => choice('pattern', 'type'),
 
-  _child_type: $ => seq(field('namespace', 'type'), field('type', $._tyconids)),
+  _ie_value: $ => choice(
+    field('variable', $._varids),
+    field('operator', choice($._sym_prefix, $._pqsym)),
+  ),
+
+  _ie_name: $ => choice($._ie_value, field('type', $._tyconids)),
+
+  _ie_data: $ => seq(
+    field('namespace', alias('data', $.namespace)),
+    choice($._ie_value, field('constructor', choice($._qconid, $._constructor))),
+  ),
+
+  _child_namespaced: $ => choice(
+    seq(field('namespace', alias('type', $.namespace)), $._ie_name),
+    $._ie_data,
+  ),
 
   _child: $ => choice(
-    alias($._child_type, $.associated_type),
+    alias($._child_namespaced, $.namespaced_child),
     $._qname,
   ),
 
   children: $ => parens($, sep(',', field('element', choice(alias('..', $.all_names), $._child)))),
 
-  _ie_entity: $ => seq(
-    optional(field('namespace', $.namespace)),
-    choice(
-      field('variable', $._varids),
-      field('type', $._tyconids),
-      field('operator', choice($._sym_prefix, $._pqsym)),
+  _ie_entity: $ => choice(
+    seq(
+      optional(field('namespace', $.namespace)),
+      $._ie_name,
+      optional(field('children', $.children)),
     ),
-    optional(field('children', $.children)),
+    $._ie_data,
   ),
 
   // ------------------------------------------------------------------------

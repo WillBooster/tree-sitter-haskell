@@ -116,6 +116,8 @@
   "infixr"
 ] @keyword
 
+(namespace) @keyword
+
 [
   (function name: (variable) @function)
   (bind name: (variable) @function)

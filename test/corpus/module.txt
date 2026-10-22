@@ -348,11 +348,14 @@ module A (
         (name)))))
 
 ================================================================================
-module: namespace for type child
+module: namespace for child
 ================================================================================
 
 module A (
-  A (type A, A, ..)
+  A (type A, A, ..),
+  A (type (#), data A, data a),
+  data A,
+  data a
 ) where
 
 --------------------------------------------------------------------------------
@@ -365,7 +368,27 @@ module A (
       (export
         (name)
         (children
-          (associated_type
+          (namespaced_child
+            (namespace)
             (name))
           (constructor)
-          (all_names))))))
+          (all_names)))
+      (export
+        (name)
+        (children
+          (namespaced_child
+            (namespace)
+            (prefix_id
+              (operator)))
+          (namespaced_child
+            (namespace)
+            (constructor))
+          (namespaced_child
+            (namespace)
+            (variable))))
+      (export
+        (namespace)
+        (constructor))
+      (export
+        (namespace)
+        (variable)))))

@@ -344,6 +344,33 @@ infixl 1 -
       (operator))))
 
 ================================================================================
+decl: fixity with namespace
+================================================================================
+
+infixl 9 type $
+infixr 0 data $, `op`
+infix 4 type :+:
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (fixity
+      (integer)
+      (namespace)
+      (operator))
+    (fixity
+      (integer)
+      (namespace)
+      (operator)
+      (infix_id
+        (variable)))
+    (fixity
+      (integer)
+      (namespace)
+      (constructor_operator))))
+
+================================================================================
 decl: infix function with extra args
 ================================================================================
 
