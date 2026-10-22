@@ -40,6 +40,11 @@ test('scanner diagnostics preserve long-line trees and incremental edits', () =>
       const edited = parse(debugLibrary, ['--edits', '9 0 yy']);
       fs.writeFileSync(input, source.slice(0, 9) + 'yy' + source.slice(9));
       expect(edited.stdout).toBe(parse(optimizedLibrary).stdout);
+      fs.writeFileSync(input, `-- ${'x'.repeat(length)}\nfollowing = 1\n`);
+      const comment = parse(debugLibrary);
+      expect(comment.stdout).toBe(parse(optimizedLibrary).stdout);
+      expect(comment.stderr).toContain('characters omitted');
+      expectBoundedSnapshots(comment.stderr);
     }
     const input = path.join(workspace, 'deep.hs');
     fs.writeFileSync(input, `(${'Box ('.repeat(512)}deep${')'.repeat(512)}) = value\nfollowing = 1\n`);
