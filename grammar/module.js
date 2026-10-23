@@ -92,11 +92,16 @@ module.exports = {
     optional(','),
   ),
 
+  import_level: _ => choice('splice', 'quote'),
+
   import: $ => seq(
     'import',
+    optional(field('level', $.import_level)),
+    optional('safe'),
     optional('qualified'),
     optional(field('package', alias($.string, $.import_package))),
     field('module', $.module),
+    optional(field('level', $.import_level)),
     optional('qualified'),
     optional(seq('as', field('alias', $.module))),
     optional(seq(

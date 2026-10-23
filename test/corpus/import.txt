@@ -556,3 +556,68 @@ import A ((->.), (⊸))
         (import_name
           (prefix_id
             (operator)))))))
+
+================================================================================
+import: level and safe modifiers
+================================================================================
+
+import splice A
+import A splice
+import splice qualified A as A
+import splice A qualified as A
+import A quote qualified as A
+import quote safe qualified "a" A (a)
+import safe A
+import A (splice, quote, safe)
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (imports
+    (import
+      (import_level)
+      (module
+        (module_id)))
+    (import
+      (module
+        (module_id))
+      (import_level))
+    (import
+      (import_level)
+      (module
+        (module_id))
+      (module
+        (module_id)))
+    (import
+      (import_level)
+      (module
+        (module_id))
+      (module
+        (module_id)))
+    (import
+      (module
+        (module_id))
+      (import_level)
+      (module
+        (module_id)))
+    (import
+      (import_level)
+      (import_package)
+      (module
+        (module_id))
+      (import_list
+        (import_name
+          (variable))))
+    (import
+      (module
+        (module_id)))
+    (import
+      (module
+        (module_id))
+      (import_list
+        (import_name
+          (variable))
+        (import_name
+          (variable))
+        (import_name
+          (variable))))))

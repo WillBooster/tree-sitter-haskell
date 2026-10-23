@@ -65,7 +65,9 @@
 [
   "import"
   "qualified"
+  "safe"
   "module"
+  (import_level)
 ] @keyword.import
 
 [
