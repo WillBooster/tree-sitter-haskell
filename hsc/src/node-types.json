@@ -1637,16 +1637,6 @@
           }
         ]
       },
-      "multiplicity": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "modifier",
-            "named": true
-          }
-        ]
-      },
       "name": {
         "multiple": false,
         "required": false,

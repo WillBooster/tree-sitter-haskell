@@ -120,7 +120,7 @@
                       "name": "decl",
                       "content": {
                         "type": "SYMBOL",
-                        "name": "decl"
+                        "name": "_local_binding"
                       }
                     },
                     {
@@ -149,7 +149,7 @@
                             "name": "decl",
                             "content": {
                               "type": "SYMBOL",
-                              "name": "decl"
+                              "name": "_local_binding"
                             }
                           }
                         ]
@@ -11015,23 +11015,70 @@
       ]
     },
     "bind": {
+      "type": "PREC",
+      "value": "bind",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "pattern",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_pat"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "name",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_var"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "name",
+                "content": {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_binding_name_parens"
+                  },
+                  "named": true,
+                  "value": "parenthesized_name"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "implicit",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "implicit_variable"
+                }
+              }
+            ]
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_bind_matches"
+          }
+        ]
+      }
+    },
+    "_multiplicity_bind": {
       "type": "SEQ",
       "members": [
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "multiplicity",
-              "content": {
-                "type": "SYMBOL",
-                "name": "modifier"
-              }
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
+          "type": "FIELD",
+          "name": "multiplicity",
+          "content": {
+            "type": "SYMBOL",
+            "name": "modifier"
+          }
         },
         {
           "type": "PREC",
@@ -11087,6 +11134,24 @@
               }
             ]
           }
+        }
+      ]
+    },
+    "_local_binding": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "decl"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_multiplicity_bind"
+          },
+          "named": true,
+          "value": "bind"
         }
       ]
     },
@@ -11255,8 +11320,17 @@
                       "type": "FIELD",
                       "name": "decl",
                       "content": {
-                        "type": "SYMBOL",
-                        "name": "_local_decl"
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "fixity"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "_local_binding"
+                          }
+                        ]
                       }
                     },
                     {
@@ -11284,8 +11358,17 @@
                             "type": "FIELD",
                             "name": "decl",
                             "content": {
-                              "type": "SYMBOL",
-                              "name": "_local_decl"
+                              "type": "CHOICE",
+                              "members": [
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "fixity"
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "_local_binding"
+                                }
+                              ]
                             }
                           }
                         ]
