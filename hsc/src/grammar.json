@@ -7475,29 +7475,9 @@
         }
       ]
     },
-    "import": {
+    "_import_module": {
       "type": "SEQ",
       "members": [
-        {
-          "type": "STRING",
-          "value": "import"
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "level",
-              "content": {
-                "type": "SYMBOL",
-                "name": "import_level"
-              }
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
         {
           "type": "CHOICE",
           "members": [
@@ -7550,20 +7530,60 @@
             "type": "SYMBOL",
             "name": "module"
           }
+        }
+      ]
+    },
+    "import": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "import"
         },
         {
           "type": "CHOICE",
           "members": [
             {
-              "type": "FIELD",
-              "name": "level",
-              "content": {
-                "type": "SYMBOL",
-                "name": "import_level"
-              }
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "level",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "import_level"
+                  }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_import_module"
+                }
+              ]
             },
             {
-              "type": "BLANK"
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_import_module"
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "level",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "import_level"
+                      }
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },

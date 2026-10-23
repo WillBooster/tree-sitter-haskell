@@ -3607,7 +3607,7 @@
         ]
       },
       "level": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
           {
