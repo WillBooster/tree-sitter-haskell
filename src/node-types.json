@@ -1223,6 +1223,16 @@
           }
         ]
       },
+      "multiplicity": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "modifier",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": false,
@@ -1587,6 +1597,16 @@
         "types": [
           {
             "type": "match",
+            "named": true
+          }
+        ]
+      },
+      "multiplicity": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "modifier",
             "named": true
           }
         ]

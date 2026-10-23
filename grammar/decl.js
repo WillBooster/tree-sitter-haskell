@@ -101,7 +101,7 @@ module.exports = {
 
   _binding_name_parens: $ => parens($, choice($._var, $._binding_name_parens)),
 
-  bind: $ => binding($, $._pat),
+  bind: $ => seq(optional(field('multiplicity', $.modifier)), binding($, $._pat)),
 
   _module_bind: $ => binding($, $._binding_pat),
 

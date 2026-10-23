@@ -11025,59 +11025,80 @@
       ]
     },
     "bind": {
-      "type": "PREC",
-      "value": "bind",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "CHOICE",
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "multiplicity",
+              "content": {
+                "type": "SYMBOL",
+                "name": "modifier"
+              }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "PREC",
+          "value": "bind",
+          "content": {
+            "type": "SEQ",
             "members": [
               {
-                "type": "FIELD",
-                "name": "pattern",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_pat"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "name",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_var"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "name",
-                "content": {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "_binding_name_parens"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "FIELD",
+                    "name": "pattern",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_pat"
+                    }
                   },
-                  "named": true,
-                  "value": "parenthesized_name"
-                }
+                  {
+                    "type": "FIELD",
+                    "name": "name",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_var"
+                    }
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "name",
+                    "content": {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_binding_name_parens"
+                      },
+                      "named": true,
+                      "value": "parenthesized_name"
+                    }
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "implicit",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "implicit_variable"
+                    }
+                  }
+                ]
               },
               {
-                "type": "FIELD",
-                "name": "implicit",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "implicit_variable"
-                }
+                "type": "SYMBOL",
+                "name": "_bind_matches"
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_bind_matches"
           }
-        ]
-      }
+        }
+      ]
     },
     "_module_bind": {
       "type": "PREC",
