@@ -23,6 +23,7 @@ The fork's main differences from upstream 0.23.1 are:
 
 - **Whitespace**: horizontal tabs separate tokens, are accepted before Haddock markers, and advance layout to the next eight-column tab stop.
 - **ExplicitNamespaces**: import and export items, including subordinate items, accept the `data` namespace, and fixity declarations accept `type` and `data`. A namespaced subordinate item such as `type (#)` or `data P` is a `namespaced_child` node with a `namespace` child; a `data` item puts a constructor name in a `constructor` field and a variable or operator in the `variable` or `operator` field.
+- **Import modifiers**: imports accept the `ExplicitLevelImports` levels `splice` and `quote`, before or after the module name, as an `import_level` node in a `level` field, and the Safe Haskell `safe` keyword, such as `import splice safe qualified M as N`.
 - **NamedDefaults**: `default` declarations accept a class name before the type list, such as `default Monoid ([Int])`, in a `class` field, and export lists accept `default` items such as `default Monoid` as `default_export` nodes.
 - **OrPatterns**: parenthesized alternatives separated by semicolons, such as `(A; B)`, parse as an `or_pattern` node with an `alternative` field for each pattern.
 - **MultilineStrings**: triple-quoted literals retain their complete source as a single `string` node, including embedded quotes, escapes, and string gaps.

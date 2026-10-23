@@ -7452,12 +7452,33 @@
         }
       ]
     },
-    "import": {
-      "type": "SEQ",
+    "import_level": {
+      "type": "CHOICE",
       "members": [
         {
           "type": "STRING",
-          "value": "import"
+          "value": "splice"
+        },
+        {
+          "type": "STRING",
+          "value": "quote"
+        }
+      ]
+    },
+    "_import_module": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "safe"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
           "type": "CHOICE",
@@ -7499,6 +7520,62 @@
             "type": "SYMBOL",
             "name": "module"
           }
+        }
+      ]
+    },
+    "import": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "import"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "level",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "import_level"
+                  }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_import_module"
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_import_module"
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "level",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "import_level"
+                      }
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         },
         {
           "type": "CHOICE",

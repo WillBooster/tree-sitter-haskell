@@ -3606,6 +3606,16 @@
           }
         ]
       },
+      "level": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "import_level",
+            "named": true
+          }
+        ]
+      },
       "module": {
         "multiple": false,
         "required": true,
@@ -3637,6 +3647,11 @@
         ]
       }
     }
+  },
+  {
+    "type": "import_level",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "import_list",
@@ -7298,6 +7313,10 @@
     "named": true
   },
   {
+    "type": "quote",
+    "named": false
+  },
+  {
     "type": "rec",
     "named": false
   },
@@ -7310,8 +7329,16 @@
     "named": false
   },
   {
+    "type": "safe",
+    "named": false
+  },
+  {
     "type": "safety",
     "named": true
+  },
+  {
+    "type": "splice",
+    "named": false
   },
   {
     "type": "stock",
