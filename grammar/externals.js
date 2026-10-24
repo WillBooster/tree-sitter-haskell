@@ -1,5 +1,4 @@
 module.exports = {
-
   /**
    * These rules are handled manually by the custom lexer in `src/scanner.c`.
    * Whenever the symbols are used in the rule tree, the parser executes the scanner.
@@ -36,8 +35,7 @@ module.exports = {
    *
    * Most other symbols produce nodes, except for newline and the error sentinel.
    */
-  externals: $ => [
-
+  externals: ($) => [
     // This is an unused symbol that indicates to the scanner that a parse error has occurred.
     // Tree-sitter marks _all_ symbols as valid when calling the scanner after an error, so a symbol that's not used in
     // the grammar is only valid if that is the case.
@@ -171,7 +169,5 @@ module.exports = {
     // The newline is used as a dummy symbol that is emitted whenever the scanner has to update its state even though
     // the current position must be parsed by the grammar.
     /\n/,
-
   ],
-
-}
+};

@@ -1,12 +1,10 @@
 module.exports = {
-
-  inline: $ => [
+  inline: ($) => [
     $.expression,
     $.pattern,
     $.binding_pattern,
     $.type,
     $.constraint,
-
 
     // ------------------------------------------------
     // variable
@@ -105,7 +103,5 @@ module.exports = {
 
     $._function_head_patterns,
     $._function_head,
-
   ],
-
-}
+};

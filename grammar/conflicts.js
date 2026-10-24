@@ -1,6 +1,5 @@
 module.exports = {
-
-  conflicts: $ => [
+  conflicts: ($) => [
     // GHC DisambECP (notes Ambiguous syntactic categories, PatBuilder and Declaration/signature overlap)
     // disambiguates expressions, patterns and declaration heads after parsing; these alternatives must remain
     // available until following syntax determines their role, including for top-level expression splices.
@@ -22,12 +21,18 @@ module.exports = {
     [$.pattern_operand, $._function_name],
     [$.expression_operand, $.pattern_operand, $._function_name],
     [$._grouped_name, $.expression_operand],
-    [$._grouped_name, $.expression_operand, $.pattern_operand, $.binding_pattern_operand, $._function_name, $._binding_name_parens],
+    [
+      $._grouped_name,
+      $.expression_operand,
+      $.pattern_operand,
+      $.binding_pattern_operand,
+      $._function_name,
+      $._binding_name_parens,
+    ],
     [$.binding_pattern_operand, $.signature],
     [$.pattern_operand, $.binding_pattern_operand, $._function_name],
     [$.expression_operand, $.pattern_operand, $.binding_pattern_operand, $._function_name],
     // The hash opening an unboxed tuple can also begin a symbolic operator.
     [$._operator_hash_head, $._unboxed_open],
   ],
-
-}
+};

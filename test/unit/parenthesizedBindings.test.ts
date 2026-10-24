@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import { Edit, Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { afterAll, beforeAll, expect, test } from 'vitest';
+
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 await Parser.init();

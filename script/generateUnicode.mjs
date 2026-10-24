@@ -54,7 +54,7 @@ function readCodepoints(text) {
     const value = Number.parseInt(fields[0], 16),
       name = fields[1],
       category = fields[2];
-    assert.ok(Number.isInteger(value) && value >= 0 && value <= 0x10_FF_FF);
+    assert.ok(Number.isInteger(value) && value >= 0 && value <= 0x10_ff_ff);
     if (name.endsWith(', First>')) {
       assert.equal(first, undefined);
       first = { value, name, category };

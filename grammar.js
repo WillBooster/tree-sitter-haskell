@@ -1,5 +1,4 @@
-const
-  class_ = require('./grammar/class.js'),
+const class_ = require('./grammar/class.js'),
   comment = require('./grammar/comment.js'),
   conflicts = require('./grammar/conflicts.js'),
   context = require('./grammar/context.js'),
@@ -18,16 +17,13 @@ const
   patsyn = require('./grammar/patsyn.js'),
   precedences = require('./grammar/precedences.js'),
   th = require('./grammar/th.js'),
-  type = require('./grammar/type.js')
+  type = require('./grammar/type.js');
 
 module.exports = grammar({
   name: 'haskell',
 
   rules: {
-    haskell: $ => seq(
-      optional($.header),
-      optional($._body),
-    ),
+    haskell: ($) => seq(optional($.header), optional($._body)),
 
     ...general,
     ...comment,
@@ -45,7 +41,6 @@ module.exports = grammar({
     ...id,
     ...operator,
     ...lexeme,
-
   },
 
   ...externals,
@@ -53,18 +48,9 @@ module.exports = grammar({
   ...inline,
   ...conflicts,
 
-  extras: $ => [
-    /\p{Zs}/,
-    /\t/,
-    /\n/,
-    /\r/,
-    $.cpp,
-    $.comment,
-    $.haddock,
-    $.pragma,
-  ],
+  extras: ($) => [/\p{Zs}/, /\t/, /\n/, /\r/, $.cpp, $.comment, $.haddock, $.pragma],
 
-  supertypes: $ => [
+  supertypes: ($) => [
     $.expression_operand,
     $.pattern_operand,
     $.binding_pattern_operand,
@@ -89,6 +75,5 @@ module.exports = grammar({
    * For example, if the identifier `ifM` occurs in a position where the keyword `if` is valid (so most expressions),
    * the fact that `ifM` matches `variable` prevents tree-sitter from lexing `if` followed by `M` as a `name`.
    */
-  word: $ => $.variable,
-
-})
+  word: ($) => $.variable,
+});
