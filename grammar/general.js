@@ -15,7 +15,7 @@ module.exports = {
     field('expression', $._exp),
   ),
 
-  _let_binds: $ => layout_sort($, $._cmd_layout_start_let, field('decl', $.decl)),
+  _let_binds: $ => layout_sort($, $._cmd_layout_start_let, field('decl', $._local_binding)),
 
   _let: $ => seq('let', optional(field('binds', alias($._let_binds, $.local_binds)))),
 

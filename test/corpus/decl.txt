@@ -730,3 +730,131 @@ a a | a
             (variable)
             (variable)))
         (variable)))))
+
+================================================================================
+decl: local binding multiplicity
+================================================================================
+
+a = let %1 a = a in a
+a = let %A (a, a) = a in a
+a = let %1 !(a, a) = a
+        %a a = a
+    in a
+a = a
+  where
+    %1 a = a % a
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (let_in
+          (local_binds
+            (bind
+              (modifier
+                (literal
+                  (integer)))
+              (variable)
+              (match
+                (variable))))
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (let_in
+          (local_binds
+            (bind
+              (modifier
+                (name))
+              (tuple
+                (variable)
+                (variable))
+              (match
+                (variable))))
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (let_in
+          (local_binds
+            (bind
+              (modifier
+                (literal
+                  (integer)))
+              (strict
+                (tuple
+                  (variable)
+                  (variable)))
+              (match
+                (variable)))
+            (bind
+              (modifier
+                (variable))
+              (variable)
+              (match
+                (variable))))
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (variable))
+      (where_clause
+        (local_binds
+          (bind
+            (modifier
+              (literal
+                (integer)))
+            (variable)
+            (match
+              (operator_chain
+                (variable)
+                (operator)
+                (variable)))))))))
+
+================================================================================
+decl: local binding multiplicity in explicit layout
+================================================================================
+
+a = let{%1 a = a;%1 a = a}in a
+a = a where{%1 a = a}
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (let_in
+          (local_binds
+            (bind
+              (modifier
+                (literal
+                  (integer)))
+              (variable)
+              (match
+                (variable)))
+            (bind
+              (modifier
+                (literal
+                  (integer)))
+              (variable)
+              (match
+                (variable))))
+          (variable))))
+    (bind
+      (variable)
+      (match
+        (variable))
+      (where_clause
+        (local_binds
+          (bind
+            (modifier
+              (literal
+                (integer)))
+            (variable)
+            (match
+              (variable))))))))
