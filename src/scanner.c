@@ -2189,11 +2189,13 @@ static Symbol tight_op(Env *env, bool whitespace, Symbol s) {
  * Used for situations where the operator is followed by an opening token, and so can be a prefix op if it is preceded
  * by whitespace; but is no valid tight op and therefore becomes a regular operator if not preceded by whitespace or the
  * symbol is not valid.
+ * Without whitespace, it is a prefix op only where no operator is valid, like `%` in `let{%1 x = y}`, since the
+ * scanner cannot see the preceding character that GHC uses to tell `{%1` from `a%1`.
  *
- * Only used for `%` (modifier).
+ * Used for `%` (modifier) and for `.` followed by an opening token.
  */
 static Symbol prefix_or_varsym(Env *env, bool whitespace, Symbol s) {
-  if (whitespace) SEQ(finish_if_valid(env, s, "prefix_or_varsym"));
+  if (whitespace || !valid(env, VARSYM)) SEQ(finish_if_valid(env, s, "prefix_or_varsym"));
   return finish_symop(env, VARSYM);
 }
 
