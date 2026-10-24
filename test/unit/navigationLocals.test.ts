@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 test('retains local references for grouped variable callees without treating qualified or symbolic names as locals', async () => {

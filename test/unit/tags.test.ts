@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import { afterAll, expect } from 'vitest';
+
 import { testCommand } from './run.js';
 
 interface Tag {

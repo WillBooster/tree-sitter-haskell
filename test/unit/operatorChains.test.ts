@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { Edit, Language, Parser, Query, type Node } from '@willbooster/web-tree-sitter';
+
+import { Edit, Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 const root = path.join(import.meta.dirname, '../..');
