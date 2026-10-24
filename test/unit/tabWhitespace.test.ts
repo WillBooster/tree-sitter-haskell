@@ -1,7 +1,7 @@
-import { afterAll, expect, test } from 'vitest';
 import path from 'node:path';
 
 import { Edit, Language, Parser } from '@willbooster/web-tree-sitter';
+import { afterAll, expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
 

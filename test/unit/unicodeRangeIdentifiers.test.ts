@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { Edit, Language, Parser, Query, type Node } from '@willbooster/web-tree-sitter';
+
+import { Edit, Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
 import { afterAll, beforeAll, expect, test } from 'vitest';
+
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 const root = path.resolve(import.meta.dirname, '../..');
@@ -9,7 +11,7 @@ const names = [
   '日本語',
   '한국어',
   ...[
-    0x34_01, 0x4E_01, 0xAC_01, 0x1_70_01, 0x1_8D_01, 0x2_00_01, 0x2_A7_01, 0x2_B7_41, 0x2_B8_21, 0x2_CE_B1, 0x2_EB_F1,
+    0x34_01, 0x4e_01, 0xac_01, 0x1_70_01, 0x1_8d_01, 0x2_00_01, 0x2_a7_01, 0x2_b7_41, 0x2_b8_21, 0x2_ce_b1, 0x2_eb_f1,
     0x3_00_01, 0x3_13_51,
   ].map((codepoint) => String.fromCodePoint(codepoint)),
 ];
