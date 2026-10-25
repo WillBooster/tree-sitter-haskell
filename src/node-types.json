@@ -2580,24 +2580,6 @@
           }
         ]
       },
-      "parameter": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "lazy_field",
-            "named": true
-          },
-          {
-            "type": "quantified_type",
-            "named": true
-          },
-          {
-            "type": "strict_field",
-            "named": true
-          }
-        ]
-      },
       "type": {
         "multiple": false,
         "required": false,
