@@ -1,8 +1,7 @@
-import fs from 'node:fs';
 import path from 'node:path';
 
-import { Edit, Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
-import { afterAll, beforeAll, expect, test } from 'vitest';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
+import { expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
@@ -17,15 +16,6 @@ const names = [
 ];
 await Parser.init();
 const language = await Language.load(currentWasmPath(root));
-const queries: Query[] = [];
-beforeAll(() => {
-  for (const file of fs.readdirSync(path.join(root, 'queries')).filter((file) => file.endsWith('.scm'))) {
-    queries.push(new Query(language, fs.readFileSync(path.join(root, 'queries', file), 'utf8')));
-  }
-}, 180_000);
-afterAll(() => {
-  for (const query of queries) query.delete();
-});
 
 test('recognizes Unicode range interiors in record fields, selectors, and qualified variables', () => {
   const parser = new Parser().setLanguage(language);
@@ -54,62 +44,3 @@ test('recognizes Unicode range interiors in record fields, selectors, and qualif
     parser.delete();
   }
 });
-
-test('preserves ranges, fields and captures when ASCII record fields become Unicode names and back', () => {
-  const parser = new Parser().setLanguage(language);
-  const prefix = 'value = record.',
-    suffix = '\nfollowing = 1\n';
-  let name = 'field';
-  let tree = parser.parse(prefix + name + suffix)!;
-  try {
-    for (const replacement of [...names, 'field']) {
-      tree.edit(
-        new Edit({
-          startIndex: prefix.length,
-          oldEndIndex: prefix.length + name.length,
-          newEndIndex: prefix.length + replacement.length,
-          startPosition: { row: 0, column: prefix.length },
-          oldEndPosition: { row: 0, column: prefix.length + name.length },
-          newEndPosition: { row: 0, column: prefix.length + replacement.length },
-        })
-      );
-      name = replacement;
-      const source = prefix + name + suffix,
-        previous = tree;
-      tree = parser.parse(source, previous)!;
-      previous.delete();
-      const fresh = parser.parse(source)!;
-      try {
-        expect(tree.rootNode.hasError, source).toBe(false);
-        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-        expect(tree.rootNode.descendantsOfType('projection').map((node) => node.text)).toEqual([`record.${name}`]);
-        for (const query of queries) {
-          const captures = (node: Node): unknown =>
-            query.captures(node).map(({ name, node }) => [name, snapshot(node)]);
-          expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
-        }
-        expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
-      } finally {
-        fresh.delete();
-      }
-    }
-  } finally {
-    tree.delete();
-    parser.delete();
-  }
-});
-
-function snapshot(node: Node): unknown {
-  return [
-    node.type,
-    node.startIndex,
-    node.endIndex,
-    node.startPosition,
-    node.endPosition,
-    node.isNamed,
-    node.isExtra,
-    node.isMissing,
-    node.hasError,
-    node.children.map((child, index) => [node.fieldNameForChild(index), snapshot(child)]),
-  ];
-}

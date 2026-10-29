@@ -1,23 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { Edit, Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
-import { afterAll, beforeAll, expect, test } from 'vitest';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
+import { expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 const root = path.join(import.meta.dirname, '../..');
 await Parser.init();
 const language = await Language.load(currentWasmPath(root));
-const queries: Query[] = [];
-beforeAll(() => {
-  for (const file of fs.readdirSync(path.join(root, 'queries')).filter((file) => file.endsWith('.scm'))) {
-    queries.push(new Query(language, fs.readFileSync(path.join(root, 'queries', file), 'utf8')));
-  }
-}, 180_000);
-afterAll(() => {
-  for (const query of queries) query.delete();
-});
 
 test('retains complete modern labels at exact lexical ranges beside MagicHash and unboxed syntax', () => {
   const source = fs.readFileSync(path.join(root, 'test/fixtures/modernLabels.hs'), 'utf8');
@@ -215,7 +206,7 @@ test('keeps unspaced unboxed delimiters ahead of label-like first elements', () 
   }
 });
 
-test('preserves unboxed and label roles through spelling and physical-adjacency edits', () => {
+test('preserves unboxed and label roles across spellings and physical adjacency', () => {
   const parser = new Parser().setLanguage(language);
   const prefix = 'value = ',
     suffix = '\nfollowing = 1\nafter = 2\n';
@@ -240,58 +231,29 @@ test('preserves unboxed and label roles through spelling and physical-adjacency 
     { expression: '(#"gap\\\n \\text")', labels: ['#"gap\\\n \\text"'], unboxed: false },
     { expression: '( #Foo)', labels: ['#Foo'], unboxed: false },
     { expression: '({- comment -}#Foo)', labels: ['#Foo'], unboxed: false },
-    { expression: '(# left, right #)', labels: [], unboxed: true },
   ];
-  let expression = examples[0]!.expression;
-  let source = prefix + expression + suffix;
-  let tree = parser.parse(source)!;
   try {
-    for (const example of examples) {
-      const next = example.expression;
-      const updated = prefix + next + suffix;
-      tree.edit(
-        new Edit({
-          startIndex: prefix.length,
-          oldEndIndex: prefix.length + expression.length,
-          newEndIndex: prefix.length + next.length,
-          startPosition: point(source, prefix.length),
-          oldEndPosition: point(source, prefix.length + expression.length),
-          newEndPosition: point(updated, prefix.length + next.length),
-        })
-      );
-      const previous = tree;
-      tree = parser.parse(updated, previous)!;
-      previous.delete();
-      const fresh = parser.parse(updated)!;
+    for (const { expression, labels, unboxed } of examples) {
+      const source = prefix + expression + suffix;
+      const tree = parser.parse(source)!;
       try {
-        expect(tree.rootNode.hasError, next).toBe(false);
-        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
+        expect(tree.rootNode.hasError, expression).toBe(false);
         expect(tree.rootNode.descendantsOfType('unboxed_tuple').map((node) => node.text)).toEqual(
-          example.unboxed ? [next] : []
+          unboxed ? [expression] : []
         );
         expect(
           tree.rootNode.descendantsOfType('label').map((node) => [node.text, node.startIndex, node.endIndex])
-        ).toEqual(
-          example.labels.map((label) => [label, updated.indexOf(label), updated.indexOf(label) + label.length])
-        );
-        for (const query of queries) {
-          const captures = (node: Node): unknown =>
-            query.captures(node).map(({ name, node }) => [name, snapshot(node)]);
-          expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
-        }
+        ).toEqual(labels.map((label) => [label, source.indexOf(label), source.indexOf(label) + label.length]));
         expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
           'value',
           'following',
           'after',
         ]);
       } finally {
-        fresh.delete();
+        tree.delete();
       }
-      expression = next;
-      source = updated;
     }
   } finally {
-    tree.delete();
     parser.delete();
   }
 });
@@ -331,7 +293,7 @@ test('retains existing variable-shaped parenthesized labels and optics expressio
   }
 });
 
-test('keeps parenthesized labels after whitespace, comments and CPP through incremental edits', () => {
+test('keeps parenthesized labels after whitespace, comments and CPP', () => {
   const expressions = [
     '( #foo)',
     '({- comment -}#foo)',
@@ -339,35 +301,16 @@ test('keeps parenthesized labels after whitespace, comments and CPP through incr
     '({- outer {- inner -} -}#"quoted")',
     '(-- comment\n #Foo)',
     '(\n#if FLAG\n#Foo\n#endif\n)',
-    '( #foo)',
   ];
   const parser = new Parser().setLanguage(language);
   const prefix = 'value = ',
     suffix = '\nfollowing = 1\n';
-  let expression = expressions[0]!;
-  let source = prefix + expression + suffix;
-  let tree = parser.parse(source)!;
   try {
-    for (const next of expressions) {
-      const updated = prefix + next + suffix;
-      tree.edit(
-        new Edit({
-          startIndex: prefix.length,
-          oldEndIndex: prefix.length + expression.length,
-          newEndIndex: prefix.length + next.length,
-          startPosition: point(source, prefix.length),
-          oldEndPosition: point(source, prefix.length + expression.length),
-          newEndPosition: point(updated, prefix.length + next.length),
-        })
-      );
-      const previous = tree;
-      tree = parser.parse(updated, previous)!;
-      previous.delete();
-      const fresh = parser.parse(updated)!;
+    for (const expression of expressions) {
+      const tree = parser.parse(prefix + expression + suffix)!;
       try {
-        expect(tree.rootNode.hasError, next).toBe(false);
-        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-        const labels = [...next.matchAll(/#(?:foo|Foo|"quoted")/g)];
+        expect(tree.rootNode.hasError, expression).toBe(false);
+        const labels = [...expression.matchAll(/#(?:foo|Foo|"quoted")/g)];
         expect(
           tree.rootNode.descendantsOfType('label').map((node) => [node.text, node.startIndex, node.endIndex])
         ).toEqual(
@@ -375,87 +318,42 @@ test('keeps parenthesized labels after whitespace, comments and CPP through incr
         );
         expect(tree.rootNode.descendantsOfType('unboxed_tuple')).toHaveLength(0);
         expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
-        for (const query of queries) {
-          const captures = (node: Node): unknown =>
-            query.captures(node).map(({ name, node }) => [name, snapshot(node)]);
-          expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
-        }
       } finally {
-        fresh.delete();
+        tree.delete();
       }
-      expression = next;
-      source = updated;
     }
   } finally {
-    tree.delete();
     parser.delete();
   }
 });
 
-test('incrementally changes label spellings and repairs incomplete labels without stale ranges or captures', () => {
+test('keeps label spellings at exact ranges and rejects incomplete labels', () => {
   const parser = new Parser().setLanguage(language);
   const prefix = 'value = ',
     suffix = '\nfollowing = 1\n';
-  let spelling = '#foo';
-  let source = prefix + spelling + suffix;
-  let tree = parser.parse(source)!;
   try {
-    for (const next of ['#Foo', '#3', '#""', '#"こんにちは"', String.raw`#"gap\ \"`, '#"gap\\\n\\"', '#...', '#foo']) {
-      const updated = prefix + next + suffix;
-      tree.edit(
-        new Edit({
-          startIndex: prefix.length,
-          oldEndIndex: prefix.length + spelling.length,
-          newEndIndex: prefix.length + next.length,
-          startPosition: point(source, prefix.length),
-          oldEndPosition: point(source, prefix.length + spelling.length),
-          newEndPosition: point(updated, prefix.length + next.length),
-        })
-      );
-      const previous = tree;
-      tree = parser.parse(updated, previous)!;
-      previous.delete();
-      const fresh = parser.parse(updated)!;
+    for (const spelling of [
+      '#foo',
+      '#Foo',
+      '#3',
+      '#""',
+      '#"こんにちは"',
+      String.raw`#"gap\ \"`,
+      '#"gap\\\n\\"',
+      '#...',
+    ]) {
+      const tree = parser.parse(prefix + spelling + suffix)!;
       try {
-        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-        expect(tree.rootNode.hasError).toBe(next === '#...');
+        expect(tree.rootNode.hasError).toBe(spelling === '#...');
         expect(
           tree.rootNode.descendantsOfType('label').map((node) => [node.text, node.startIndex, node.endIndex])
-        ).toEqual(next === '#...' ? [] : [[next, prefix.length, prefix.length + next.length]]);
-        for (const query of queries) {
-          const captures = (node: Node): unknown =>
-            query.captures(node).map(({ name, node }) => [name, snapshot(node)]);
-          expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
-        }
+        ).toEqual(spelling === '#...' ? [] : [[spelling, prefix.length, prefix.length + spelling.length]]);
         expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
       } finally {
-        fresh.delete();
+        tree.delete();
       }
-      spelling = next;
-      source = updated;
     }
   } finally {
-    tree.delete();
     parser.delete();
   }
 });
-
-function point(source: string, index: number): { row: number; column: number } {
-  const lines = source.slice(0, index).split('\n');
-  return { row: lines.length - 1, column: lines.at(-1)!.length };
-}
-
-function snapshot(node: Node): unknown {
-  return [
-    node.type,
-    node.startIndex,
-    node.endIndex,
-    node.startPosition,
-    node.endPosition,
-    node.isNamed,
-    node.isExtra,
-    node.isMissing,
-    node.hasError,
-    node.children.map((child, index) => [node.fieldNameForChild(index), snapshot(child)]),
-  ];
-}

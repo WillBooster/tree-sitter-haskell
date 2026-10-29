@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { Edit, Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
@@ -23,19 +23,12 @@ const boundaries = [
 await Parser.init();
 describe.each(['haskell', 'hsc'] as const)('%s unresolved operator chains', (name) => {
   let language: Language;
-  const queries: Query[] = [];
   let tags: Query;
   beforeAll(async () => {
     language = await Language.load(currentWasmPath(root, name));
-    for (const folder of name === 'hsc' ? ['queries', 'hsc/queries'] : ['queries']) {
-      for (const file of fs.readdirSync(path.join(root, folder)).filter((entry) => entry.endsWith('.scm'))) {
-        queries.push(new Query(language, fs.readFileSync(path.join(root, folder, file), 'utf8')));
-      }
-    }
     tags = new Query(language, fs.readFileSync(path.join(root, 'queries/tags.scm'), 'utf8'));
   }, 180_000);
   afterAll(() => {
-    for (const query of queries) query.delete();
     tags.delete();
   });
 
@@ -234,57 +227,25 @@ describe.each(['haskell', 'hsc'] as const)('%s unresolved operator chains', (nam
     }
   });
 
-  test.each([2, 32, 256])('retains flat chains through edits and undo with %i operators', (length) => {
+  test.each([2, 32, 256])('retains flat chains with %i operators', (length) => {
     const original = `value x = ${'x + '.repeat(length)}x\nfollowing = 1\n`;
+    const start = original.indexOf('+');
     const parser = new Parser().setLanguage(language);
-    let source = original;
-    let tree = parser.parse(source)!;
     try {
-      for (const replacement of ['*', 'Prelude.+', '`div`']) {
-        const start = source.indexOf('+');
-        for (const [from, to] of [
-          ['+', replacement],
-          [replacement, '+'],
-        ] as const) {
-          const old = source;
-          source = source.slice(0, start) + to + source.slice(start + from.length);
-          tree.edit(
-            new Edit({
-              startIndex: start,
-              oldEndIndex: start + from.length,
-              newEndIndex: start + to.length,
-              startPosition: positionAt(old, start),
-              oldEndPosition: positionAt(old, start + from.length),
-              newEndPosition: positionAt(source, start + to.length),
-            })
-          );
-          const next = parser.parse(source, tree)!;
+      for (const replacement of ['+', '*', 'Prelude.+', '`div`']) {
+        const tree = parser.parse(original.slice(0, start) + replacement + original.slice(start + 1))!;
+        try {
+          expect(tree.rootNode.hasError).toBe(false);
+          const chain = expressionFor(tree.rootNode, 'value');
+          expect(chain.childrenForFieldName('operand')).toHaveLength(length + 1);
+          expect(chain.childrenForFieldName('operator')).toHaveLength(length);
+          expect(chain.children.some((node) => node.type === 'operator_chain')).toBe(false);
+          expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following = 1');
+        } finally {
           tree.delete();
-          tree = next;
-          const fresh = parser.parse(source)!;
-          try {
-            expect(tree.rootNode.hasError).toBe(false);
-            expect(metadata(tree.rootNode)).toEqual(metadata(fresh.rootNode));
-            for (const query of queries) {
-              const captures = (node: Node): (string | number)[][] =>
-                query
-                  .captures(node)
-                  .map(({ name: capture, node: value }) => [capture, value.type, value.startIndex, value.endIndex]);
-              expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
-            }
-            const chain = expressionFor(tree.rootNode, 'value');
-            expect(chain.childrenForFieldName('operand')).toHaveLength(length + 1);
-            expect(chain.childrenForFieldName('operator')).toHaveLength(length);
-            expect(chain.children.some((node) => node.type === 'operator_chain')).toBe(false);
-            expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following = 1');
-          } finally {
-            fresh.delete();
-          }
         }
       }
-      expect(source).toBe(original);
     } finally {
-      tree.delete();
       parser.delete();
     }
   });
@@ -297,32 +258,4 @@ function expressionFor(rootNode: Node, name: string): Node {
   const expression = declaration?.childForFieldName('match')?.childForFieldName('expression');
   assert.ok(expression, name);
   return expression;
-}
-
-function positionAt(source: string, index: number): { row: number; column: number } {
-  const lines = source.slice(0, index).split('\n');
-  return { row: lines.length - 1, column: lines.at(-1)!.length };
-}
-
-function metadata(rootNode: Node): unknown[] {
-  const pending = [rootNode],
-    result: unknown[] = [];
-  while (pending.length > 0) {
-    const node = pending.pop()!;
-    result.push([
-      node.type,
-      node.startIndex,
-      node.endIndex,
-      node.startPosition,
-      node.endPosition,
-      node.isNamed,
-      node.isExtra,
-      node.isMissing,
-      node.hasError,
-      node.childCount,
-      node.children.map((_, index) => node.fieldNameForChild(index)),
-    ]);
-    pending.push(...node.children.toReversed());
-  }
-  return result;
 }

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { Edit, Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { afterAll, expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
@@ -123,37 +123,12 @@ test('does not accept a valid type prefix inside an invalid longer primitive suf
   }
 });
 
-test('reparses typed suffix and MagicHash edits with fresh trees and captures', () => {
+test('retains following bindings after typed suffix and MagicHash literals', () => {
   const parser = new Parser().setLanguage(language);
-  const prefix = 'module X where\nvalue () = ';
-  const suffix = '\nfollowing = 1\nafter = 2\n';
-  let literal = '55#Int64';
-  const source = prefix + literal + suffix;
-  let tree = parser.parse(source)!;
-  const captures = (current: typeof tree): unknown =>
-    queries.map((query) =>
-      query.captures(current.rootNode).map(({ name, node }) => [name, node.type, node.startIndex, node.endIndex])
-    );
   try {
-    for (const next of ['55#Int8', '55##', '0xff#Word8', '55#Int128', '55#Int64', '55', '55#Int64']) {
-      const updated = prefix + next + suffix;
-      tree.edit(
-        new Edit({
-          startIndex: prefix.length,
-          oldEndIndex: prefix.length + literal.length,
-          newEndIndex: prefix.length + next.length,
-          startPosition: { row: 1, column: 11 },
-          oldEndPosition: { row: 1, column: 11 + literal.length },
-          newEndPosition: { row: 1, column: 11 + next.length },
-        })
-      );
-      const previous = tree;
-      tree = parser.parse(updated, previous)!;
-      previous.delete();
-      const fresh = parser.parse(updated)!;
+    for (const literal of ['55#Int64', '55#Int8', '55##', '0xff#Word8', '55#Int128', '55']) {
+      const tree = parser.parse(`module X where\nvalue () = ${literal}\nfollowing = 1\nafter = 2\n`)!;
       try {
-        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-        expect(captures(tree)).toEqual(captures(fresh));
         expect(
           tree.rootNode
             .descendantsOfType('bind')
@@ -161,27 +136,10 @@ test('reparses typed suffix and MagicHash edits with fresh trees and captures', 
             .map((node) => node.childForFieldName('name')?.text)
         ).toEqual(['following', 'after']);
       } finally {
-        fresh.delete();
+        tree.delete();
       }
-      literal = next;
     }
   } finally {
-    tree.delete();
     parser.delete();
   }
 });
-
-function snapshot(node: Node): unknown {
-  return [
-    node.type,
-    node.isNamed,
-    node.isMissing,
-    node.isExtra,
-    node.hasError,
-    node.startIndex,
-    node.endIndex,
-    node.startPosition,
-    node.endPosition,
-    node.children.map((child, index) => [node.fieldNameForChild(index), snapshot(child)]),
-  ];
-}

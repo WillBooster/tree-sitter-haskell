@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { Edit, Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { afterAll, expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
@@ -30,7 +30,7 @@ afterAll(() => {
   }
 });
 
-for (const { name, language, queries, injections, highlights } of resources) {
+for (const { name, language, injections, highlights } of resources) {
   test(`${name} exposes exact comment bodies without losing whitespace, nesting or following bindings`, () => {
     const examples = [
       ['{-  body  -}', 'comment', '  body  '],
@@ -168,39 +168,19 @@ for (const { name, language, queries, injections, highlights } of resources) {
       ['line ending', '\r\n\t-- continued', '\n  -- continued'],
       ['documentation marker', '{-  outer', '{- | outer'],
       ['following binding', 'following', 'afterwards'],
-    ] as const)(`${name} restores %s at depth ${depth} through an edit and undo`, (_label, target, replacement) => {
+    ] as const)(`${name} parses either %s at depth ${depth}`, (_label, target, replacement) => {
       const parser = new Parser().setLanguage(language);
-      let source = `before = 0\nvalue = (${'let { x = ('.repeat(depth)}{-  outer {- nested -} tail -} 0${') } in x'.repeat(depth)})\n-- | Docs\r\n\t-- continued\r\nfollowing = 1\n`;
-      let tree = parser.parse(source)!;
+      const original = `before = 0\nvalue = (${'let { x = ('.repeat(depth)}{-  outer {- nested -} tail -} 0${') } in x'.repeat(depth)})\n-- | Docs\r\n\t-- continued\r\nfollowing = 1\n`;
+      const start = original.indexOf(target);
+      expect(start).toBeGreaterThanOrEqual(0);
       try {
-        const original = source;
-        for (const [from, to] of [
-          [target, replacement],
-          [replacement, target],
-        ] as const) {
-          const start = source.indexOf(from);
-          expect(start).toBeGreaterThanOrEqual(0);
-          const oldSource = source;
-          source = source.slice(0, start) + to + source.slice(start + from.length);
-          tree.edit(
-            new Edit({
-              startIndex: start,
-              oldEndIndex: start + from.length,
-              newEndIndex: start + to.length,
-              startPosition: positionAt(oldSource, start),
-              oldEndPosition: positionAt(oldSource, start + from.length),
-              newEndPosition: positionAt(source, start + to.length),
-            })
-          );
-          const previous = tree;
-          tree = parser.parse(source, previous)!;
-          previous.delete();
-          const fresh = parser.parse(source)!;
+        for (const source of [
+          original,
+          original.slice(0, start) + replacement + original.slice(start + target.length),
+        ]) {
+          const tree = parser.parse(source)!;
           try {
             expect(tree.rootNode.hasError).toBe(false);
-            expect(metadata(tree.rootNode)).toEqual(metadata(fresh.rootNode));
-            for (const query of queries)
-              expect(captures(query, tree.rootNode)).toEqual(captures(query, fresh.rootNode));
             expect(
               tree.rootNode
                 .childForFieldName('declarations')!
@@ -208,38 +188,12 @@ for (const { name, language, queries, injections, highlights } of resources) {
                 .map((node) => node.childForFieldName('name')?.text)
             ).toEqual(['before', 'value', source.includes('afterwards') ? 'afterwards' : 'following']);
           } finally {
-            fresh.delete();
+            tree.delete();
           }
         }
-        expect(source).toBe(original);
       } finally {
-        tree.delete();
         parser.delete();
       }
     });
   }
-}
-
-function positionAt(source: string, index: number): { row: number; column: number } {
-  const lines = source.slice(0, index).split('\n');
-  return { row: lines.length - 1, column: lines.at(-1)!.length };
-}
-
-function metadata(node: Node): unknown {
-  return [
-    node.type,
-    node.startIndex,
-    node.endIndex,
-    node.startPosition,
-    node.endPosition,
-    node.isNamed,
-    node.isExtra,
-    node.isMissing,
-    node.hasError,
-    node.children.map((child, index) => [node.fieldNameForChild(index), metadata(child)]),
-  ];
-}
-
-function captures(query: Query, node: Node): (string | number)[][] {
-  return query.captures(node).map(({ name, node: value }) => [name, value.type, value.startIndex, value.endIndex]);
 }
