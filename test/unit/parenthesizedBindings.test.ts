@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { Edit, Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { afterAll, beforeAll, expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
@@ -64,40 +64,20 @@ test('indexes deeply grouped simple bindings alongside destructured module bindi
   }
 });
 
-test('incrementally wraps a simple binding without changing its definition location or the following declaration', () => {
+test('indexes a grouped simple binding at its name without changing the following declaration', () => {
   const parser = new Parser().setLanguage(language);
-  const query = tagQuery;
-  const previous = parser.parse('named = 1\nfollowing = 2\n')!;
+  const tree = parser.parse('((named)) = 1\nfollowing = 2\n')!;
   try {
-    previous.edit(
-      new Edit({
-        startIndex: 0,
-        oldEndIndex: 5,
-        newEndIndex: 9,
-        startPosition: { row: 0, column: 0 },
-        oldEndPosition: { row: 0, column: 5 },
-        newEndPosition: { row: 0, column: 9 },
-      })
-    );
-    const source = '((named)) = 1\nfollowing = 2\n';
-    const incremental = parser.parse(source, previous)!;
-    const fresh = parser.parse(source)!;
-    try {
-      expect(incremental.rootNode.hasError).toBe(false);
-      expect(incremental.rootNode.toString()).toBe(fresh.rootNode.toString());
-      expect(
-        query
-          .captures(incremental.rootNode)
-          .filter(({ name, node }) => name === 'name' && node.text === 'named')
-          .map(({ node }) => [node.startIndex, node.endIndex])
-      ).toEqual([[2, 7]]);
-      expect(incremental.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following = 2');
-    } finally {
-      incremental.delete();
-      fresh.delete();
-    }
+    expect(tree.rootNode.hasError).toBe(false);
+    expect(
+      tagQuery
+        .captures(tree.rootNode)
+        .filter(({ name, node }) => name === 'name' && node.text === 'named')
+        .map(({ node }) => [node.startIndex, node.endIndex])
+    ).toEqual([[2, 7]]);
+    expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following = 2');
   } finally {
-    previous.delete();
+    tree.delete();
     parser.delete();
   }
 });

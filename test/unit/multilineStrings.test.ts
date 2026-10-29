@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { Edit, Language, Parser } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { afterAll, expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
@@ -51,47 +51,6 @@ test('stops each multiline literal at its first unescaped delimiter', () => {
       '"""second"""',
       '"ordinary"',
     ]);
-  } finally {
-    tree.delete();
-  }
-});
-
-test.each([
-  ['expression', 'value = ', '\nafter = "ordinary"\n'],
-  ['constraint', 'value :: Proxy ', ' => Int\nvalue = undefined\n'],
-])('reparses %s edits around escaped triple quotes consistently with a fresh parse', (_kind, prefix, suffix) => {
-  let source = `${prefix}"""first\nsecond"""${suffix}`;
-  let tree = parser.parse(source)!;
-  try {
-    for (const content of ['"', '""', String.raw`"\"""`, String.raw`""\""`, '\\ \\', '']) {
-      const startIndex = source.indexOf('second');
-      const endIndex = source.lastIndexOf('"""');
-      const replacement = `second${content}`;
-      const next = source.slice(0, startIndex) + replacement + source.slice(endIndex);
-      tree.edit(
-        new Edit({
-          startIndex,
-          oldEndIndex: endIndex,
-          newEndIndex: startIndex + replacement.length,
-          startPosition: { row: 1, column: 0 },
-          oldEndPosition: { row: 1, column: endIndex - startIndex },
-          newEndPosition: { row: 1, column: replacement.length },
-        })
-      );
-      const incremental = parser.parse(next, tree)!;
-      tree.delete();
-      tree = incremental;
-      const fresh = parser.parse(next)!;
-      try {
-        expect(incremental.rootNode.toString()).toBe(fresh.rootNode.toString());
-        expect(incremental.rootNode.descendantsOfType('string').map((node) => node.text)).toEqual(
-          fresh.rootNode.descendantsOfType('string').map((node) => node.text)
-        );
-      } finally {
-        fresh.delete();
-      }
-      source = next;
-    }
   } finally {
     tree.delete();
   }

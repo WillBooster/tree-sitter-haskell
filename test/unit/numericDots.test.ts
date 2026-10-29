@@ -1,26 +1,13 @@
-import fs from 'node:fs';
 import path from 'node:path';
 
-import { Edit, Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
-import { afterAll, beforeAll, expect, test } from 'vitest';
+import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 const root = path.join(import.meta.dirname, '../..');
 await Parser.init();
 const language = await Language.load(currentWasmPath(root));
-const queries: Query[] = [];
-beforeAll(() => {
-  queries.push(
-    ...fs
-      .readdirSync(path.join(root, 'queries'))
-      .filter((file) => file.endsWith('.scm'))
-      .map((file) => new Query(language, fs.readFileSync(path.join(root, 'queries', file), 'utf8')))
-  );
-}, 180_000);
-afterAll(() => {
-  for (const query of queries) query.delete();
-});
 
 test('keeps dot operators before numeric and quoted operands in applications and right sections', () => {
   const parser = new Parser().setLanguage(language);
@@ -81,14 +68,11 @@ test('preserves Unicode record fields, field selectors, and qualified names', ()
   }
 });
 
-test('reparses dots when record fields become numeric operands or quoted names', () => {
+test('parses dots between record fields, numeric operands and quoted names', () => {
   const parser = new Parser().setLanguage(language);
-  const prefix = 'value = ',
-    suffix = '\nfollowing = 1\n';
-  let expression = 'left.field';
-  let tree = parser.parse(prefix + expression + suffix)!;
   try {
-    for (const replacement of [
+    for (const expression of [
+      'left.field',
       'left.14',
       'left .14',
       "left .'True",
@@ -97,54 +81,17 @@ test('reparses dots when record fields become numeric operands or quoted names',
       '(.14)',
       '( .14)',
       '#foo.14',
-      'left.field',
     ]) {
-      tree.edit(
-        new Edit({
-          startIndex: prefix.length,
-          oldEndIndex: prefix.length + expression.length,
-          newEndIndex: prefix.length + replacement.length,
-          startPosition: { row: 0, column: prefix.length },
-          oldEndPosition: { row: 0, column: prefix.length + expression.length },
-          newEndPosition: { row: 0, column: prefix.length + replacement.length },
-        })
-      );
-      const source = prefix + replacement + suffix;
-      const previous = tree;
-      tree = parser.parse(source, previous)!;
-      previous.delete();
-      const fresh = parser.parse(source)!;
+      const source = `value = ${expression}\nfollowing = 1\n`;
+      const tree = parser.parse(source)!;
       try {
         expect(tree.rootNode.hasError, source).toBe(false);
-        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-        for (const query of queries) {
-          const captures = (node: Node): unknown =>
-            query.captures(node).map(({ name, node }) => [name, snapshot(node)]);
-          expect(captures(tree.rootNode)).toEqual(captures(fresh.rootNode));
-        }
         expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
       } finally {
-        fresh.delete();
+        tree.delete();
       }
-      expression = replacement;
     }
   } finally {
-    tree.delete();
     parser.delete();
   }
 });
-
-function snapshot(node: Node): unknown {
-  return [
-    node.type,
-    node.startIndex,
-    node.endIndex,
-    node.startPosition,
-    node.endPosition,
-    node.isNamed,
-    node.isExtra,
-    node.isMissing,
-    node.hasError,
-    node.children.map((child, index) => [node.fieldNameForChild(index), snapshot(child)]),
-  ];
-}

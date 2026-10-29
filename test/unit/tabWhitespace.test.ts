@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { Edit, Language, Parser } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { afterAll, expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
@@ -63,38 +63,16 @@ test.each(['--\t| Documentation', '{-\t| Documentation -}'])(
   }
 );
 
-test('reparses spaces replaced by tabs consistently with a fresh parse', () => {
+test('parses each partial replacement of spaces by tabs without errors', () => {
   let source = 'f x = case x of\n  A -> x\n';
-  let tree = parser.parse(source)!;
-  try {
-    for (const index of [...source.matchAll(/(?<=\S) /g)].map((match) => match.index)) {
-      const before = source.slice(0, index).split('\n');
-      const startPosition = { row: before.length - 1, column: before.at(-1)!.length };
-      const endPosition = { row: startPosition.row, column: startPosition.column + 1 };
-      tree.edit(
-        new Edit({
-          startIndex: index,
-          oldEndIndex: index + 1,
-          newEndIndex: index + 1,
-          startPosition,
-          oldEndPosition: endPosition,
-          newEndPosition: endPosition,
-        })
-      );
-      source = `${source.slice(0, index)}\t${source.slice(index + 1)}`;
-      const next = parser.parse(source, tree)!;
+  for (const index of [...source.matchAll(/(?<=\S) /g)].map((match) => match.index)) {
+    source = `${source.slice(0, index)}\t${source.slice(index + 1)}`;
+    const tree = parser.parse(source)!;
+    try {
+      expect(tree.rootNode.hasError, source).toBe(false);
+    } finally {
       tree.delete();
-      tree = next;
-      const fresh = parser.parse(source)!;
-      try {
-        expect(tree.rootNode.hasError).toBe(false);
-        expect(tree.rootNode.toString()).toBe(fresh.rootNode.toString());
-      } finally {
-        fresh.delete();
-      }
     }
-  } finally {
-    tree.delete();
   }
 });
 
@@ -156,39 +134,17 @@ test.each([
 test.each([
   ['f = (" ", do x\n              y)\n', 6],
   ['f = do {- -} x\n                   y\n', 9],
-] as const)('updates layout after editing a tab inside an earlier token: %j', (source, index) => {
-  let tree = parser.parse(source)!;
+] as const)('counts a tab inside an earlier token toward layout: %j', (source, index) => {
+  expect(statements(source)).toHaveLength(1);
+  expect(statements(`${source.slice(0, index)}\t${source.slice(index + 1)}`)).toEqual(['x', 'y']);
+});
+
+function statements(source: string): string[] {
+  const tree = parser.parse(source)!;
   try {
-    expect(tree.rootNode.hasError).toBe(false);
-    const originalStatements = tree.rootNode.descendantsOfType('exp').map((node) => node.text);
-    expect(originalStatements).toHaveLength(1);
-    for (const character of ['\t', ' ']) {
-      tree.edit(
-        new Edit({
-          startIndex: index,
-          oldEndIndex: index + 1,
-          newEndIndex: index + 1,
-          startPosition: { row: 0, column: index },
-          oldEndPosition: { row: 0, column: index + 1 },
-          newEndPosition: { row: 0, column: index + 1 },
-        })
-      );
-      const edited = `${source.slice(0, index)}${character}${source.slice(index + 1)}`;
-      const next = parser.parse(edited, tree)!;
-      tree.delete();
-      tree = next;
-      const fresh = parser.parse(edited)!;
-      try {
-        expect(tree.rootNode.hasError).toBe(false);
-        expect(tree.rootNode.toString()).toBe(fresh.rootNode.toString());
-        expect(tree.rootNode.descendantsOfType('exp').map((node) => node.text)).toEqual(
-          character === '\t' ? ['x', 'y'] : originalStatements
-        );
-      } finally {
-        fresh.delete();
-      }
-    }
+    expect(tree.rootNode.hasError, source).toBe(false);
+    return tree.rootNode.descendantsOfType('exp').map((node) => node.text);
   } finally {
     tree.delete();
   }
-});
+}

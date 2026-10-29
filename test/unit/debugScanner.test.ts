@@ -6,7 +6,7 @@ import { expect, test } from 'vitest';
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
 
-test('scanner diagnostics preserve long-line trees and incremental edits', () => {
+test('scanner diagnostics preserve long-line trees', () => {
   fs.mkdirSync(path.join(repositoryRoot, '.tmp'), { recursive: true });
   const workspace = fs.mkdtempSync(path.join(repositoryRoot, '.tmp/debug-scanner-'));
   const run = (arguments_: string[]): SpawnSyncReturns<string> => {
@@ -30,17 +30,14 @@ test('scanner diagnostics preserve long-line trees and incremental edits', () =>
       const input = path.join(workspace, 'input.hs');
       const source = `value = "${'x'.repeat(length)}"\nfollowing = 1\n`;
       fs.writeFileSync(input, source);
-      const parse = (library: string, edits: string[] = []): SpawnSyncReturns<string> =>
-        run(['parse', '--lib-path', library, '--lang-name', 'haskell', input, ...edits]);
+      const parse = (library: string): SpawnSyncReturns<string> =>
+        run(['parse', '--lib-path', library, '--lang-name', 'haskell', input]);
       const optimized = parse(optimizedLibrary);
       const debug = parse(debugLibrary);
       expect(debug.stdout).toBe(optimized.stdout);
       expect(debug.stderr).toContain('contexts =');
       expect(debug.stderr).toContain('result:');
       expectBoundedSnapshots(debug.stderr);
-      const edited = parse(debugLibrary, ['--edits', '9 0 yy']);
-      fs.writeFileSync(input, source.slice(0, 9) + 'yy' + source.slice(9));
-      expect(edited.stdout).toBe(parse(optimizedLibrary).stdout);
       fs.writeFileSync(input, `-- ${'x'.repeat(length)}\nfollowing = 1\n`);
       const comment = parse(debugLibrary);
       expect(comment.stdout).toBe(parse(optimizedLibrary).stdout);

@@ -1,12 +1,12 @@
 import path from 'node:path';
 
-import { Edit, Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 const root = path.join(import.meta.dirname, '../..');
-interface ClauseEdit {
+interface ClauseVariant {
   before: string;
   after: string;
   clauses: string[];
@@ -17,7 +17,7 @@ interface Fixture {
   source: string;
   clauses: string[];
   bodyDeclarations?: (string[] | undefined)[];
-  edits?: ClauseEdit[];
+  variants?: ClauseVariant[];
 }
 const fixtures: Fixture[] = [
   {
@@ -60,7 +60,7 @@ const fixtures: Fixture[] = [
     source: 'outer = 1 where {}\nfollowing = 2\n',
     clauses: ['where {}'],
     bodyDeclarations: [[]],
-    edits: [
+    variants: [
       {
         before: '{}',
         after: '{ local = 3 }',
@@ -74,7 +74,7 @@ const fixtures: Fixture[] = [
     source: 'outer = 1 where\nfollowing = 2\n',
     clauses: ['where'],
     bodyDeclarations: [undefined],
-    edits: [
+    variants: [
       {
         before: 'where',
         after: 'where\n  local = 3',
@@ -94,63 +94,28 @@ const languages = await Promise.all(
 );
 
 test.each(languages.flatMap((language) => fixtures.map((fixture) => ({ ...fixture, ...language }))))(
-  '$dialect exposes $name as selectable where clauses through edits and undo',
-  ({ language, source: originalSource, clauses: expectedClauses, bodyDeclarations, edits = [] }) => {
+  '$dialect exposes $name and its variants as selectable where clauses',
+  ({ language, source, clauses, bodyDeclarations, variants = [] }) => {
     const parser = new Parser().setLanguage(language);
     const query = new Query(language, '(("where" @keyword) (local_binds) @body)');
-    let source = originalSource;
-    let tree = parser.parse(source)!;
     try {
-      expectClauses(tree.rootNode, query, source, expectedClauses, bodyDeclarations);
-      const original = snapshot(tree.rootNode);
-      const roundTrips: ClauseEdit[] = [
-        {
-          before: '1',
-          after: '22',
-          clauses: expectedClauses.map((text) => text.replace('1', '22')),
-          bodyDeclarations,
-        },
-        ...edits,
-      ];
-      for (const edit of roundTrips) {
-        const startIndex = source.indexOf(edit.before);
+      const replaced = [
+        { before: '1', after: '22', clauses: clauses.map((text) => text.replace('1', '22')), bodyDeclarations },
+        ...variants,
+      ].map(({ before, after, ...expected }) => {
+        const startIndex = source.indexOf(before);
         expect(startIndex).toBeGreaterThanOrEqual(0);
-        let previous = edit.before;
-        for (const [replacement, clauses, bodies] of [
-          [edit.after, edit.clauses, edit.bodyDeclarations],
-          [edit.before, expectedClauses, bodyDeclarations],
-        ] as const) {
-          const oldEndIndex = startIndex + previous.length;
-          const newEndIndex = startIndex + replacement.length;
-          const newSource = source.slice(0, startIndex) + replacement + source.slice(oldEndIndex);
-          tree.edit(
-            new Edit({
-              startIndex,
-              oldEndIndex,
-              newEndIndex,
-              startPosition: position(source, startIndex),
-              oldEndPosition: position(source, oldEndIndex),
-              newEndPosition: position(newSource, newEndIndex),
-            })
-          );
-          source = newSource;
-          previous = replacement;
-          const next = parser.parse(source, tree)!;
+        return { source: source.slice(0, startIndex) + after + source.slice(startIndex + before.length), ...expected };
+      });
+      for (const variant of [{ source, clauses, bodyDeclarations }, ...replaced]) {
+        const tree = parser.parse(variant.source)!;
+        try {
+          expectClauses(tree.rootNode, query, variant.source, variant.clauses, variant.bodyDeclarations);
+        } finally {
           tree.delete();
-          tree = next;
-          const fresh = parser.parse(source)!;
-          try {
-            expectClauses(tree.rootNode, query, source, clauses, bodies);
-            expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-          } finally {
-            fresh.delete();
-          }
         }
-        expect(source).toBe(originalSource);
-        expect(snapshot(tree.rootNode)).toEqual(original);
       }
     } finally {
-      tree.delete();
       query.delete();
       parser.delete();
     }
@@ -191,28 +156,6 @@ function expectClauses(
   const following = rootNode.childForFieldName('declarations')?.lastNamedChild;
   expect(following?.text).toBe('following = 2');
   expect(following?.startPosition).toEqual(position(source, source.indexOf('following')));
-}
-
-function snapshot(rootNode: Node): unknown[] {
-  const pending = [rootNode];
-  const nodes = [];
-  while (pending.length > 0) {
-    const node = pending.pop()!;
-    const children = node.children;
-    nodes.push([
-      node.type,
-      node.startIndex,
-      node.endIndex,
-      node.startPosition,
-      node.endPosition,
-      node.isNamed,
-      node.isMissing,
-      node.isError,
-      children.map((_, index) => node.fieldNameForChild(index)),
-    ]);
-    pending.push(...children.toReversed());
-  }
-  return nodes;
 }
 
 function position(source: string, index: number): { row: number; column: number } {

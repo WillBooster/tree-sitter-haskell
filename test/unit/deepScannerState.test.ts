@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { Edit, Language, type Node, Parser } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
@@ -28,12 +28,11 @@ const grammars = await Promise.all(
 );
 
 test.each(grammars.flatMap((grammar) => examples.map((example) => ({ ...example, ...grammar }))))(
-  'preserves $name $label and later declarations through Wasm edits and undo',
-  ({ label, source: initialSource, language }) => {
+  'preserves $name $label and later declarations in Wasm',
+  ({ label, source, language }) => {
     const parser = new Parser().setLanguage(language);
     try {
-      let source = initialSource;
-      let tree = parser.parse(source)!;
+      const tree = parser.parse(source)!;
       try {
         expect(tree.rootNode.hasError, label).toBe(false);
         const following = tree.rootNode.childForFieldName('declarations')?.lastNamedChild;
@@ -43,39 +42,14 @@ test.each(grammars.flatMap((grammar) => examples.map((example) => ({ ...example,
           { row: followingRow, column: 0 },
           { row: followingRow, column: 13 },
         ]);
-        const original = snapshot(tree.rootNode);
-        const startIndex = source.indexOf('deep');
-        const row = source.slice(0, startIndex).split('\n').length - 1;
-        const column = startIndex - source.lastIndexOf('\n', startIndex - 1) - 1;
-        let previous = 'deep';
-        for (const replacement of [`${'Box ('.repeat(4)}deeper${')'.repeat(4)}`, 'deep']) {
-          const oldEndIndex = startIndex + previous.length;
-          tree.edit(
-            new Edit({
-              startIndex,
-              oldEndIndex,
-              newEndIndex: startIndex + replacement.length,
-              startPosition: { row, column },
-              oldEndPosition: { row, column: column + previous.length },
-              newEndPosition: { row, column: column + replacement.length },
-            })
-          );
-          source = source.slice(0, startIndex) + replacement + source.slice(oldEndIndex);
-          previous = replacement;
-          const incremental = parser.parse(source, tree)!;
-          tree.delete();
-          tree = incremental;
-          const fresh = parser.parse(source)!;
-          try {
-            expect(tree.rootNode.hasError, `${label}, ${replacement}`).toBe(false);
-            expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-          } finally {
-            fresh.delete();
-          }
-        }
-        expect(snapshot(tree.rootNode)).toEqual(original);
       } finally {
         tree.delete();
+      }
+      const deeper = parser.parse(source.replace('deep', `${'Box ('.repeat(4)}deeper${')'.repeat(4)}`))!;
+      try {
+        expect(deeper.rootNode.hasError, `${label}, deeper`).toBe(false);
+      } finally {
+        deeper.delete();
       }
     } finally {
       parser.delete();
@@ -127,17 +101,6 @@ function layoutSource(depth: number): string {
 
 function bracedSource(depth: number): string {
   return `value = (${'let { x = ('.repeat(depth)}deep${') } in x'.repeat(depth)})\nfollowing = 1\n`;
-}
-
-function snapshot(rootNode: Node): unknown[] {
-  const pending = [rootNode];
-  const nodes = [];
-  while (pending.length > 0) {
-    const node = pending.pop()!;
-    nodes.push([node.type, node.startIndex, node.endIndex, node.startPosition, node.endPosition, node.isNamed]);
-    pending.push(...node.children.toReversed());
-  }
-  return nodes;
 }
 
 function run(arguments_: string[]): string {

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { Edit, Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { afterAll, expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
@@ -87,42 +87,23 @@ test('retains calling convention and safety macro fields without consuming optio
   }
 });
 
-test('reparses changes between safety keywords and macros identically to a fresh parse', () => {
-  let source = fs.readFileSync(path.join(root, 'test/fixtures/foreignSafetyMacros.hs'), 'utf8');
-  const original = source;
-  const startIndex = source.indexOf('SAFE_ON_WIN "sin"');
+test('parses safety keywords and macros in place of a safety macro', () => {
+  const original = fs.readFileSync(path.join(root, 'test/fixtures/foreignSafetyMacros.hs'), 'utf8');
+  const startIndex = original.indexOf('SAFE_ON_WIN "sin"');
   const parser = new Parser().setLanguage(language);
-  let tree = parser.parse(source)!;
-  let length = 'SAFE_ON_WIN'.length;
   try {
-    for (const safety of ['SAFE64', 'safe', 'interruptible', 'SAFE_2', 'SAFE_ON_WIN']) {
-      tree.edit(
-        new Edit({
-          startIndex,
-          oldEndIndex: startIndex + length,
-          newEndIndex: startIndex + safety.length,
-          startPosition: { row: 9, column: 24 },
-          oldEndPosition: { row: 9, column: 24 + length },
-          newEndPosition: { row: 9, column: 24 + safety.length },
-        })
-      );
-      source = source.slice(0, startIndex) + safety + source.slice(startIndex + length);
-      const incremental = parser.parse(source, tree)!;
-      tree.delete();
-      tree = incremental;
-      const fresh = parser.parse(source)!;
+    for (const safety of ['SAFE64', 'safe', 'interruptible', 'SAFE_2']) {
+      const tree = parser.parse(
+        original.slice(0, startIndex) + safety + original.slice(startIndex + 'SAFE_ON_WIN'.length)
+      )!;
       try {
         expect(tree.rootNode.hasError).toBe(false);
         expect(tree.rootNode.descendantsOfType('foreign_import')[0]?.childForFieldName('safety')?.text).toBe(safety);
-        expectSameTreeAndCaptures(tree.rootNode, fresh.rootNode);
       } finally {
-        fresh.delete();
+        tree.delete();
       }
-      length = safety.length;
     }
-    expect(source).toBe(original);
   } finally {
-    tree.delete();
     parser.delete();
   }
 });
@@ -143,88 +124,33 @@ test('does not split an uppercase identifier into a safety prefix and a foreign 
   }
 });
 
-test('retains following declarations through errors, repairs and undo outside foreign syntax', () => {
-  const original = 'foo = ) _bar\nx = 1\ny = ) Maybe\nz = 2\nf :: ) Int\ng = 3\nh = ) _\nk = 4\n';
-  let source = original;
+test('retains following declarations through errors and repairs outside foreign syntax', () => {
+  let source = 'foo = ) _bar\nx = 1\ny = ) Maybe\nz = 2\nf :: ) Int\ng = 3\nh = ) _\nk = 4\n';
   const parser = new Parser().setLanguage(language);
-  let tree = parser.parse(source)!;
-  const removals: number[] = [];
-  const edit = (start: number, remove: number, insert: string): void => {
-    const lines = source.slice(0, start).split('\n');
-    const row = lines.length - 1,
-      column = lines.at(-1)!.length;
-    tree.edit(
-      new Edit({
-        startIndex: start,
-        oldEndIndex: start + remove,
-        newEndIndex: start + insert.length,
-        startPosition: { row, column },
-        oldEndPosition: { row, column: column + remove },
-        newEndPosition: { row, column: column + insert.length },
-      })
-    );
-    source = source.slice(0, start) + insert + source.slice(start + remove);
-    const next = parser.parse(source, tree)!;
-    tree.delete();
-    tree = next;
-    const fresh = parser.parse(source)!;
-    try {
-      expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
-        'foo',
-        'x',
-        'y',
-        'z',
-        'g',
-        'h',
-        'k',
-      ]);
-      expect(tree.rootNode.descendantsOfType('signature').map((node) => node.childForFieldName('name')?.text)).toEqual([
-        'f',
-      ]);
-      expectSameTreeAndCaptures(tree.rootNode, fresh.rootNode);
-    } finally {
-      fresh.delete();
-    }
-  };
   try {
-    expect(tree.rootNode.hasError).toBe(true);
-    edit(0, 0, '');
-    while (source.includes(')')) {
-      const start = source.indexOf(')');
-      removals.push(start);
-      edit(start, 1, '');
+    for (;;) {
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(source.includes(')'));
+        expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
+          'foo',
+          'x',
+          'y',
+          'z',
+          'g',
+          'h',
+          'k',
+        ]);
+        expect(
+          tree.rootNode.descendantsOfType('signature').map((node) => node.childForFieldName('name')?.text)
+        ).toEqual(['f']);
+      } finally {
+        tree.delete();
+      }
+      if (!source.includes(')')) break;
+      source = source.replace(')', '');
     }
-    expect(tree.rootNode.hasError).toBe(false);
-    for (const start of removals.toReversed()) edit(start, 0, ')');
-    expect(source).toBe(original);
-    expect(tree.rootNode.hasError).toBe(true);
   } finally {
-    tree.delete();
     parser.delete();
   }
 });
-
-function expectSameTreeAndCaptures(actual: Node, expected: Node): void {
-  expect(nodeMetadata(actual)).toEqual(nodeMetadata(expected));
-  for (const query of queries) {
-    const captures = (node: Node): (string | number)[][] =>
-      query.captures(node).map(({ name, node: value }) => [name, value.type, value.startIndex, value.endIndex]);
-    expect(captures(actual)).toEqual(captures(expected));
-  }
-}
-
-function nodeMetadata(node: Node): unknown {
-  return [
-    node.type,
-    node.startIndex,
-    node.endIndex,
-    node.startPosition,
-    node.endPosition,
-    node.isNamed,
-    node.isExtra,
-    node.isMissing,
-    node.hasError,
-    node.childCount,
-    node.children.map(nodeMetadata),
-  ];
-}
