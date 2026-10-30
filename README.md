@@ -108,10 +108,9 @@ In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-
 [willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter), the runtime this package is tested and
 fuzzed with:
 
-```toml
-[dependencies]
-tree-sitter = { package = "willbooster-tree-sitter", version = "15.0.0" }
-tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "17" }
+```sh
+cargo add willbooster-tree-sitter@15.0.0 --rename tree-sitter
+cargo add willbooster-tree-sitter-haskell --rename tree-sitter-haskell
 ```
 
 ```rust
