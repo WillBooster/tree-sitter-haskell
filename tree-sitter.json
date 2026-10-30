@@ -7,8 +7,6 @@
       "scope": "source.haskell",
       "path": ".",
       "file-types": ["hs", "hs-boot"],
-      "highlights": "queries/highlights.scm",
-      "tags": "queries/tags.scm",
       "injection-regex": "^(hs|haskell)$"
     },
     {
@@ -17,10 +15,7 @@
       "scope": "source.hsc",
       "path": "hsc",
       "file-types": ["hsc"],
-      "highlights": ["queries/highlights.scm", "hsc/queries/highlights.scm"],
-      "tags": "queries/tags.scm",
-      "injection-regex": "^hsc$",
-      "injections": ["queries/injections.scm", "hsc/queries/injections.scm"]
+      "injection-regex": "^hsc$"
     }
   ],
   "metadata": {
