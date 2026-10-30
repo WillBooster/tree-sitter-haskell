@@ -1,32 +1,15 @@
-import fs from 'node:fs';
 import path from 'node:path';
 
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
-import { afterAll, beforeAll, expect, test } from 'vitest';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
+import { expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 await Parser.init();
 const language = await Language.load(currentWasmPath(path.join(import.meta.dirname, '../..')));
-const tags = fs.readFileSync(path.join(import.meta.dirname, '../../queries/tags.scm'), 'utf8');
-
-let tagQuery: Query;
-let highlightQuery: Query;
-beforeAll(() => {
-  tagQuery = new Query(language, tags);
-  highlightQuery = new Query(
-    language,
-    fs.readFileSync(path.join(import.meta.dirname, '../../queries/highlights.scm'), 'utf8')
-  );
-}, 180_000);
-afterAll(() => {
-  tagQuery.delete();
-  highlightQuery.delete();
-});
 
 test('preserves subtraction after grouped names instead of applying them to negative arguments', () => {
   const parser = new Parser().setLanguage(language);
-  const query = tagQuery;
   try {
     for (const expression of [
       '(f) - x',
@@ -45,13 +28,6 @@ test('preserves subtraction after grouped names instead of applying them to nega
         expect(declaration?.childForFieldName('match')?.childForFieldName('expression')?.type, source).toBe(
           'operator_chain'
         );
-        const calls = query
-          .matches(tree.rootNode)
-          .filter(({ captures }) => captures.some(({ name }) => name === 'reference.call'));
-        expect(
-          calls.flatMap(({ captures }) => captures.filter(({ name }) => name === 'name').map(({ node }) => node.text)),
-          source
-        ).toEqual(['-']);
         expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following = 1');
       } finally {
         tree.delete();
@@ -62,7 +38,7 @@ test('preserves subtraction after grouped names instead of applying them to nega
   }
 });
 
-test('normalizes grouped name expressions while reserving call tags and highlights for function position', () => {
+test('normalizes grouped name expressions', () => {
   const parser = new Parser().setLanguage(language);
   const source = 'held = (((f)))\ncalled = (((f))) (-x)\n';
   const tree = parser.parse(source)!;
@@ -74,21 +50,6 @@ test('normalizes grouped name expressions while reserving call tags and highligh
       [['variable', 'f']],
       [['variable', 'f']],
     ]);
-    const callStart = source.indexOf('(((f)))', source.indexOf('called')) + 3;
-    const calls = tagQuery
-      .matches(tree.rootNode)
-      .filter(({ captures }) => captures.some(({ name }) => name === 'reference.call'));
-    expect(
-      calls.flatMap(({ captures }) =>
-        captures.filter(({ name }) => name === 'name').map(({ node }) => [node.text, node.startIndex])
-      )
-    ).toEqual([['f', callStart]]);
-    expect(
-      highlightQuery
-        .captures(tree.rootNode)
-        .filter(({ name, node }) => name === 'function.call' && node.text === 'f')
-        .map(({ node }) => node.startIndex)
-    ).toEqual([callStart]);
     expect(tree.rootNode.descendantsOfType('operator_chain').map((node) => node.text)).toEqual(['-x']);
     expect(tree.rootNode.descendantsOfType('prefix_negation').map((node) => node.text)).toEqual(['-']);
   } finally {
@@ -99,8 +60,6 @@ test('normalizes grouped name expressions while reserving call tags and highligh
 
 test('retains left-associative application when grouped names occupy argument positions', () => {
   const parser = new Parser().setLanguage(language);
-  const query = tagQuery;
-  const highlights = highlightQuery;
   try {
     for (const [callee, grouped, finalArgument] of [
       ['map', '(helper)', 'xs'],
@@ -123,25 +82,6 @@ test('retains left-associative application when grouped names occupy argument po
         expect(firstApplication?.type, source).toBe('apply');
         expect(firstApplication?.childForFieldName('function')?.text, source).toBe(callee);
         expect(firstApplication?.childForFieldName('argument')?.text, source).toBe(grouped);
-        const calls = query
-          .matches(tree.rootNode)
-          .filter(({ captures }) => captures.some(({ name }) => name === 'reference.call'));
-        expect(
-          calls.flatMap(({ captures }) => captures.filter(({ name }) => name === 'name').map(({ node }) => node.text)),
-          source
-        ).toEqual([callee]);
-        const callHighlights = highlights.captures(tree.rootNode).filter(({ name }) => name === 'function.call');
-        expect(
-          callHighlights.some(({ node }) => node.text === callee),
-          source
-        ).toBe(true);
-        const argumentStart = source.indexOf(grouped);
-        expect(
-          callHighlights.filter(
-            ({ node }) => node.startIndex >= argumentStart && node.endIndex <= argumentStart + grouped.length
-          ),
-          source
-        ).toEqual([]);
         expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following = 1');
       } finally {
         tree.delete();

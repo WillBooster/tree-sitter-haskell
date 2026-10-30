@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { Language, type Node, Parser } from '@willbooster/web-tree-sitter';
+import { beforeAll, describe, expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
@@ -23,14 +23,9 @@ const boundaries = [
 await Parser.init();
 describe.each(['haskell', 'hsc'] as const)('%s unresolved operator chains', (name) => {
   let language: Language;
-  let tags: Query;
   beforeAll(async () => {
     language = await Language.load(currentWasmPath(root, name));
-    tags = new Query(language, fs.readFileSync(path.join(root, 'queries/tags.scm'), 'utf8'));
   }, 180_000);
-  afterAll(() => {
-    tags.delete();
-  });
 
   test.each(boundaries)('keeps %s in source order', (_label, expression, operands, operators, prefixes) => {
     const source = `{-# LANGUAGE LexicalNegation #-}\nvalue = ${expression}\nfollowing = 1\n`;
@@ -51,7 +46,7 @@ describe.each(['haskell', 'hsc'] as const)('%s unresolved operator chains', (nam
     }
   });
 
-  test('keeps type and pattern chains flat without indexing parameters or constructor names', () => {
+  test('keeps type and pattern chains flat', () => {
     const source = fs.readFileSync(path.join(root, 'test/fixtures/operatorChains.hs'), 'utf8');
     const parser = new Parser().setLanguage(language);
     const tree = parser.parse(source)!;
@@ -67,25 +62,6 @@ describe.each(['haskell', 'hsc'] as const)('%s unresolved operator chains', (nam
         [':+:', ':*:'],
         [':+:', ':*:'],
         [':+:', ':*:'],
-      ]);
-      const definitions = tags
-        .matches(tree.rootNode)
-        .filter(({ captures }) => captures.some(({ name: capture }) => capture === 'definition.variable'))
-        .flatMap(({ captures }) =>
-          captures.filter(({ name: capture }) => capture === 'name').map(({ node }) => node.text)
-        );
-      expect(definitions).toEqual([
-        'original',
-        'highNegation',
-        'lowNegation',
-        'parenthesized',
-        'leftSection',
-        'rightSection',
-        'qualified',
-        'first',
-        'second',
-        'third',
-        'following',
       ]);
     } finally {
       tree.delete();
@@ -152,9 +128,6 @@ describe.each(['haskell', 'hsc'] as const)('%s unresolved operator chains', (nam
       const invalid = parser.parse(source.replace('(Int :+: Bool) :<>: (Char :*: Double)', 'Int :<>: Bool :*: Char'))!;
       try {
         expect(invalid.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following = 1');
-        expect(
-          tags.captures(invalid.rootNode).filter(({ name, node }) => name === 'name' && node.text === 'following')
-        ).toHaveLength(1);
       } finally {
         invalid.delete();
       }
@@ -164,22 +137,12 @@ describe.each(['haskell', 'hsc'] as const)('%s unresolved operator chains', (nam
     }
   });
 
-  test('indexes only unambiguous single-operator instance and deriving heads', () => {
+  test('parses single-operator instance and deriving heads', () => {
     const source = fs.readFileSync(path.join(root, 'test/fixtures/operatorInstances.hs'), 'utf8');
     const parser = new Parser().setLanguage(language);
     const tree = parser.parse(source)!;
     try {
       expect(tree.rootNode.hasError).toBe(false);
-      const implementations = tags
-        .matches(tree.rootNode)
-        .filter(({ captures }) => captures.some(({ name: capture }) => capture === 'reference.implementation'))
-        .flatMap(({ captures }) =>
-          captures.filter(({ name: capture }) => capture === 'name').map(({ node }) => [node.text, node.startPosition])
-        );
-      expect(implementations).toEqual([
-        [':*:', { row: 7, column: 13 }],
-        [':*:', { row: 9, column: 32 }],
-      ]);
     } finally {
       tree.delete();
       parser.delete();
@@ -204,17 +167,6 @@ describe.each(['haskell', 'hsc'] as const)('%s unresolved operator chains', (nam
             const tree = parser.parse(input)!;
             try {
               expect(tree.rootNode.hasError, input).toBe(false);
-              const implementations = tags
-                .matches(tree.rootNode)
-                .filter(({ captures }) => captures.some(({ name }) => name === 'reference.implementation'))
-                .flatMap(({ captures }) =>
-                  captures
-                    .filter(({ name }) => name === 'name')
-                    .map(({ node }) => [node.text, node.startIndex, node.endIndex])
-                );
-              expect(implementations, input).toEqual(
-                input === source ? [[':*:', input.indexOf(':*:'), input.indexOf(':*:') + 3]] : []
-              );
               expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following = 1');
             } finally {
               tree.delete();

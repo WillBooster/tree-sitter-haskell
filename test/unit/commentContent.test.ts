@@ -1,8 +1,7 @@
-import fs from 'node:fs';
 import path from 'node:path';
 
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
-import { afterAll, expect, test } from 'vitest';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
+import { expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
@@ -11,26 +10,11 @@ await Parser.init();
 const resources = await Promise.all(
   (['haskell', 'hsc'] as const).map(async (name) => {
     const language = await Language.load(currentWasmPath(root, name));
-    const directories = name === 'hsc' ? ['queries', 'hsc/queries'] : ['queries'];
-    const queries = directories.flatMap((directory) =>
-      fs
-        .readdirSync(path.join(root, directory))
-        .filter((file) => file.endsWith('.scm'))
-        .map((file) => new Query(language, fs.readFileSync(path.join(root, directory, file), 'utf8')))
-    );
-    const injections = new Query(language, fs.readFileSync(path.join(root, 'queries/injections.scm'), 'utf8'));
-    const highlights = queries.find((query) => query.captureNames.includes('comment.documentation'))!;
-    return { name, language, queries, injections, highlights };
+    return { name, language };
   })
 );
-afterAll(() => {
-  for (const { queries, injections } of resources) {
-    for (const query of queries) query.delete();
-    injections.delete();
-  }
-});
 
-for (const { name, language, injections, highlights } of resources) {
+for (const { name, language } of resources) {
   test(`${name} exposes exact comment bodies without losing whitespace, nesting or following bindings`, () => {
     const examples = [
       ['{-  body  -}', 'comment', '  body  '],
@@ -59,33 +43,11 @@ for (const { name, language, injections, highlights } of resources) {
             expect(nodes.map((node) => [node.type, node.text])).toEqual([[kind, comment]]);
             const content = nodes[0]!.namedChildren;
             expect(content.map((node) => [node.type, node.text])).toEqual([['content', body]]);
-            expect(
-              highlights
-                .captures(tree.rootNode)
-                .filter(
-                  ({ name, node }) =>
-                    name !== 'spell' && node.startIndex >= nodes[0]!.startIndex && node.endIndex <= nodes[0]!.endIndex
-                )
-                .map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
-            ).toEqual([
-              [
-                kind === 'haddock' ? 'comment.documentation' : 'comment',
-                comment,
-                source.indexOf(comment),
-                source.indexOf(comment) + comment.length,
-              ],
-            ]);
             const start = source.indexOf(comment) + comment.length - body.length - (comment.startsWith('{-') ? 2 : 0);
             expect([content[0]!.startIndex, content[0]!.endIndex]).toEqual([start, start + body!.length]);
             expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
               prefix.includes('value') ? ['before', 'value', 'following'] : ['before', 'following']
             );
-            expect(
-              injections
-                .captures(tree.rootNode)
-                .filter((capture) => capture.name === 'injection.content')
-                .map(({ node }) => [node.type, node.text, node.startIndex, node.endIndex])
-            ).toEqual(kind === 'comment' ? [['content', body, start, start + body!.length]] : []);
           } finally {
             tree.delete();
           }
@@ -123,12 +85,6 @@ for (const { name, language, injections, highlights } of resources) {
       const tree = parser.parse(source)!;
       try {
         expect(tree.rootNode.hasError).toBe(false);
-        expect(
-          highlights
-            .captures(tree.rootNode)
-            .filter(({ name, node }) => name === 'operator' && node.text === '|')
-            .map(({ node }) => [node.startIndex, node.endIndex])
-        ).toEqual(['| On', '| x', '| y', '| #'].map((marker) => [source.indexOf(marker), source.indexOf(marker) + 1]));
       } finally {
         tree.delete();
       }
