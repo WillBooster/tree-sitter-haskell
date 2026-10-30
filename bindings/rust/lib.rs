@@ -40,36 +40,10 @@ pub const HSC_LANGUAGE: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_h
 /// The node schema of the hsc2hs dialect.
 pub const HSC_NODE_TYPES: &str = include_str!("../../hsc/src/node-types.json");
 
-/// Haskell and hsc2hs directive highlighting.
-pub const HSC_HIGHLIGHTS_QUERY: &str = concat!(
-    include_str!("../../queries/highlights.scm"),
-    "\n",
-    include_str!("../../hsc/queries/highlights.scm")
-);
-
-/// Haskell injections and C argument bodies in hsc2hs directives.
-pub const HSC_INJECTIONS_QUERY: &str = concat!(
-    include_str!("../../queries/injections.scm"),
-    "\n",
-    include_str!("../../hsc/queries/injections.scm")
-);
-
 /// The content of the [`node-types.json`] file for this grammar.
 ///
 /// [`node-types.json`]: https://tree-sitter.github.io/tree-sitter/using-parsers/6-static-node-types
 pub const NODE_TYPES: &str = include_str!("../../src/node-types.json");
-
-/// The syntax highlighting query for this language.
-pub const HIGHLIGHTS_QUERY: &str = include_str!("../../queries/highlights.scm");
-
-/// The syntax highlighting query for languages injected into this one.
-pub const INJECTIONS_QUERY: &str = include_str!("../../queries/injections.scm");
-
-/// The code-navigation tagging query for this language.
-pub const TAGS_QUERY: &str = include_str!("../../queries/tags.scm");
-
-/// The local-variable syntax highlighting query for this language.
-pub const LOCALS_QUERY: &str = include_str!("../../queries/locals.scm");
 
 #[cfg(test)]
 mod tests {
@@ -108,13 +82,5 @@ mod tests {
         }
         assert_eq!(directives, [("const", " (1 + sizeof(\"}\"))")]);
         assert_eq!(bindings, ["following", "value"]);
-        for query in [
-            super::HSC_HIGHLIGHTS_QUERY,
-            super::HSC_INJECTIONS_QUERY,
-            super::TAGS_QUERY,
-            super::LOCALS_QUERY,
-        ] {
-            tree_sitter::Query::new(&super::HSC_LANGUAGE.into(), query).unwrap();
-        }
     }
 }

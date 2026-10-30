@@ -5,7 +5,7 @@
 [![Test](https://github.com/WillBooster/tree-sitter-haskell/actions/workflows/test.yml/badge.svg)](https://github.com/WillBooster/tree-sitter-haskell/actions/workflows/test.yml)
 [![Test rust](https://github.com/WillBooster/tree-sitter-haskell/actions/workflows/test-rust.yml/badge.svg)](https://github.com/WillBooster/tree-sitter-haskell/actions/workflows/test-rust.yml)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
-[![wbfy](https://img.shields.io/badge/wbfy-20.49.0-1e90ff.svg)](https://github.com/WillBooster/shared/tree/main/packages/wbfy)
+[![wbfy](https://img.shields.io/badge/wbfy-21.0.0-1e90ff.svg)](https://github.com/WillBooster/shared/tree/main/packages/wbfy)
 [![crates.io](https://img.shields.io/crates/v/willbooster-tree-sitter-haskell.svg)](https://crates.io/crates/willbooster-tree-sitter-haskell)
 
 Haskell grammar for [tree-sitter](https://github.com/tree-sitter/tree-sitter), forked from
@@ -15,7 +15,7 @@ to its authors and contributors. This is not an official release of that project
 This fork is based on upstream's version 0.23.1 grammar and generates the parser with the
 [WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parser carries that fork's own ABI number. This package supports the fork's runtime version 15.0.0 or later within 15.x; upstream's runtime rejects it.
 [Upstream's README at that version](https://github.com/tree-sitter/tree-sitter-haskell/blob/v0.23.1/README.md) lists
-the supported language extensions. The fork's node and query contracts are described below.
+the supported language extensions. The fork's node contracts are described below.
 
 ## Differences from upstream
 
@@ -28,7 +28,7 @@ The fork's main differences from upstream 0.23.1 are:
 - **NamedDefaults**: `default` declarations accept a class name before the type list, such as `default Monoid ([Int])`, in a `class` field, and export lists accept `default` items such as `default Monoid` as `default_export` nodes.
 - **OrPatterns**: parenthesized alternatives separated by semicolons, such as `(A; B)`, parse as an `or_pattern` node with an `alternative` field for each pattern.
 - **MultilineStrings**: triple-quoted literals retain their complete source as a single `string` node, including embedded quotes, escapes, and string gaps.
-- **Comment scanning**: comments and Haddock nodes expose a named `content` child, preserving body whitespace and excluding outer delimiters. Ordinary comment injection captures this child.
+- **Comment scanning**: comments and Haddock nodes expose a named `content` child, preserving body whitespace and excluding outer delimiters.
   Empty block comments such as `{--}` terminate at their closing delimiter and preserve following code.
   An ordinary line comment does not absorb a following marked Haddock comment.
   Unmarked continuation lines remain in their preceding Haddock block, including space or tab indentation and LF or CRLF newlines.
@@ -40,6 +40,13 @@ The fork's main differences from upstream 0.23.1 are:
 
 A NUL character inside a string or character literal parses as part of the literal, where upstream's prebuilt parser
 reports an error: the lexers of the WillBooster/tree-sitter generator let character classes match a NUL character.
+
+## Support Scope
+
+This fork maintains only full parsing: valid input yields a correct tree, and invalid input yields `ERROR` or `MISSING`
+nodes without crashing, hanging, or taking more than linear time. Incremental parsing works as in upstream tree-sitter
+but is not tested here, and no queries (highlights, locals, injections, tags) are shipped. Node types, field names, and
+the trees that error recovery produces may change; such changes are released as new major versions.
 
 ## Usage
 
@@ -83,25 +90,19 @@ const parser = new Parser();
 parser.setLanguage(await Language.load(haskell));
 ```
 
-The package also ships `grammar.js` with the files in `grammar/` it loads, the queries in `queries/`, and the node types in `src/node-types.json`.
+The package also ships `grammar.js` with the files in `grammar/` it loads and the node types in `src/node-types.json`.
 
-For [hsc2hs](https://github.com/haskell/hsc2hs) source in `.hsc` files, load `tree-sitter-hsc.wasm` instead. This dialect parses C directives and the doubled hashes that hsc2hs turns into literal hashes. Its node schema is `hsc/src/node-types.json`. Combine the ordinary queries with the matching suffixes in `hsc/queries/` for directive highlighting and C-body injections.
+For [hsc2hs](https://github.com/haskell/hsc2hs) source in `.hsc` files, load `tree-sitter-hsc.wasm` instead. This dialect parses C directives and the doubled hashes that hsc2hs turns into literal hashes. Its node schema is `hsc/src/node-types.json`.
 
-For code navigation, use `queries/tags.scm` (or `TAGS_QUERY` in Rust). It indexes module headers, top-level named functions and bindings, named types and classes, class and instance methods, and syntactic variable/operator calls. A signature and each equation have separate definition locations. Call references identify the called name without resolving its binding.
-
-Declaration names and variable/operator callees remain indexed through nested parentheses. Class and instance equations retain their method roles; grouping a value without applying it does not create a call reference. Destructuring bindings contribute their explicit names at every nesting depth, including as-pattern binders and record puns. Local pattern bindings, names bound by patterns inside declaration quotes and constructors (including pattern synonyms) are not indexed.
-
-Function and type declaration-head parentheses are anonymous syntax: the enclosing declaration directly exposes its `name`, parameter groups and infix `head` fields. Parentheses inside parameters and types retain their existing nodes. A grouped variable name, including a qualified name, uses one `parenthesized_name` node with a direct name child, independent of grouping depth. A symbolic variable operator keeps its required prefix parentheses in `prefix_id`: `(<+>)` and `(Demo.<+>)` remain `prefix_id`, while redundant grouping such as `((<+>))` adds one `parenthesized_name` wrapper around that node. This also applies to unapplied names; only function position creates a call reference or call highlight. A parenthesized simple binding name uses `parenthesized_name` in the `bind` node's `name` field, retaining one wrapper at any grouping depth. Complex expressions retain ordinary `parens` nodes. These changes affect public syntax trees.
+Function and type declaration-head parentheses are anonymous syntax: the enclosing declaration directly exposes its `name`, parameter groups and infix `head` fields. Parentheses inside parameters and types retain their existing nodes. A grouped variable name, including a qualified name, uses one `parenthesized_name` node with a direct name child, independent of grouping depth. A symbolic variable operator keeps its required prefix parentheses in `prefix_id`: `(<+>)` and `(Demo.<+>)` remain `prefix_id`, while redundant grouping such as `((<+>))` adds one `parenthesized_name` wrapper around that node. This also applies to unapplied names. A parenthesized simple binding name uses `parenthesized_name` in the `bind` node's `name` field, retaining one wrapper at any grouping depth. Complex expressions retain ordinary `parens` nodes. These changes affect public syntax trees.
 
 Local `where` clauses form a `where_clause` node spanning the keyword and its binding block. Enclosing bindings, functions and case alternatives expose it through their `binds` field; the clause's optional `binds` field contains `local_binds`. The latter's `decl` fields and source ranges are unchanged. This provides a single named node for selecting or identifying the scope of `where` without including the enclosing declaration. For `let`, `binds` directly contains `local_binds`. Queries can still capture sibling `"where"` and `local_binds` nodes to obtain their separate ranges.
 
 Operator uses retain unresolved source order. Expressions use `operator_chain` with repeated `operand` and `operator` fields: `6 * 7 == 42` has operands `6`, `7`, `42` and operators `*`, `==`. Application stays inside an operand; explicit parentheses and greedy block bodies retain their own grouping. A `prefix_operator` field records each named `prefix_negation` token at its source position, including unary-only chains. Its semantic extent depends on fixities and language extensions, so the tree does not assign it an operand subtree.
 
-Type, pattern and constraint operators use `infix_chain` with repeated `operand` and `operator` fields, even for a single operator. Function, type and data declaration heads retain the `infix` node because they define one operator. Instance and standalone deriving implementation tags identify a class only for a single-operator head; multi-operator heads require fixity resolution by the caller.
+Type, pattern and constraint operators use `infix_chain` with repeated `operand` and `operator` fields, even for a single operator. Function, type and data declaration heads retain the `infix` node because they define one operator.
 
 Queries distinguish operands through the `expression_operand`, `type_operand`, `pattern_operand`, `binding_pattern_operand` and `constraint_operand` supertypes. For example, `(expression_operand/variable)` selects an expression variable and `(binding_pattern_operand/variable)` selects an explicit module-binding name. Match chains directly with `(operator_chain)` or `(infix_chain)` and their fields. The concrete operand node names remain shared across contexts. A `binding_field_pattern/field_pattern` with a `field` field and no `pattern` field is a module binding record pun. The `decl` supertype covers bindings in local blocks and declaration quotes, except multiplicity-annotated local bindings, which are `bind` nodes directly; module declarations use `declaration`.
-
-In a repository checkout, configure the CLI parser directories to include the grammar, then run `script/tree-sitter tags file.hs` to inspect the tags.
 
 In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-haskell) and on
 [willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter), the runtime this package is tested and
@@ -110,7 +111,7 @@ fuzzed with:
 ```toml
 [dependencies]
 tree-sitter = { package = "willbooster-tree-sitter", version = "15.0.0" }
-tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "16" }
+tree-sitter-haskell = { package = "willbooster-tree-sitter-haskell", version = "17" }
 ```
 
 ```rust
@@ -118,7 +119,7 @@ let mut parser = tree_sitter::Parser::new();
 parser.set_language(&tree_sitter_haskell::LANGUAGE.into())?;
 ```
 
-For `.hsc` files in Rust, select `HSC_LANGUAGE` and `HSC_NODE_TYPES`. Use `HSC_HIGHLIGHTS_QUERY` and `HSC_INJECTIONS_QUERY` for the combined queries; `TAGS_QUERY` and `LOCALS_QUERY` are shared with ordinary Haskell.
+For `.hsc` files in Rust, select `HSC_LANGUAGE` and `HSC_NODE_TYPES`.
 
 ## Development
 
