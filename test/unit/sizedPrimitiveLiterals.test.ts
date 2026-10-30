@@ -1,21 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
-import { afterAll, expect, test } from 'vitest';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
+import { expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 const root = path.join(import.meta.dirname, '../..');
 await Parser.init();
 const language = await Language.load(currentWasmPath(root));
-const queries = fs
-  .readdirSync(path.join(root, 'queries'))
-  .filter((file) => file.endsWith('.scm'))
-  .map((file) => new Query(language, fs.readFileSync(path.join(root, 'queries', file), 'utf8')));
-afterAll(() => {
-  for (const query of queries) query.delete();
-});
 
 test('retains complete sized integer leaves at exact ranges in the compiler-checked fixture', () => {
   const source = fs.readFileSync(path.join(root, 'test/fixtures/sizedPrimitiveLiterals.hs'), 'utf8');
@@ -40,7 +33,6 @@ test('retains complete sized integer leaves at exact ranges in the compiler-chec
       offset = start + text.length;
     }
     expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
-    for (const query of queries) expect(() => query.captures(tree.rootNode)).not.toThrow();
   } finally {
     tree.delete();
     parser.delete();

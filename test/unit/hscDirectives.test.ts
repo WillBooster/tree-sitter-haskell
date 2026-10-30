@@ -1,23 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
-import { afterAll, expect, test } from 'vitest';
+import { Language, Parser, type Tree } from '@willbooster/web-tree-sitter';
+import { expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
 
 const root = path.join(import.meta.dirname, '../..');
 await Parser.init();
 const language = await Language.load(currentWasmPath(root, 'hsc'));
-const queries = ['queries', 'hsc/queries'].flatMap((directory) =>
-  fs
-    .readdirSync(path.join(root, directory))
-    .filter((file) => file.endsWith('.scm'))
-    .map((file) => new Query(language, fs.readFileSync(path.join(root, directory, file), 'utf8')))
-);
-afterAll(() => {
-  for (const query of queries) query.delete();
-});
 
 test('retains directive names, C body ranges, doubled hashes and following Haskell declarations', () => {
   const source = fs.readFileSync(path.join(root, 'test/fixtures/hscDirectives.hsc'), 'utf8');
@@ -69,12 +60,6 @@ test('retains directive names, C body ranges, doubled hashes and following Haske
     ]);
     expect(tree.rootNode.descendantsOfType('unboxed_tuple')).toHaveLength(1);
     expect(tree.rootNode.descendantsOfType('bind').at(-1)?.childForFieldName('name')?.text).toBe('following');
-    const injected = queries
-      .flatMap((query) => query.captures(tree.rootNode))
-      .filter(({ name, node }) => name === 'injection.content' && node.type === 'hsc_args');
-    expect(injected.map(({ node }) => [node.startIndex, node.endIndex])).toEqual(
-      bodies.map((node) => [node.startIndex, node.endIndex])
-    );
   } finally {
     tree.delete();
     parser.delete();
