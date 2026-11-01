@@ -60,3 +60,21 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
     }
   });
 }
+
+for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, parsers[index]!] as const)) {
+  test.each(['import', 'Data.import'])(`${dialect} permits the keyword in quasiquoter %s`, (name) => {
+    const source = `{-# LANGUAGE QuasiQuotes #-}\nmodule Probe where\nvalue = [${name}|body|]\nfollowing = 2\n`;
+    const tree = parser.parse(source)!;
+    try {
+      expect(tree.rootNode.hasError, source).toBe(false);
+      expect(tree.rootNode.descendantsOfType('quoter').map((node) => node.text)).toEqual([name]);
+      expect(tree.rootNode.descendantsOfType('quasiquote_body').map((node) => node.text)).toEqual(['body']);
+      expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
+        'value',
+        'following',
+      ]);
+    } finally {
+      tree.delete();
+    }
+  });
+}
