@@ -344,21 +344,22 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
     );
   }
 
-  test.each(['#if 0\n#define import 1\n#endif\n', '#ifdef FOO\n#define import 1\n#else\n#undef import\n#endif\n'])(
-    `${dialect} preserves ordinary imports with uncertain macro bindings: %j`,
-    (directives) => {
-      const tree = parser.parse(`{-# LANGUAGE CPP #-}\nmodule Probe where\n${directives}import Data.Maybe\nx=1\n`)!;
-      try {
-        expect(tree.rootNode.hasError).toBe(false);
-        expect(tree.rootNode.childForFieldName('imports')?.namedChildren.map((node) => node.text)).toEqual([
-          'import Data.Maybe',
-        ]);
-        expect(tree.rootNode.descendantsOfType('top_splice')).toHaveLength(0);
-      } finally {
-        tree.delete();
-      }
+  test.each([
+    '#define import import\n',
+    '#if 0\n#define import 1\n#endif\n',
+    '#ifdef FOO\n#define import 1\n#else\n#undef import\n#endif\n',
+  ])(`${dialect} preserves ordinary imports with uncertain macro bindings: %j`, (directives) => {
+    const tree = parser.parse(`{-# LANGUAGE CPP #-}\nmodule Probe where\n${directives}import Data.Maybe\nx=1\n`)!;
+    try {
+      expect(tree.rootNode.hasError).toBe(false);
+      expect(tree.rootNode.childForFieldName('imports')?.namedChildren.map((node) => node.text)).toEqual([
+        'import Data.Maybe',
+      ]);
+      expect(tree.rootNode.descendantsOfType('top_splice')).toHaveLength(0);
+    } finally {
+      tree.delete();
     }
-  );
+  });
 
   test.each(cppImportRejections)(`${dialect} rejects late imports after $name`, ({ source }) => {
     const tree = parser.parse(source)!;
