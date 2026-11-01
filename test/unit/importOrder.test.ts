@@ -24,7 +24,6 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
     for (const source of [
       `${declaration}\nimport Data.Maybe\n`,
       `module Probe where\nimport Data.List\n${declaration}\nimport Data.Maybe\n`,
-      `module Probe where { import Data.List; ${declaration}; import Data.Maybe }`,
     ]) {
       const tree = parser.parse(source)!;
       try {
