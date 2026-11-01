@@ -110,4 +110,42 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
       }
     }
   );
+
+  test.each([
+    'value = C { Data.import = 1 }',
+    'value = candidate { Data.import = 1 }',
+    'value = case candidate of C { Data.import = bound } -> bound',
+  ])(`${dialect} retains the qualified field in %s`, (declaration) => {
+    const source = `module Probe where\n${declaration}\nfollowing=2\n`;
+    const tree = parser.parse(source)!;
+    try {
+      expect(tree.rootNode.hasError, source).toBe(false);
+      expect(
+        tree.rootNode
+          .descendantsOfType('qualified')
+          .filter((node) => node.text === 'Data.import')
+          .map((node) => node.childForFieldName('id')?.type)
+      ).toEqual(['field_name']);
+      expect(tree.rootNode.descendantsOfType('field_name').map((node) => node.text)).toContain('import');
+      expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
+        'value',
+        'following',
+      ]);
+    } finally {
+      tree.delete();
+    }
+  });
+
+  test.each([
+    'value = C { import = 1 }',
+    'value = candidate { import = 1 }',
+    'value = case candidate of C { import = bound } -> bound',
+  ])(`${dialect} rejects the unqualified field in %s`, (declaration) => {
+    const tree = parser.parse(`module Probe where\n${declaration}\n`)!;
+    try {
+      expect(tree.rootNode.hasError).toBe(true);
+    } finally {
+      tree.delete();
+    }
+  });
 }

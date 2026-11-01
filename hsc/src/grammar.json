@@ -8249,8 +8249,13 @@
             "type": "FIELD",
             "name": "id",
             "content": {
-              "type": "SYMBOL",
-              "name": "field_name"
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_unrestricted_variable"
+              },
+              "named": true,
+              "value": "field_name"
             }
           }
         ]
