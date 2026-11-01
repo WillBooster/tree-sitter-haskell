@@ -55,6 +55,20 @@ test.each([' + ', ' {- c -} '])(
   }
 );
 
+test('parses repeated unterminated macro-call comments in linear time', { timeout: 60_000 }, () => {
+  const prefix = '#define import(x) x\nvalue=1\n';
+  const small = prefix + 'import /* a\n'.repeat(500);
+  const large = prefix + 'import /* a\n'.repeat(2000);
+  parseCpuTime(large);
+  let smallFastest = Infinity;
+  let largeFastest = Infinity;
+  for (let run = 0; run < 5; run++) {
+    smallFastest = Math.min(smallFastest, parseCpuTime(small));
+    largeFastest = Math.min(largeFastest, parseCpuTime(large));
+  }
+  expect(largeFastest / smallFastest).toBeLessThan(9);
+});
+
 function parseCpuTime(source: string, expectedError = true): number {
   const start = process.threadCpuUsage();
   const tree = parser.parse(source);

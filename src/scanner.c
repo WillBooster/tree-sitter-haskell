@@ -605,6 +605,7 @@ typedef struct {
   uint8_t import_macros;
   uint8_t input_import_macros;
   bool input_has_cpp;
+  bool input_has_unclosed_cpp_comment;
   bool definite_declaration;
   bool cpp_state_unknown;
   uint32_t cpp_depth;
@@ -2456,10 +2457,15 @@ static uint32_t import_macro_space(Env *env, uint32_t start) {
 }
 
 static uint32_t import_macro_comment(Env *env, uint32_t start) {
+  State *state = env->state;
+  if (state->input_has_unclosed_cpp_comment) return UINT32_MAX;
   for (;;) {
     start = cpp_splices(env, start, true);
     int32_t c = peek(env, start);
-    if (is_eof(env) && env->state->lookahead.offset + start >= env->state->lookahead.size) return UINT32_MAX;
+    if (is_eof(env) && state->lookahead.offset + start >= state->lookahead.size) {
+      state->input_has_unclosed_cpp_comment = true;
+      return UINT32_MAX;
+    }
     start++;
     if (c == '*') {
       start = cpp_splices(env, start, true);

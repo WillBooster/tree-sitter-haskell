@@ -361,6 +361,26 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
     }
   });
 
+  if (dialect === 'Haskell') {
+    test('Haskell preserves closed multiline calls after an invalid full-parse input', () => {
+      const invalid = parser.parse('#define import(x) x\nvalue=1\nimport /* unclosed\n')!;
+      try {
+        expect(invalid.rootNode.hasError).toBe(true);
+      } finally {
+        invalid.delete();
+      }
+      const valid = parser.parse(
+        '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Example where\n#define import const (pure [])\nimport /* first\nsecond */ (True)\nfollowing=2\n'
+      )!;
+      try {
+        expect(valid.rootNode.hasError).toBe(false);
+        expect(valid.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following=2');
+      } finally {
+        valid.delete();
+      }
+    });
+  }
+
   test.each(cppImportRejections)(`${dialect} rejects late imports after $name`, ({ source }) => {
     const tree = parser.parse(source)!;
     try {
