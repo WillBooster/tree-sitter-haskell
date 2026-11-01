@@ -167,6 +167,9 @@ module.exports = {
 
     $._unboxed_label_start,
     $._sized_integer,
+    $._cond_non_import_declaration,
+    $._cond_cpp_declaration,
+    $._cond_cpp_initial,
 
     // The newline is used as a dummy symbol that is emitted whenever the scanner has to update its state even though
     // the current position must be parsed by the grammar.

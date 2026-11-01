@@ -167,6 +167,9 @@ typedef enum {
   CONSYM,
   UNBOXED_LABEL_START,
   SIZED_INTEGER,
+  NON_IMPORT_DECLARATION,
+  CPP_DECLARATION,
+  CPP_INITIAL,
 #ifdef HSC_EXT
   HSC_START_BRACE,
   HSC_HASH,
@@ -233,6 +236,9 @@ static const char *sym_names[] = {
   "consym",
   "unboxed_label_start",
   "sized_integer",
+  "non_import_declaration",
+  "cpp_declaration",
+  "cpp_initial",
 #ifdef HSC_EXT
   "hsc_start_brace",
   "hsc_hash",
@@ -592,8 +598,35 @@ typedef struct {
   bool haddock;
 } Comment;
 
+enum { ImportMacroObject = 1, ImportMacroFunction = 2 };
+
+typedef struct {
+  bool valid;
+  bool result;
+  uint32_t start;
+  uint32_t end;
+} ImportInvocationMemo;
+
+typedef struct {
+  bool has_start;
+  bool has_end;
+  bool resolved;
+  bool result;
+  uint32_t start;
+  uint32_t end;
+} ImportInvocationProbe;
+
 typedef struct {
   Comment comment;
+  uint8_t import_macros;
+  uint8_t input_import_macros;
+  bool input_has_cpp;
+  bool input_has_unclosed_cpp_comment;
+  uint32_t input_unclosed_cpp_comment_start;
+  ImportInvocationMemo input_invocation_memo;
+  bool definite_declaration;
+  bool cpp_state_unknown;
+  uint32_t cpp_depth;
   Contexts contexts;
   Newline newline;
   Lookahead lookahead;
@@ -2357,6 +2390,16 @@ static Lexed lex(Env *env, bool bol) {
 static void hsc_skip_cpp_else(Env *env, bool emit);
 #endif
 
+static bool track_import_macro(Env *env);
+static uint32_t import_macro_space(Env *env, uint32_t start, ImportInvocationProbe *probe);
+static uint32_t cpp_splices(Env *env, uint32_t start, bool spaced);
+static uint32_t import_macro_comment(Env *env, uint32_t start, ImportInvocationProbe *probe);
+static bool import_comment_position(Env *env, uint32_t cursor, uint32_t *position);
+static bool import_comment_cached(Env *env, uint32_t position, ImportInvocationProbe *probe);
+static void import_comment_unclosed(State *state, bool known, uint32_t position);
+static bool import_comment_finished(Env *env, uint32_t cursor, bool known, uint32_t position);
+static bool import_macro_word(Env *env, uint32_t *start, const char *word);
+
 static Symbol cpp_else(Env *env, bool emit) {
 #ifdef HSC_EXT
   hsc_skip_cpp_else(env, emit);
@@ -2364,6 +2407,7 @@ static Symbol cpp_else(Env *env, bool emit) {
 #else
   uint32_t nesting = 1;
   do {
+    if (emit && !track_import_macro(env)) return FAIL;
     take_line_escaped_newline(env);
     if (emit) MARK("cpp_else");
     S_ADVANCE;
@@ -2388,8 +2432,130 @@ static Symbol cpp_else(Env *env, bool emit) {
 static void take_cpp_line(Env *env);
 
 static Symbol cpp_line(Env *env) {
+  CppDirective directive = cpp_directive(env);
+  if (directive == CppStart) env->state->cpp_depth++;
+  else if (directive == CppEnd && env->state->cpp_depth) env->state->cpp_depth--;
+  if (!track_import_macro(env)) return FAIL;
   take_cpp_line(env);
   return finish_marked(env, CPP, "cpp");
+}
+
+static bool track_import_macro(Env *env) {
+  if (!char0(env, '#') || char1(env, '!')) return true;
+#ifdef HSC_EXT
+  if (cpp_directive(env) == CppOther) return true;
+#endif
+  env->state->input_has_cpp = true;
+#ifndef HSC_EXT
+  uint32_t start = import_macro_space(env, 1, NULL);
+  if (start == UINT32_MAX) return false;
+  bool define = import_macro_word(env, &start, "define");
+  if (!define && !import_macro_word(env, &start, "undef")) return true;
+  start = import_macro_space(env, start, NULL);
+  if (start == UINT32_MAX) return false;
+  if (!import_macro_word(env, &start, "import")) return true;
+  State *state = env->state;
+  uint8_t kind = char_at(env, start, '(') ? ImportMacroFunction : ImportMacroObject;
+  if (define) state->input_import_macros |= kind;
+  if (!state->cpp_state_unknown && state->cpp_depth == 0) state->import_macros = define ? kind : 0;
+  else if (define) state->import_macros |= kind;
+#endif
+  return true;
+}
+
+static uint32_t import_macro_space(Env *env, uint32_t start, ImportInvocationProbe *probe) {
+  for (;;) {
+    start = cpp_splices(env, start, true);
+    if (is_space_char_or_tab(peek(env, start))) start++;
+    else if (char_at(env, start, '/') && char_at(env, cpp_splices(env, start + 1, true), '*')) {
+      start = import_macro_comment(env, cpp_splices(env, start + 1, true) + 1, probe);
+      if (start == UINT32_MAX) return start;
+    }
+    else return start;
+  }
+}
+
+static uint32_t import_macro_comment(Env *env, uint32_t start, ImportInvocationProbe *probe) {
+  State *state = env->state;
+  uint32_t origin = 0;
+  bool known_origin = import_comment_position(env, start, &origin);
+  if (known_origin && import_comment_cached(env, origin, probe)) return UINT32_MAX;
+  for (;;) {
+    start = cpp_splices(env, start, true);
+    int32_t c = peek(env, start);
+    uint32_t position = 0;
+    bool known_position = (c == '*' || state->input_has_unclosed_cpp_comment)
+      && import_comment_position(env, start, &position);
+    if (import_comment_finished(env, start, known_position, position)) {
+      import_comment_unclosed(state, known_origin, origin);
+      return UINT32_MAX;
+    }
+    start++;
+    if (c != '*') continue;
+    start = cpp_splices(env, start, true);
+    if (peek(env, start) != '/') continue;
+    if (probe && known_position) { probe->has_end = true; probe->end = position; }
+    return start + 1;
+  }
+}
+
+static bool import_comment_finished(Env *env, uint32_t cursor, bool known, uint32_t position) {
+  State *state = env->state;
+  return (known && state->input_has_unclosed_cpp_comment && position >= state->input_unclosed_cpp_comment_start)
+    || (is_eof(env) && state->lookahead.offset + cursor >= state->lookahead.size);
+}
+
+static bool import_comment_position(Env *env, uint32_t cursor, uint32_t *position) {
+  peek(env, cursor);
+  if (env->state->lookahead.offset + cursor != env->state->lookahead.size) return false;
+  TSLexerPosition current;
+  env->lexer->get_position(env->lexer, &current);
+  *position = current.bytes;
+  return true;
+}
+
+static bool import_comment_cached(Env *env, uint32_t position, ImportInvocationProbe *probe) {
+  State *state = env->state;
+  if (state->input_has_unclosed_cpp_comment && position >= state->input_unclosed_cpp_comment_start) return true;
+  if (!probe) return false;
+  if (!probe->has_start) { probe->has_start = true; probe->start = position; }
+  ImportInvocationMemo *memo = &state->input_invocation_memo;
+  if (!memo->valid || position < memo->start || position > memo->end) return false;
+  probe->resolved = true;
+  probe->result = memo->result;
+  probe->has_end = true;
+  probe->end = memo->end;
+  return true;
+}
+
+static void import_comment_unclosed(State *state, bool known, uint32_t position) {
+  if (!known) return;
+  if (!state->input_has_unclosed_cpp_comment || position < state->input_unclosed_cpp_comment_start)
+    state->input_unclosed_cpp_comment_start = position;
+  state->input_has_unclosed_cpp_comment = true;
+}
+
+static uint32_t cpp_splices(Env *env, uint32_t start, bool spaced) {
+  while (char_at(env, start, '\\')) {
+    uint32_t end = start + 1;
+    if (spaced) while (is_space_or_tab(peek(env, end))) end++;
+    if (char_at(env, end, '\n')) start = end + 1;
+    else if (char_at(env, end, '\r') && char_at(env, end + 1, '\n')) start = end + 2;
+    else break;
+  }
+  return start;
+}
+
+static bool import_macro_word(Env *env, uint32_t *start, const char *word) {
+  uint32_t cursor = *start;
+  for (; *word; word++) {
+    cursor = cpp_splices(env, cursor, true);
+    if (peek(env, cursor++) != *word) return false;
+  }
+  cursor = cpp_splices(env, cursor, true);
+  if (is_identifier_char(peek(env, cursor)) || peek(env, cursor) == '_') return false;
+  *start = cursor;
+  return true;
 }
 
 static void take_cpp_line(Env *env) {
@@ -3250,11 +3416,19 @@ static Symbol process_token_constraint(Env *env, Lexed next) {
 
 static Symbol sized_integer(Env *env);
 
+static Symbol non_import_declaration(Env *env);
+static Symbol import_declaration_boundary(Env *env);
+static uint8_t possible_import_macros(Env *env);
+static bool parenthesized_import_macro(Env *env);
+static bool import_macro_invocation(Env *env);
+static void memoize_import_invocation(State *state, ImportInvocationProbe probe, bool result);
+
 static Symbol interior(Env *env, bool whitespace) {
   Lexed next = lex(env, false);
   dbg("interior, column %d, ws %d, token %s\n", column(env), whitespace, token_names[next]);
   SEQ(resolve_semicolon(env, next));
   SEQ(process_token_interior(env, next));
+  SEQ(non_import_declaration(env));
   if (valid(env, SIZED_INTEGER) && peek0(env) >= '0' && peek0(env) <= '9' &&
       !constraint_lookahead_valid(env)) {
     return sized_integer(env);
@@ -3263,6 +3437,64 @@ static Symbol interior(Env *env, bool whitespace) {
   SEQ(process_token_constraint(env, next));
   SEQ(process_token_splice(env, next));
   return FAIL;
+}
+
+static Symbol non_import_declaration(Env *env) {
+  if ((!valid(env, NON_IMPORT_DECLARATION) && !valid(env, CPP_DECLARATION) && !valid(env, CPP_INITIAL))
+      || char0(env, ';')) return FAIL;
+  State *state = env->state;
+#ifdef HSC_EXT
+  if (char0(env, '#') && cpp_directive(env) == CppNothing) state->input_has_cpp = true;
+#endif
+  if (token(env, "import")) return import_declaration_boundary(env);
+  if (!valid(env, NON_IMPORT_DECLARATION)) return FAIL;
+  if (!state->input_has_cpp) state->definite_declaration = true;
+  return finish(NON_IMPORT_DECLARATION, "non-import declaration");
+}
+
+static Symbol import_declaration_boundary(Env *env) {
+  if (parenthesized_import_macro(env))
+    return finish_if_valid(env, NON_IMPORT_DECLARATION, "macro call declaration");
+  bool uncertain_macro = possible_import_macros(env) & ImportMacroObject;
+  if (uncertain_macro && valid(env, CPP_INITIAL)) return finish(CPP_INITIAL, "CPP initial alternatives");
+  State *state = env->state;
+  if (valid(env, CPP_DECLARATION) && (uncertain_macro || state->cpp_depth > 0 || (state->input_has_cpp && !state->definite_declaration)))
+    return finish(CPP_DECLARATION, "CPP declaration alternatives");
+  return FAIL;
+}
+
+static uint8_t possible_import_macros(Env *env) {
+  State *state = env->state;
+  return state->import_macros | (state->cpp_state_unknown ? state->input_import_macros : 0);
+}
+
+static bool parenthesized_import_macro(Env *env) {
+  return possible_import_macros(env) && import_macro_invocation(env);
+}
+
+static bool import_macro_invocation(Env *env) {
+  uint32_t cursor = 6;
+  ImportInvocationProbe probe = {0};
+  bool result = false;
+  for (;;) {
+    cursor = import_macro_space(env, cursor, &probe);
+    if (probe.resolved) { result = probe.result; break; }
+    if (cursor == UINT32_MAX) return false;
+    if (is_newline(peek(env, cursor))) cursor++;
+    else { result = char_at(env, cursor, '('); break; }
+  }
+  memoize_import_invocation(env->state, probe, result);
+  return result;
+}
+
+static void memoize_import_invocation(State *state, ImportInvocationProbe probe, bool result) {
+  if (!probe.has_start || !probe.has_end) return;
+  ImportInvocationMemo *memo = &state->input_invocation_memo;
+  if (memo->valid && memo->result == result && probe.start <= memo->end && probe.end >= memo->start) {
+    if (memo->start < probe.start) probe.start = memo->start;
+    if (memo->end > probe.end) probe.end = memo->end;
+  }
+  *memo = (ImportInvocationMemo) { .valid = true, .result = result, .start = probe.start, .end = probe.end };
 }
 
 static bool constraint_lookahead_valid(Env *env) {
@@ -3517,6 +3749,7 @@ enum {
   ContextRepeat = 1 << 4,
   ContextIndent = 1 << 5,
   ContextReference = 1 << 6,
+  ContextCppState = 1 << 7,
   ContextSearchWindow = 64,
   ContextSortMask = ContextRepeat - 1,
 };
@@ -3531,6 +3764,7 @@ typedef struct {
 } ContextMatch;
 
 static bool serialize_contexts(const Contexts *contexts, char *buffer, unsigned *length, bool compress);
+static unsigned serialize_cpp_state(const State *state, char *buffer, unsigned length);
 static bool serialize_context(char *buffer, unsigned *length, Context context, uint32_t count);
 static bool serialize_context_reference(char *buffer, unsigned *length, ContextMatch match);
 static void deserialize_context_reference(Contexts *contexts, const char **cursor, const char *end);
@@ -3563,15 +3797,33 @@ unsigned tree_sitter_haskell_external_scanner_serialize(void *payload, char *buf
       || !serialize_uint(buffer, &length, newline.end)
       || !serialize_uint(buffer, &length, newline.indent)) return 0;
   unsigned prefix = length;
-  if (serialize_contexts(&state->contexts, buffer, &length, false)) return length;
-  length = prefix;
-  return serialize_contexts(&state->contexts, buffer, &length, true) ? length : 0;
+  if (!serialize_contexts(&state->contexts, buffer, &length, false)) {
+    length = prefix;
+    if (!serialize_contexts(&state->contexts, buffer, &length, true)) return 0;
+  }
+  return serialize_cpp_state(state, buffer, length);
 }
 
+static unsigned serialize_cpp_state(const State *state, char *buffer, unsigned length) {
+  unsigned prefix = length;
+  uint32_t flags = state->import_macros | (state->cpp_state_unknown << 2)
+    | (state->definite_declaration << 3);
+  if (serialize_uint(buffer, &length, ContextCppState)
+      && serialize_uint(buffer, &length, flags)
+      && serialize_uint(buffer, &length, state->cpp_depth)) return length;
+  return prefix;
+}
+
+// code-gauge-allow functionCognitiveComplexity 18 -- Prefix fields, context references, and the optional CPP trailer share one cursor-ordered wire format; splitting the decoder would separate their length invariants.
+// code-gauge-allow functionNcss 36 -- Prefix fields, context references, and the optional CPP trailer share one cursor-ordered wire format; splitting the decoder would separate their length invariants.
 void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
   State *state = (State *) payload;
   state->contexts.size = 0;
   state->comment = (Comment) {0};
+  state->import_macros = 0;
+  state->definite_declaration = false;
+  state->cpp_state_unknown = length > 0;
+  state->cpp_depth = 0;
   state->newline = (Newline) {.state = NResume};
   if (length > 0) {
     const char *cursor = buffer;
@@ -3591,6 +3843,14 @@ void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char 
     };
     while (cursor < end) {
       uint32_t tag = deserialize_uint(&cursor, end);
+      if (tag == ContextCppState) {
+        uint32_t cpp_flags = deserialize_uint(&cursor, end);
+        state->import_macros = cpp_flags & 3;
+        state->cpp_state_unknown = cpp_flags & 4;
+        state->definite_declaration = cpp_flags & 8;
+        state->cpp_depth = deserialize_uint(&cursor, end);
+        break;
+      }
       if (tag == ContextReference) {
         deserialize_context_reference(&state->contexts, &cursor, end);
         continue;

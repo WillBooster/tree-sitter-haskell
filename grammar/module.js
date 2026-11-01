@@ -142,26 +142,28 @@ module.exports = {
 
   imports: $ => seq(semis($, field('import', $.import)), semi($)),
 
-  /**
-   * Using `semi` at the end instead of `semi_opt` increases parser size by a full megabyte!!
-   *
-   * This allows imports after the first declaration to prevent the tree from jittering while typing an import:
-   *
-   * > import A
-   * > imp
-   * > import B
-   *
-   * The partially typed `imp` will be parsed as a `top_splice`, which forces `imports` to reduce after `import A`.
-   * The rest of the file will then be part of `declarations` and all following imports will be broken until the keyword
-   * has been completed.
-   */
-  declarations: $ => seq($.declaration, repeat(seq(semi($), choice($.declaration, $.import))), semi_opt($)),
+  _non_import_declaration: $ => seq($._cond_non_import_declaration, $.declaration),
+
+  _cpp_declaration: $ => seq($._cond_cpp_declaration, choice($.import, $.declaration)),
+
+  _cpp_initial_declarations: $ => seq($.declaration,
+    repeat(seq(semi($), choice($._non_import_declaration, $._cpp_declaration))), semi_opt($)),
+
+  _cpp_initial_body: $ => seq($._cond_cpp_initial,
+    field('imports', optional($.imports)),
+    field('declarations', optional(alias($._cpp_initial_declarations, $.declarations))),
+  ),
+
+  declarations: $ => seq($._non_import_declaration,
+    repeat(seq(semi($), choice($._non_import_declaration, $._cpp_declaration))), semi_opt($)),
 
   _body: $ => seq(
     choice($._cmd_layout_start, alias($._cmd_layout_start_explicit, '{')),
     semi_opt($),
-    field('imports', optional($.imports)),
-    field('declarations', optional($.declarations)),
+    choice($._cpp_initial_body, seq(
+      field('imports', optional($.imports)),
+      field('declarations', optional($.declarations)),
+    )),
     $._layout_end,
   ),
 

@@ -12,6 +12,7 @@ typedef struct {
 } HscCursor;
 
 static void hsc_consume_args(Env *env, bool line);
+static void hsc_skip_cpp_directive(Env *env, bool commit);
 static bool hsc_cpp_boundary(Env *env);
 static bool hsc_text_symbol(int32_t c);
 static void hsc_skip_text(Env *env);
@@ -24,7 +25,6 @@ static void hsc_line_comment(HscCursor *cursor);
 static uint32_t hsc_cpp_start(Env *env, bool *braced);
 static bool hsc_cpp_token(Env *env, uint32_t start, const char *name);
 static uint32_t hsc_prefix_space(Env *env, uint32_t i, bool multiline);
-static uint32_t hsc_prefix_splices(Env *env, uint32_t i);
 static void hsc_advance(HscCursor *cursor);
 static int32_t hsc_current(HscCursor *cursor);
 static void hsc_splices(HscCursor *cursor);
@@ -76,7 +76,7 @@ static void hsc_take_cpp(Env *env) {
 
 static void hsc_skip_cpp_else(Env *env, bool emit) {
   uint32_t nesting = 1;
-  hsc_take_cpp(env);
+  hsc_skip_cpp_directive(env, emit);
   reset_lookahead(env);
   while (not_eof(env)) {
     if (emit) MARK("hsc cpp_else");
@@ -84,11 +84,16 @@ static void hsc_skip_cpp_else(Env *env, bool emit) {
       CppDirective directive = hsc_cpp_directive(env);
       if (directive == CppEnd && --nesting == 0) return;
       if (directive == CppStart) nesting++;
-      hsc_take_cpp(env);
+      hsc_skip_cpp_directive(env, emit);
     } else hsc_skip_text(env);
     reset_lookahead(env);
   }
   if (emit) MARK("hsc cpp-else eof");
+}
+
+static void hsc_skip_cpp_directive(Env *env, bool commit) {
+  if (commit) track_import_macro(env);
+  hsc_take_cpp(env);
 }
 
 static bool hsc_cpp_boundary(Env *env) {
@@ -205,26 +210,18 @@ static uint32_t hsc_cpp_start(Env *env, bool *braced) {
 static bool hsc_cpp_token(Env *env, uint32_t start, const char *name) {
   uint32_t i = start;
   for (; *name; name++) {
-    i = hsc_prefix_splices(env, i);
+    i = cpp_splices(env, i, false);
     if (peek(env, i++) != *name) return false;
   }
-  int32_t end = peek(env, hsc_prefix_splices(env, i));
+  int32_t end = peek(env, cpp_splices(env, i, false));
   return !(is_id_char(end) && end != '\'');
 }
 
 static uint32_t hsc_prefix_space(Env *env, uint32_t i, bool multiline) {
   for (;;) {
-    i = hsc_prefix_splices(env, i);
+    i = cpp_splices(env, i, false);
     int32_t c = peek(env, i);
     if (is_string_gap_space(c) && (multiline || c != '\n')) i++;
-    else return i;
-  }
-}
-
-static uint32_t hsc_prefix_splices(Env *env, uint32_t i) {
-  for (;;) {
-    if (char_at(env, i, '\\') && char_at(env, i + 1, '\n')) i += 2;
-    else if (char_at(env, i, '\\') && char_at(env, i + 1, '\r') && char_at(env, i + 2, '\n')) i += 3;
     else return i;
   }
 }
