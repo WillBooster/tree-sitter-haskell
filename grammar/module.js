@@ -142,7 +142,12 @@ module.exports = {
 
   imports: $ => seq(semis($, field('import', $.import)), semi($)),
 
-  declarations: $ => seq($.declaration, repeat(seq(semi($), $.declaration)), semi_opt($)),
+  _non_import_declaration: $ => seq($._cond_non_import_declaration, $.declaration),
+
+  _cpp_import: $ => seq($._cond_cpp_import, $.import),
+
+  declarations: $ => seq($._non_import_declaration,
+    repeat(seq(semi($), choice($._non_import_declaration, $._cpp_import))), semi_opt($)),
 
   _body: $ => seq(
     choice($._cmd_layout_start, alias($._cmd_layout_start_explicit, '{')),

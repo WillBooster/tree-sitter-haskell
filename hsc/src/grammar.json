@@ -7898,12 +7898,38 @@
         }
       ]
     },
+    "_non_import_declaration": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_cond_non_import_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "declaration"
+        }
+      ]
+    },
+    "_cpp_import": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_cond_cpp_import"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "import"
+        }
+      ]
+    },
     "declarations": {
       "type": "SEQ",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "declaration"
+          "name": "_non_import_declaration"
         },
         {
           "type": "REPEAT",
@@ -7927,8 +7953,17 @@
                 ]
               },
               {
-                "type": "SYMBOL",
-                "name": "declaration"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_non_import_declaration"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_cpp_import"
+                  }
+                ]
               }
             ]
           }
@@ -8249,13 +8284,8 @@
             "type": "FIELD",
             "name": "id",
             "content": {
-              "type": "ALIAS",
-              "content": {
-                "type": "SYMBOL",
-                "name": "_unrestricted_variable"
-              },
-              "named": true,
-              "value": "field_name"
+              "type": "SYMBOL",
+              "name": "field_name"
             }
           }
         ]
@@ -12192,17 +12222,8 @@
       "name": "expression"
     },
     "quoter": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "_unrestricted_variable"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_qvarid"
-        }
-      ]
+      "type": "SYMBOL",
+      "name": "_varids"
     },
     "quasiquote": {
       "type": "SEQ",
@@ -13248,24 +13269,6 @@
         }
       ]
     },
-    "_unrestricted_variable": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "variable"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "import"
-          },
-          "named": true,
-          "value": "variable"
-        }
-      ]
-    },
     "_qualified_variable": {
       "type": "PREC",
       "value": "qualified-id",
@@ -13290,7 +13293,7 @@
             "name": "id",
             "content": {
               "type": "SYMBOL",
-              "name": "_unrestricted_variable"
+              "name": "variable"
             }
           }
         ]
@@ -15733,6 +15736,14 @@
     },
     {
       "type": "SYMBOL",
+      "name": "_cond_non_import_declaration"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_cond_cpp_import"
+    },
+    {
+      "type": "SYMBOL",
       "name": "_cmd_hsc_brace_open"
     },
     {
@@ -15834,12 +15845,5 @@
     "qualifier",
     "guard"
   ],
-  "reserved": {
-    "global": [
-      {
-        "type": "STRING",
-        "value": "import"
-      }
-    ]
-  }
+  "reserved": {}
 }

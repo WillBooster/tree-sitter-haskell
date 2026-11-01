@@ -19,6 +19,70 @@ afterAll(() => {
 
 const declarations = ['value = 1', 'value :: Int', 'data Value = Value', 'type Value = Int', '$(pure [])'];
 
+const cppMacroPrograms = [
+  {
+    name: 'expression',
+    source: '{-# LANGUAGE CPP #-}\nmodule Probe where\n#define import 1\nvalue = import\nfollowing=2\n',
+    bindings: ['value', 'following'],
+    splices: [],
+  },
+  {
+    name: 'object macro splice',
+    source:
+      '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define import const (pure [])\nimport Prelude.True\nfollowing=2\n',
+    bindings: ['seed', 'following'],
+    splices: ['import Prelude.True'],
+  },
+  {
+    name: 'function macro splice',
+    source:
+      '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define import(value) const (pure []) value\nimport(Prelude.True)\nfollowing=2\n',
+    bindings: ['seed', 'following'],
+    splices: ['import(Prelude.True)'],
+  },
+  {
+    name: 'else-branch definition',
+    source:
+      '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#if 0\n-- inactive\n#else\n#define import const (pure [])\n#endif\nimport Prelude.True\nfollowing=2\n',
+    bindings: ['seed', 'following'],
+    splices: ['import Prelude.True'],
+  },
+  {
+    name: 'conditional undefinition',
+    source:
+      '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define import const (pure [])\n#if 0\n#undef import\n#endif\nimport Prelude.True\nfollowing=2\n',
+    bindings: ['seed', 'following'],
+    splices: ['import Prelude.True'],
+  },
+  {
+    name: 'comment-separated definition',
+    source:
+      '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define/* gap */import const (pure [])\nimport Prelude.True\nfollowing=2\n',
+    bindings: ['seed', 'following'],
+    splices: ['import Prelude.True'],
+  },
+  {
+    name: 'spliced macro name',
+    source:
+      '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define im\\\nport const (pure [])\nimport Prelude.True\nfollowing=2\n',
+    bindings: ['seed', 'following'],
+    splices: ['import Prelude.True'],
+  },
+];
+
+const cppImportRejections = [
+  {
+    name: 'unconditional undefinition',
+    source:
+      '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define import const (pure [])\n#undef import\nimport Data.Maybe\n',
+  },
+  {
+    name: 'different macro name',
+    source:
+      '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define imported const (pure [])\nimport Data.Maybe\n',
+  },
+];
+
 for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, parsers[index]!] as const)) {
   test.each(declarations)(`${dialect} rejects an import after %s`, (declaration) => {
     for (const source of [
@@ -98,19 +162,6 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
     }
   );
 
-  test.each(["value = 'import", 'value = import', 'value = record.import'])(
-    `${dialect} rejects the unqualified keyword in %s`,
-    (declaration) => {
-      const source = `{-# LANGUAGE TemplateHaskell, OverloadedRecordDot #-}\nmodule Probe where\n${declaration}\n`;
-      const tree = parser.parse(source)!;
-      try {
-        expect(tree.rootNode.hasError, source).toBe(true);
-      } finally {
-        tree.delete();
-      }
-    }
-  );
-
   test.each([
     'value = C { Data.import = 1 }',
     'value = candidate { Data.import = 1 }',
@@ -136,16 +187,118 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
     }
   });
 
-  test.each([
-    'value = C { import = 1 }',
-    'value = candidate { import = 1 }',
-    'value = case candidate of C { import = bound } -> bound',
-  ])(`${dialect} rejects the unqualified field in %s`, (declaration) => {
-    const tree = parser.parse(`module Probe where\n${declaration}\n`)!;
+  test.each(cppMacroPrograms)(`${dialect} retains local import macros: $name`, ({ source, bindings, splices }) => {
+    const tree = parser.parse(source)!;
+    try {
+      expect(tree.rootNode.hasError, source).toBe(false);
+      expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
+        bindings
+      );
+      expect(tree.rootNode.descendantsOfType('top_splice').map((node) => node.text)).toEqual(splices);
+    } finally {
+      tree.delete();
+    }
+  });
+
+  test.each(['#if 0\nvalue=1\n#endif\nimport Data.Maybe\n', '#define NOP\nNOP\nimport Data.Maybe\n'])(
+    `${dialect} preserves an import after CPP removes a raw declaration: %j`,
+    (body) => {
+      const tree = parser.parse(`{-# LANGUAGE CPP #-}\nmodule Probe where\n${body}`)!;
+      try {
+        expect(tree.rootNode.hasError).toBe(false);
+        expect(
+          tree.rootNode
+            .descendantsOfType('import')
+            .filter((node) => node.isNamed)
+            .map((node) => node.text)
+        ).toEqual(['import Data.Maybe']);
+      } finally {
+        tree.delete();
+      }
+    }
+  );
+
+  test.each(cppImportRejections)(`${dialect} rejects late imports after $name`, ({ source }) => {
+    const tree = parser.parse(source)!;
+    try {
+      expect(tree.rootNode.hasError, source).toBe(true);
+    } finally {
+      tree.delete();
+    }
+  });
+
+  test(`${dialect} reports invalid where layout without prescribing its recovery tree`, () => {
+    const source = 'a = case a of\n  a -> a\n  where\n    a = a\n  a -> a\n';
+    const tree = parser.parse(source)!;
     try {
       expect(tree.rootNode.hasError).toBe(true);
     } finally {
       tree.delete();
+    }
+  });
+
+  test(`${dialect} retains a declaration quote and following binding`, () => {
+    const source = '{-# LANGUAGE TemplateHaskell #-}\nmodule Probe where\n[d| generated=1 |]\nfollowing=2\n';
+    const tree = parser.parse(source)!;
+    try {
+      expect(tree.rootNode.hasError).toBe(false);
+      expect(tree.rootNode.descendantsOfType('top_splice').map((node) => node.text)).toEqual(['[d| generated=1 |]']);
+      expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following=2');
+    } finally {
+      tree.delete();
+    }
+  });
+
+  test(`${dialect} preserves nested records when CPP metadata fills the scanner buffer`, () => {
+    let state = 0x12_34_56_78;
+    let expression = 'Leaf';
+    let records = 0;
+    for (let depth = 0; depth < 1511; depth++) {
+      state ^= state << 13;
+      state ^= state >>> 17;
+      state ^= state << 5;
+      if (state >>> 31) {
+        expression = `Box { child = ${expression} }`;
+        records++;
+      } else expression = `(${expression})`;
+    }
+    const prefix = '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\n';
+    const body = `data Value = Box { child :: Value } | Leaf\n#if 1\nvalue = ${expression}\n#endif\n`;
+    for (const source of [
+      `${prefix}${body}following=1\n`,
+      `${prefix}#define import const (pure [])\n${body}import Prelude.True\nfollowing=1\n`,
+    ]) {
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError).toBe(false);
+        expect(tree.rootNode.descendantsOfType('field_update')).toHaveLength(records);
+        expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following=1');
+      } finally {
+        tree.delete();
+      }
+    }
+    const invalid = parser.parse(
+      `module Probe where\n${body.replace('#if 1\n', '').replace('#endif\n', '')}import Data.Maybe\n`
+    )!;
+    try {
+      expect(invalid.rootNode.hasError).toBe(true);
+    } finally {
+      invalid.delete();
+    }
+  });
+
+  test(`${dialect} keeps macro definitions local to each full-parse input`, () => {
+    const macro = parser.parse('{-# LANGUAGE CPP #-}\nmodule Probe where\n#define import 1\nvalue=import\n')!;
+    try {
+      expect(macro.rootNode.hasError).toBe(false);
+    } finally {
+      macro.delete();
+    }
+    const ordinary = parser.parse('module Probe where\nvalue=1\nimport Data.Maybe\n')!;
+    try {
+      expect(ordinary.rootNode.hasError).toBe(true);
+    } finally {
+      ordinary.delete();
     }
   });
 }

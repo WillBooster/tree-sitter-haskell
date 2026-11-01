@@ -16,7 +16,7 @@ module.exports = {
   // ------------------------------------------------------------------------
 
   field_name: $ => $.variable,
-  _qfield_name: $ => qualified($, alias($._unrestricted_variable, $.field_name)),
+  _qfield_name: $ => qualified($, $.field_name),
   _field_names: $ => choice($.field_name, alias($._qfield_name, $.qualified)),
 
   field_path: $ => seq(

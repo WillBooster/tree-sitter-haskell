@@ -38,7 +38,7 @@ module.exports = {
    */
   top_splice: $ => $.expression,
 
-  quoter: $ => choice($._unrestricted_variable, $._qvarid),
+  quoter: $ => $._varids,
 
   /**
    * `_cond_quote_start` (in `quote_bracket`) is a zero-width token emitted by the scanner.

@@ -2030,6 +2030,10 @@
         {
           "type": "declaration",
           "named": true
+        },
+        {
+          "type": "import",
+          "named": true
         }
       ]
     }

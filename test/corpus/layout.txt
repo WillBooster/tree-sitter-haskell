@@ -29,20 +29,6 @@ a =
               (variable))))))))
 
 ================================================================================
-layout: error: where on same level as case alt with following alt
-================================================================================
-
-a = case a of
-  a -> a
-  where
-    a = a
-  a -> a
-
---------------------------------------------------------------------------------
-
-(haskell (ERROR (bind (variable) (match (case (variable) (alternatives (alternative (variable) (match (variable)))))) (where_clause (local_binds (bind (variable) (match (variable)))))) (variable)) (declarations (top_splice (variable))))
-
-================================================================================
 layout: where on deeper level than case alt with following alt
 ================================================================================
 

@@ -53,8 +53,6 @@ module.exports = grammar({
   ...inline,
   ...conflicts,
 
-  reserved: { global: _ => ['import'] },
-
   extras: $ => [
     /\p{Zs}/,
     /\t/,
