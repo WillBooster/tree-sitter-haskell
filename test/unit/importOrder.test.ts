@@ -55,6 +55,13 @@ const cppMacroPrograms = [
     splices: ['import Prelude.True'],
   },
   {
+    name: 'NUL in a closed C comment',
+    source:
+      '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define /* comment\0 */ import const (pure [])\nimport Prelude.True\nfollowing=2\n',
+    bindings: ['seed', 'following'],
+    splices: ['import Prelude.True'],
+  },
+  {
     name: 'multiline comment in definition',
     source:
       '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define /* comment\n-- */ import const (pure [])\nimport Prelude.True\nfollowing=2\n',
@@ -252,6 +259,30 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
         tree.delete();
       }
     });
+
+    test('HSC C includes do not hide ordinary late imports', () => {
+      const tree = parser.parse('module Probe where\n#include <stdio.h>\nvalue=1\nimport Data.Maybe\n')!;
+      try {
+        expect(tree.rootNode.hasError).toBe(true);
+      } finally {
+        tree.delete();
+      }
+    });
+
+    test('HSC permits an import after an empty custom construct', () => {
+      const tree = parser.parse('module Probe where\n#let nop = ""\n#nop\nimport Data.Maybe\nvalue=Just 1\n')!;
+      try {
+        expect(tree.rootNode.hasError).toBe(false);
+        expect(
+          tree.rootNode
+            .descendantsOfType('import')
+            .filter((node) => node.isNamed)
+            .map((node) => node.text)
+        ).toEqual(['import Data.Maybe']);
+      } finally {
+        tree.delete();
+      }
+    });
   }
 
   test(`${dialect} keeps ordinary imports when a function macro is not invoked`, () => {
@@ -279,14 +310,17 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
   });
 
   if (dialect === 'Haskell') {
-    test('Haskell reports an unclosed CPP directive comment', () => {
-      const tree = parser.parse('{-# LANGUAGE CPP #-}\nmodule Probe where\nx=1\n#define/* unterminated\ny=2\n')!;
-      try {
-        expect(tree.rootNode.hasError).toBe(true);
-      } finally {
-        tree.delete();
+    test.each(['#define/* unterminated\ny=2\n', '#if 1\n#else\n#define/* unterminated\n#endif\ny=2\n'])(
+      'Haskell reports an unclosed CPP directive comment: %j',
+      (body) => {
+        const tree = parser.parse(`{-# LANGUAGE CPP #-}\nmodule Probe where\nx=1\n${body}`)!;
+        try {
+          expect(tree.rootNode.hasError).toBe(true);
+        } finally {
+          tree.delete();
+        }
       }
-    });
+    );
   }
 
   test.each(cppImportRejections)(`${dialect} rejects late imports after $name`, ({ source }) => {

@@ -2385,7 +2385,7 @@ static Symbol cpp_else(Env *env, bool emit) {
 #else
   uint32_t nesting = 1;
   do {
-    if (emit) track_import_macro(env);
+    if (emit && !track_import_macro(env)) return FAIL;
     take_line_escaped_newline(env);
     if (emit) MARK("cpp_else");
     S_ADVANCE;
@@ -2420,6 +2420,9 @@ static Symbol cpp_line(Env *env) {
 
 static bool track_import_macro(Env *env) {
   if (!char0(env, '#') || char1(env, '!')) return true;
+#ifdef HSC_EXT
+  if (cpp_directive(env) == CppOther) return true;
+#endif
   env->state->input_has_cpp = true;
 #ifndef HSC_EXT
   uint32_t start = import_macro_space(env, 1);
@@ -2451,14 +2454,16 @@ static uint32_t import_macro_space(Env *env, uint32_t start) {
 }
 
 static uint32_t import_macro_comment(Env *env, uint32_t start) {
-  while (peek(env, start)) {
+  for (;;) {
     start = cpp_splices(env, start, true);
-    if (peek(env, start++) == '*') {
+    int32_t c = peek(env, start);
+    if (is_eof(env) && env->state->lookahead.offset + start >= env->state->lookahead.size) return UINT32_MAX;
+    start++;
+    if (c == '*') {
       start = cpp_splices(env, start, true);
       if (peek(env, start) == '/') return start + 1;
     }
   }
-  return UINT32_MAX;
 }
 
 static uint32_t cpp_splices(Env *env, uint32_t start, bool spaced) {
@@ -3373,6 +3378,9 @@ static Symbol interior(Env *env, bool whitespace) {
 static Symbol non_import_declaration(Env *env) {
   if ((!valid(env, NON_IMPORT_DECLARATION) && !valid(env, CPP_IMPORT)) || char0(env, ';')) return FAIL;
   State *state = env->state;
+#ifdef HSC_EXT
+  if (char0(env, '#') && cpp_directive(env) == CppNothing) state->input_has_cpp = true;
+#endif
   if (token(env, "import") && !import_macro_expands(env)) {
     if (valid(env, CPP_IMPORT) && state->input_has_cpp && !state->definite_declaration)
       return finish(CPP_IMPORT, "CPP-dependent import");
