@@ -119,6 +119,30 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
     }
   });
 
+  test(`${dialect} preserves an inactive conditional import after a declaration`, () => {
+    const tree = parser.parse("{-# LANGUAGE CPP #-}\nmodule A where\nv1 = 'a'\n#if 0\nimport Data.Maybe\n#endif\n")!;
+    try {
+      expect(tree.rootNode.hasError).toBe(false);
+      expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
+        'v1',
+      ]);
+      expect(
+        tree.rootNode
+          .descendantsOfType('import')
+          .filter((node) => node.isNamed)
+          .map((node) => node.text)
+      ).toEqual(['import Data.Maybe']);
+    } finally {
+      tree.delete();
+    }
+    const outside = parser.parse("{-# LANGUAGE CPP #-}\nmodule A where\nv1 = 'a'\n#if 0\n#endif\nimport Data.Maybe\n")!;
+    try {
+      expect(outside.rootNode.hasError).toBe(true);
+    } finally {
+      outside.delete();
+    }
+  });
+
   test.each([
     'import Data.Maybe\nimport Data.List\nvalue = Just 1\nfollowing = value\n',
     'module Probe where\nimport Data.Maybe\n-- between sections\nvalue = Just 1\nfollowing = value\n',

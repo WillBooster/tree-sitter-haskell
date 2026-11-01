@@ -69,6 +69,21 @@ test('parses repeated unterminated macro-call comments in linear time', { timeou
   expect(largeFastest / smallFastest).toBeLessThan(9);
 });
 
+test('parses repeated macro-call lookahead inside a closed comment in linear time', { timeout: 60_000 }, () => {
+  const prefix = '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\n#define import const (pure [])\n';
+  const suffix = 'end */(True)\nfollowing=2\n';
+  const small = prefix + 'import /* a\n'.repeat(250) + suffix;
+  const large = prefix + 'import /* a\n'.repeat(1000) + suffix;
+  parseCpuTime(large, false);
+  let smallFastest = Infinity;
+  let largeFastest = Infinity;
+  for (let run = 0; run < 5; run++) {
+    smallFastest = Math.min(smallFastest, parseCpuTime(small, false));
+    largeFastest = Math.min(largeFastest, parseCpuTime(large, false));
+  }
+  expect(largeFastest / smallFastest).toBeLessThan(9);
+});
+
 function parseCpuTime(source: string, expectedError = true): number {
   const start = process.threadCpuUsage();
   const tree = parser.parse(source);
