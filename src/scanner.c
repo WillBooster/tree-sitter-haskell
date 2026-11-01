@@ -1331,7 +1331,6 @@ static bool is_space_or_tab(int32_t c) {
  * Advance until the next newline or EOF, used to consume the body of a cpp directive.
  * Escaped newlines are treated as line continuations, which allow spaces and tabs between backslash and newline.
  */
-// code-gauge-allow functionCognitiveComplexity 19 -- Backslash, optional horizontal space, and newline consumption share one forward-only cursor.
 static void take_line_escaped_newline(Env *env) {
   for (;;) {
     while (not_eof(env) && !is_newline(PEEK) && PEEK != '\\') S_ADVANCE;
@@ -2071,7 +2070,6 @@ static Lexed lex_symop(Env *env) {
   return LSymop;
 }
 
-// code-gauge-allow functionNcss 52 -- Single-character operator alternatives share prefix lookahead and the same lexical classification table.
 static Lexed lex_single_symop(Env *env, int32_t c1) {
   switch (c1) {
     case '?':
@@ -2345,7 +2343,6 @@ static Lexed lex_extras(Env *env, bool allow_cpp) {
  * The main lexing entry point, branching on the first character, then advancing as far as necessary to identify all
  * interesting tokens.
  */
-// code-gauge-allow functionNcss 40 -- Keyword, bracket, and identifier classification share one lookahead offset and must retain their dispatch order.
 static Lexed lex(Env *env, bool bol) {
   SEQ(lex_extras(env, bol));
   if (symop_char(peek0(env))) return lex_symop(env);
@@ -2616,8 +2613,6 @@ static void inline_comment(Env *env) {
   } while (line_comment_herald(env) && (haddock || !next_line_haddock(env)));
 }
 
-// code-gauge-allow functionCognitiveComplexity 16 -- Nested delimiters, content marking, and display columns advance through the same comment cursor.
-// code-gauge-allow functionNcss 39 -- Nested delimiters, content marking, and display columns advance through the same comment cursor.
 static uint32_t consume_block_comment(Env *env, uint32_t col, bool content) {
   uint32_t level = 0;
   while (not_eof(env)) {
@@ -2816,7 +2811,6 @@ static Symbol semicolon(Env *env) {
  *
  * This is called by `newline_post` before marking, so the actions must not fail after advancing.
  */
-// code-gauge-allow functionNcss 48 -- Layout endings and extras are dispatched together before token-end marking, so advancing branches cannot be reordered.
 static Symbol process_token_safe(Env *env, Lexed next, bool allow_pragma) {
   switch (next) {
     case LWhere:
@@ -2868,7 +2862,6 @@ static Symbol process_token_safe(Env *env, Lexed next, bool allow_pragma) {
 /**
  * Process a `Lexed` token if it results in a symbolic operator.
  */
-// code-gauge-allow functionNcss 48 -- Operator alternatives share consumed punctuation and prefix-versus-infix lookahead.
 static Symbol process_token_symop(Env *env, bool whitespace, Lexed next) {
 #ifdef HSC_EXT
   if (next == LHscHash) return finish_if_valid(env, HSC_HASH, "hsc hash");
@@ -3025,7 +3018,6 @@ static Symbol newline_post(Env *env) {
  * Repeatedly lex lookahead until encountering something that is neither a comment nor CPP, skipping whitespace and
  * newlines in between.
  */
-// code-gauge-allow functionNcss 46 -- Whitespace, comments, and directives jointly determine the next layout token and its display column.
 static void newline_lookahead(Env *env, Newline *newline) {
   for (;;) {
     // Using `peek0` to look for whitespace requires the lookahead buffer to have been reset immediately before this
@@ -3248,7 +3240,6 @@ static CtrResult ctr_stop_on_token(Env *env, const char * restrict target) {
  * terminating at `::`:
  * > `a :: (C + D :: Constraint) => E`
  */
-// code-gauge-allow functionNcss 42 -- Constraint stop tokens and infix evidence form one classification table over the current lookahead.
 static CtrResult ctr_top(Env *env, Lexed next) {
   switch (next) {
     case LCArrow:
@@ -3305,7 +3296,6 @@ static CtrResult ctr_top(Env *env, Lexed next) {
  * If the token wasn't identified to be irrelevant for the lookahead result, and the current bracket nesting level is
  * zero, call `ctr_top`.
  */
-// code-gauge-allow functionNcss 48 -- Bracket nesting and token-specific reset positions must be updated from the same lexed token.
 static CtrResult ctr_lookahead_step(Env *env, CtrState *state, Lexed next) {
   state->reset = 1;
   switch (next) {
@@ -3366,7 +3356,6 @@ static CtrResult ctr_lookahead_step(Env *env, CtrState *state, Lexed next) {
  *
  * A context arrow is always a termination criterion; an infix operator only if CONTEXT isn't valid.
  */
-// code-gauge-allow functionNcss 45 -- Constraint evidence and reset positions are accumulated in lexical order until one classification is decisive.
 static Symbol constraint_lookahead(Env *env) {
   dbg("type lookahead\n");
   CtrState state = {.reset = 0};
