@@ -12149,74 +12149,16 @@
       "type": "SYMBOL",
       "name": "expression"
     },
-    "_qualified_quoter": {
-      "type": "PREC",
-      "value": "qualified-id",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "module",
-            "content": {
-              "type": "ALIAS",
-              "content": {
-                "type": "SYMBOL",
-                "name": "_qualifying_module"
-              },
-              "named": true,
-              "value": "module"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "id",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "variable"
-                },
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "STRING",
-                    "value": "import"
-                  },
-                  "named": true,
-                  "value": "variable"
-                }
-              ]
-            }
-          }
-        ]
-      }
-    },
     "quoter": {
       "type": "CHOICE",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "variable"
+          "name": "_unrestricted_variable"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "import"
-          },
-          "named": true,
-          "value": "variable"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_qualified_quoter"
-          },
-          "named": true,
-          "value": "qualified"
+          "type": "SYMBOL",
+          "name": "_qvarid"
         }
       ]
     },
@@ -13255,6 +13197,24 @@
         }
       ]
     },
+    "_unrestricted_variable": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "variable"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "import"
+          },
+          "named": true,
+          "value": "variable"
+        }
+      ]
+    },
     "_qualified_variable": {
       "type": "PREC",
       "value": "qualified-id",
@@ -13279,7 +13239,7 @@
             "name": "id",
             "content": {
               "type": "SYMBOL",
-              "name": "variable"
+              "name": "_unrestricted_variable"
             }
           }
         ]

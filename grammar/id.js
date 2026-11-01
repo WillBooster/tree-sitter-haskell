@@ -10,7 +10,9 @@ module.exports = {
   // var
   // ------------------------------------------------------------------------
 
-  _qualified_variable: $ => qualified($, $.variable),
+  _unrestricted_variable: $ => choice($.variable, alias('import', $.variable)),
+
+  _qualified_variable: $ => qualified($, $._unrestricted_variable),
   _qvarid: $ => alias($._qualified_variable, $.qualified),
   _varids: $ => choice($._qvarid, $.variable),
 

@@ -1,6 +1,5 @@
 const {
   layout_sort,
-  qualified,
 } = require('./util.js')
 
 const quote_bracket = ($, quoter) => seq(
@@ -39,13 +38,7 @@ module.exports = {
    */
   top_splice: $ => $.expression,
 
-  _qualified_quoter: $ => qualified($, choice($.variable, alias('import', $.variable))),
-
-  quoter: $ => choice(
-    $.variable,
-    alias('import', $.variable),
-    alias($._qualified_quoter, $.qualified),
-  ),
+  quoter: $ => choice($._unrestricted_variable, $._qvarid),
 
   /**
    * `_cond_quote_start` (in `quote_bracket`) is a zero-width token emitted by the scanner.

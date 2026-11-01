@@ -78,3 +78,36 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
     }
   });
 }
+
+for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, parsers[index]!] as const)) {
+  test.each(['value = Data.import', 'value = left `Data.import` right', "value = 'Data.import"])(
+    `${dialect} permits the qualified keyword in %s`,
+    (declaration) => {
+      const source = `{-# LANGUAGE TemplateHaskell #-}\nmodule Probe where\n${declaration}\nfollowing=2\n`;
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(false);
+        expect(tree.rootNode.descendantsOfType('qualified').map((node) => node.text)).toContain('Data.import');
+        expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual([
+          'value',
+          'following',
+        ]);
+      } finally {
+        tree.delete();
+      }
+    }
+  );
+
+  test.each(["value = 'import", 'value = import', 'value = record.import'])(
+    `${dialect} rejects the unqualified keyword in %s`,
+    (declaration) => {
+      const source = `{-# LANGUAGE TemplateHaskell, OverloadedRecordDot #-}\nmodule Probe where\n${declaration}\n`;
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(true);
+      } finally {
+        tree.delete();
+      }
+    }
+  );
+}
