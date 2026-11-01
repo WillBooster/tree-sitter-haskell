@@ -210,16 +210,16 @@ static uint32_t hsc_cpp_start(Env *env, bool *braced) {
 static bool hsc_cpp_token(Env *env, uint32_t start, const char *name) {
   uint32_t i = start;
   for (; *name; name++) {
-    i = cpp_splices(env, i);
+    i = cpp_splices(env, i, false);
     if (peek(env, i++) != *name) return false;
   }
-  int32_t end = peek(env, cpp_splices(env, i));
+  int32_t end = peek(env, cpp_splices(env, i, false));
   return !(is_id_char(end) && end != '\'');
 }
 
 static uint32_t hsc_prefix_space(Env *env, uint32_t i, bool multiline) {
   for (;;) {
-    i = cpp_splices(env, i);
+    i = cpp_splices(env, i, false);
     int32_t c = peek(env, i);
     if (is_string_gap_space(c) && (multiline || c != '\n')) i++;
     else return i;

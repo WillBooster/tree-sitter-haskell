@@ -55,6 +55,13 @@ const cppMacroPrograms = [
     splices: ['import Prelude.True'],
   },
   {
+    name: 'multiline comment in definition',
+    source:
+      '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define /* comment\n-- */ import const (pure [])\nimport Prelude.True\nfollowing=2\n',
+    bindings: ['seed', 'following'],
+    splices: ['import Prelude.True'],
+  },
+  {
     name: 'comment-separated definition',
     source:
       '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define/* gap */import const (pure [])\nimport Prelude.True\nfollowing=2\n',
@@ -113,12 +120,14 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
         'following',
       ]);
       const imports = tree.rootNode.childForFieldName('imports');
-      expect(
-        tree.rootNode
-          .descendantsOfType('import')
-          .filter((node) => node.isNamed)
-          .every((node) => node.parent?.id === imports?.id)
-      ).toBe(true);
+      const namedImports = tree.rootNode.descendantsOfType('import').filter((node) => node.isNamed);
+      const expectedImports = source.startsWith('import Data.Maybe')
+        ? ['import Data.Maybe', 'import Data.List']
+        : source.includes('import Data.Maybe')
+          ? ['import Data.Maybe']
+          : [];
+      expect(namedImports.map((node) => node.text)).toEqual(expectedImports);
+      expect(namedImports.every((node) => node.parent?.id === imports?.id)).toBe(true);
     } finally {
       tree.delete();
     }
@@ -187,36 +196,98 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
     }
   });
 
-  test.each(cppMacroPrograms)(`${dialect} retains local import macros: $name`, ({ source, bindings, splices }) => {
-    const tree = parser.parse(source)!;
+  if (dialect === 'Haskell') {
+    test.each(cppMacroPrograms)(`${dialect} retains local import macros: $name`, ({ source, bindings, splices }) => {
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(false);
+        expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
+          bindings
+        );
+        expect(tree.rootNode.descendantsOfType('top_splice').map((node) => node.text)).toEqual(splices);
+      } finally {
+        tree.delete();
+      }
+    });
+  }
+
+  test.each([
+    '#if 0\nvalue=1\n#endif\nimport Data.Maybe\n',
+    ...(dialect === 'Haskell' ? ['#define NOP\nNOP\nimport Data.Maybe\n'] : []),
+  ])(`${dialect} preserves an import after CPP removes a raw declaration: %j`, (body) => {
+    const tree = parser.parse(`{-# LANGUAGE CPP #-}\nmodule Probe where\n${body}`)!;
     try {
-      expect(tree.rootNode.hasError, source).toBe(false);
-      expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
-        bindings
-      );
-      expect(tree.rootNode.descendantsOfType('top_splice').map((node) => node.text)).toEqual(splices);
+      expect(tree.rootNode.hasError).toBe(false);
+      expect(
+        tree.rootNode
+          .descendantsOfType('import')
+          .filter((node) => node.isNamed)
+          .map((node) => node.text)
+      ).toEqual(['import Data.Maybe']);
     } finally {
       tree.delete();
     }
   });
 
-  test.each(['#if 0\nvalue=1\n#endif\nimport Data.Maybe\n', '#define NOP\nNOP\nimport Data.Maybe\n'])(
-    `${dialect} preserves an import after CPP removes a raw declaration: %j`,
-    (body) => {
-      const tree = parser.parse(`{-# LANGUAGE CPP #-}\nmodule Probe where\n${body}`)!;
+  if (dialect === 'Haskell') {
+    test.each([' ', '\t', ' \t'])(`${dialect} retains whitespace-separated macro continuations: %j`, (gap) => {
+      const source = `{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define im\\${gap}\nport const (pure [])\nimport Prelude.True\nfollowing=2\n`;
+      const tree = parser.parse(source)!;
       try {
         expect(tree.rootNode.hasError).toBe(false);
-        expect(
-          tree.rootNode
-            .descendantsOfType('import')
-            .filter((node) => node.isNamed)
-            .map((node) => node.text)
-        ).toEqual(['import Data.Maybe']);
+        expect(tree.rootNode.descendantsOfType('top_splice').map((node) => node.text)).toContain('import Prelude.True');
+        expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following=2');
       } finally {
         tree.delete();
       }
+    });
+  } else {
+    test('HSC does not expand C import macros in Haskell declarations', () => {
+      const tree = parser.parse(
+        '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define import X\nimport Data.Maybe\nfollowing=2\n'
+      )!;
+      try {
+        expect(tree.rootNode.hasError).toBe(true);
+      } finally {
+        tree.delete();
+      }
+    });
+  }
+
+  test(`${dialect} keeps ordinary imports when a function macro is not invoked`, () => {
+    const tree = parser.parse(
+      '{-# LANGUAGE CPP #-}\nmodule Probe where\n#define import(x) x\nimport Data.Maybe\nvalue=Just 1\n'
+    )!;
+    try {
+      expect(tree.rootNode.hasError).toBe(false);
+      expect(tree.rootNode.childForFieldName('imports')?.namedChildren.map((node) => node.text)).toEqual([
+        'import Data.Maybe',
+      ]);
+      expect(tree.rootNode.descendantsOfType('top_splice')).toHaveLength(0);
+    } finally {
+      tree.delete();
     }
-  );
+  });
+
+  test(`${dialect} rejects a late import after a shebang`, () => {
+    const tree = parser.parse('#!/usr/bin/env runhaskell\nmodule Main where\nx=1\nimport Data.Maybe\n')!;
+    try {
+      expect(tree.rootNode.hasError).toBe(true);
+    } finally {
+      tree.delete();
+    }
+  });
+
+  if (dialect === 'Haskell') {
+    test('Haskell reports an unclosed CPP directive comment', () => {
+      const tree = parser.parse('{-# LANGUAGE CPP #-}\nmodule Probe where\nx=1\n#define/* unterminated\ny=2\n')!;
+      try {
+        expect(tree.rootNode.hasError).toBe(true);
+      } finally {
+        tree.delete();
+      }
+    });
+  }
 
   test.each(cppImportRejections)(`${dialect} rejects late imports after $name`, ({ source }) => {
     const tree = parser.parse(source)!;
@@ -266,7 +337,9 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
     const body = `data Value = Box { child :: Value } | Leaf\n#if 1\nvalue = ${expression}\n#endif\n`;
     for (const source of [
       `${prefix}${body}following=1\n`,
-      `${prefix}#define import const (pure [])\n${body}import Prelude.True\nfollowing=1\n`,
+      ...(dialect === 'Haskell'
+        ? [`${prefix}#define import const (pure [])\n${body}import Prelude.True\nfollowing=1\n`]
+        : []),
     ]) {
       const tree = parser.parse(source)!;
       try {
@@ -287,8 +360,9 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
     }
   });
 
-  test(`${dialect} keeps macro definitions local to each full-parse input`, () => {
-    const macro = parser.parse('{-# LANGUAGE CPP #-}\nmodule Probe where\n#define import 1\nvalue=import\n')!;
+  test(`${dialect} keeps CPP source facts local to each full-parse input`, () => {
+    const source = dialect === 'Haskell' ? '#define import 1\nvalue=import\n' : '#if 0\nunused=1\n#endif\nvalue=1\n';
+    const macro = parser.parse(`{-# LANGUAGE CPP #-}\nmodule Probe where\n${source}`)!;
     try {
       expect(macro.rootNode.hasError).toBe(false);
     } finally {

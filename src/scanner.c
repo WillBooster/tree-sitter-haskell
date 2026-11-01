@@ -596,10 +596,12 @@ typedef struct {
   bool haddock;
 } Comment;
 
+enum { ImportMacroObject = 1, ImportMacroFunction = 2 };
+
 typedef struct {
   Comment comment;
-  bool import_macro_possible;
-  bool input_has_import_macro;
+  uint8_t import_macros;
+  uint8_t input_import_macros;
   bool input_has_cpp;
   bool definite_declaration;
   bool cpp_state_unknown;
@@ -2368,12 +2370,11 @@ static Lexed lex(Env *env, bool bol) {
 
 #ifdef HSC_EXT
 static void hsc_skip_cpp_else(Env *env, bool emit);
-static uint32_t hsc_cpp_start(Env *env, bool *braced);
 #endif
 
-static void track_import_macro(Env *env);
+static bool track_import_macro(Env *env);
 static uint32_t import_macro_space(Env *env, uint32_t start);
-static uint32_t cpp_splices(Env *env, uint32_t start);
+static uint32_t cpp_splices(Env *env, uint32_t start, bool spaced);
 static uint32_t import_macro_comment(Env *env, uint32_t start);
 static bool import_macro_word(Env *env, uint32_t *start, const char *word);
 
@@ -2412,65 +2413,72 @@ static Symbol cpp_line(Env *env) {
   CppDirective directive = cpp_directive(env);
   if (directive == CppStart) env->state->cpp_depth++;
   else if (directive == CppEnd && env->state->cpp_depth) env->state->cpp_depth--;
-  track_import_macro(env);
+  if (!track_import_macro(env)) return FAIL;
   take_cpp_line(env);
   return finish_marked(env, CPP, "cpp");
 }
 
-static void track_import_macro(Env *env) {
-  if (!char0(env, '#')) return;
+static bool track_import_macro(Env *env) {
+  if (!char0(env, '#') || char1(env, '!')) return true;
   env->state->input_has_cpp = true;
-#ifdef HSC_EXT
-  bool braced;
-  uint32_t start = hsc_cpp_start(env, &braced);
-#else
+#ifndef HSC_EXT
   uint32_t start = import_macro_space(env, 1);
-#endif
+  if (start == UINT32_MAX) return false;
   bool define = import_macro_word(env, &start, "define");
-  if (!define && !import_macro_word(env, &start, "undef")) return;
+  if (!define && !import_macro_word(env, &start, "undef")) return true;
   start = import_macro_space(env, start);
-  if (!import_macro_word(env, &start, "import")) return;
-  env->state->input_has_import_macro |= define;
-  if (define || (!env->state->cpp_state_unknown && env->state->cpp_depth == 0))
-    env->state->import_macro_possible = define;
+  if (start == UINT32_MAX) return false;
+  if (!import_macro_word(env, &start, "import")) return true;
+  State *state = env->state;
+  uint8_t kind = char_at(env, start, '(') ? ImportMacroFunction : ImportMacroObject;
+  if (define) state->input_import_macros |= kind;
+  if (!state->cpp_state_unknown && state->cpp_depth == 0) state->import_macros = define ? kind : 0;
+  else if (define) state->import_macros |= kind;
+#endif
+  return true;
 }
 
 static uint32_t import_macro_space(Env *env, uint32_t start) {
   for (;;) {
-    start = cpp_splices(env, start);
+    start = cpp_splices(env, start, true);
     if (is_space_char_or_tab(peek(env, start))) start++;
-    else if (char_at(env, start, '/') && char_at(env, cpp_splices(env, start + 1), '*'))
-      start = import_macro_comment(env, cpp_splices(env, start + 1) + 1);
+    else if (char_at(env, start, '/') && char_at(env, cpp_splices(env, start + 1, true), '*')) {
+      start = import_macro_comment(env, cpp_splices(env, start + 1, true) + 1);
+      if (start == UINT32_MAX) return start;
+    }
     else return start;
   }
 }
 
 static uint32_t import_macro_comment(Env *env, uint32_t start) {
   while (peek(env, start)) {
-    start = cpp_splices(env, start);
+    start = cpp_splices(env, start, true);
     if (peek(env, start++) == '*') {
-      start = cpp_splices(env, start);
+      start = cpp_splices(env, start, true);
       if (peek(env, start) == '/') return start + 1;
     }
   }
-  return start;
+  return UINT32_MAX;
 }
 
-static uint32_t cpp_splices(Env *env, uint32_t start) {
-  for (;;) {
-    if (char_at(env, start, '\\') && char_at(env, start + 1, '\n')) start += 2;
-    else if (char_at(env, start, '\\') && char_at(env, start + 1, '\r') && char_at(env, start + 2, '\n')) start += 3;
-    else return start;
+static uint32_t cpp_splices(Env *env, uint32_t start, bool spaced) {
+  while (char_at(env, start, '\\')) {
+    uint32_t end = start + 1;
+    if (spaced) while (is_space_or_tab(peek(env, end))) end++;
+    if (char_at(env, end, '\n')) start = end + 1;
+    else if (char_at(env, end, '\r') && char_at(env, end + 1, '\n')) start = end + 2;
+    else break;
   }
+  return start;
 }
 
 static bool import_macro_word(Env *env, uint32_t *start, const char *word) {
   uint32_t cursor = *start;
   for (; *word; word++) {
-    cursor = cpp_splices(env, cursor);
+    cursor = cpp_splices(env, cursor, true);
     if (peek(env, cursor++) != *word) return false;
   }
-  cursor = cpp_splices(env, cursor);
+  cursor = cpp_splices(env, cursor, true);
   if (is_identifier_char(peek(env, cursor)) || peek(env, cursor) == '_') return false;
   *start = cursor;
   return true;
@@ -3343,6 +3351,8 @@ static Symbol process_token_constraint(Env *env, Lexed next) {
 static Symbol sized_integer(Env *env);
 
 static Symbol non_import_declaration(Env *env);
+static bool import_macro_expands(Env *env);
+static bool import_macro_invocation(Env *env);
 
 static Symbol interior(Env *env, bool whitespace) {
   Lexed next = lex(env, false);
@@ -3363,8 +3373,7 @@ static Symbol interior(Env *env, bool whitespace) {
 static Symbol non_import_declaration(Env *env) {
   if ((!valid(env, NON_IMPORT_DECLARATION) && !valid(env, CPP_IMPORT)) || char0(env, ';')) return FAIL;
   State *state = env->state;
-  if (token(env, "import") && !state->import_macro_possible
-      && !(state->cpp_state_unknown && state->input_has_import_macro)) {
+  if (token(env, "import") && !import_macro_expands(env)) {
     if (valid(env, CPP_IMPORT) && state->input_has_cpp && !state->definite_declaration)
       return finish(CPP_IMPORT, "CPP-dependent import");
     return FAIL;
@@ -3372,6 +3381,23 @@ static Symbol non_import_declaration(Env *env) {
   if (!valid(env, NON_IMPORT_DECLARATION)) return FAIL;
   if (!state->input_has_cpp) state->definite_declaration = true;
   return finish(NON_IMPORT_DECLARATION, "non-import declaration");
+}
+
+static bool import_macro_expands(Env *env) {
+  State *state = env->state;
+  uint8_t macros = state->import_macros;
+  if (state->cpp_state_unknown) macros |= state->input_import_macros;
+  return (macros & ImportMacroObject) || ((macros & ImportMacroFunction) && import_macro_invocation(env));
+}
+
+static bool import_macro_invocation(Env *env) {
+  uint32_t cursor = 6;
+  for (;;) {
+    cursor = import_macro_space(env, cursor);
+    if (cursor == UINT32_MAX) return false;
+    if (is_newline(peek(env, cursor))) cursor++;
+    else return char_at(env, cursor, '(');
+  }
 }
 
 static bool constraint_lookahead_valid(Env *env) {
@@ -3683,8 +3709,8 @@ unsigned tree_sitter_haskell_external_scanner_serialize(void *payload, char *buf
 
 static unsigned serialize_cpp_state(const State *state, char *buffer, unsigned length) {
   unsigned prefix = length;
-  uint32_t flags = state->import_macro_possible | (state->cpp_state_unknown << 1)
-    | (state->definite_declaration << 2);
+  uint32_t flags = state->import_macros | (state->cpp_state_unknown << 2)
+    | (state->definite_declaration << 3);
   if (serialize_uint(buffer, &length, ContextCppState)
       && serialize_uint(buffer, &length, flags)
       && serialize_uint(buffer, &length, state->cpp_depth)) return length;
@@ -3697,7 +3723,7 @@ void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char 
   State *state = (State *) payload;
   state->contexts.size = 0;
   state->comment = (Comment) {0};
-  state->import_macro_possible = false;
+  state->import_macros = 0;
   state->definite_declaration = false;
   state->cpp_state_unknown = length > 0;
   state->cpp_depth = 0;
@@ -3722,9 +3748,9 @@ void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char 
       uint32_t tag = deserialize_uint(&cursor, end);
       if (tag == ContextCppState) {
         uint32_t cpp_flags = deserialize_uint(&cursor, end);
-        state->import_macro_possible = cpp_flags & 1;
-        state->cpp_state_unknown = cpp_flags & 2;
-        state->definite_declaration = cpp_flags & 4;
+        state->import_macros = cpp_flags & 3;
+        state->cpp_state_unknown = cpp_flags & 4;
+        state->definite_declaration = cpp_flags & 8;
         state->cpp_depth = deserialize_uint(&cursor, end);
         break;
       }
