@@ -515,28 +515,6 @@ import A (A (type (#), data A, data a), data A, data a, data (+))
             (operator)))))))
 
 ================================================================================
-import: partially typed import before the end of the block
-================================================================================
-
-import A
-impo
-import A
-
---------------------------------------------------------------------------------
-
-(haskell
-  (imports
-    (import
-      (module
-        (module_id))))
-  (declarations
-    (top_splice
-      (variable))
-    (import
-      (module
-        (module_id)))))
-
-================================================================================
 import: linear arrow as value operator
 ================================================================================
 

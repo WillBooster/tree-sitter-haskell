@@ -7917,17 +7917,8 @@
                 ]
               },
               {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "declaration"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "import"
-                  }
-                ]
+                "type": "SYMBOL",
+                "name": "declaration"
               }
             ]
           }
@@ -15470,5 +15461,12 @@
     "qualifier",
     "guard"
   ],
-  "reserved": {}
+  "reserved": {
+    "global": [
+      {
+        "type": "STRING",
+        "value": "import"
+      }
+    ]
+  }
 }
