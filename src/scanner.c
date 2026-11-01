@@ -168,7 +168,8 @@ typedef enum {
   UNBOXED_LABEL_START,
   SIZED_INTEGER,
   NON_IMPORT_DECLARATION,
-  CPP_IMPORT,
+  CPP_DECLARATION,
+  CPP_INITIAL,
 #ifdef HSC_EXT
   HSC_START_BRACE,
   HSC_HASH,
@@ -236,7 +237,8 @@ static const char *sym_names[] = {
   "unboxed_label_start",
   "sized_integer",
   "non_import_declaration",
-  "cpp_import",
+  "cpp_declaration",
+  "cpp_initial",
 #ifdef HSC_EXT
   "hsc_start_brace",
   "hsc_hash",
@@ -3356,7 +3358,9 @@ static Symbol process_token_constraint(Env *env, Lexed next) {
 static Symbol sized_integer(Env *env);
 
 static Symbol non_import_declaration(Env *env);
-static bool import_macro_expands(Env *env);
+static Symbol import_declaration_boundary(Env *env);
+static uint8_t possible_import_macros(Env *env);
+static bool parenthesized_import_macro(Env *env);
 static bool import_macro_invocation(Env *env);
 
 static Symbol interior(Env *env, bool whitespace) {
@@ -3376,26 +3380,36 @@ static Symbol interior(Env *env, bool whitespace) {
 }
 
 static Symbol non_import_declaration(Env *env) {
-  if ((!valid(env, NON_IMPORT_DECLARATION) && !valid(env, CPP_IMPORT)) || char0(env, ';')) return FAIL;
+  if ((!valid(env, NON_IMPORT_DECLARATION) && !valid(env, CPP_DECLARATION) && !valid(env, CPP_INITIAL))
+      || char0(env, ';')) return FAIL;
   State *state = env->state;
 #ifdef HSC_EXT
   if (char0(env, '#') && cpp_directive(env) == CppNothing) state->input_has_cpp = true;
 #endif
-  if (token(env, "import") && !import_macro_expands(env)) {
-    if (valid(env, CPP_IMPORT) && state->input_has_cpp && !state->definite_declaration)
-      return finish(CPP_IMPORT, "CPP-dependent import");
-    return FAIL;
-  }
+  if (token(env, "import")) return import_declaration_boundary(env);
   if (!valid(env, NON_IMPORT_DECLARATION)) return FAIL;
   if (!state->input_has_cpp) state->definite_declaration = true;
   return finish(NON_IMPORT_DECLARATION, "non-import declaration");
 }
 
-static bool import_macro_expands(Env *env) {
+static Symbol import_declaration_boundary(Env *env) {
+  if (parenthesized_import_macro(env))
+    return finish_if_valid(env, NON_IMPORT_DECLARATION, "macro call declaration");
+  bool uncertain_macro = possible_import_macros(env) & ImportMacroObject;
+  if (uncertain_macro && valid(env, CPP_INITIAL)) return finish(CPP_INITIAL, "CPP initial alternatives");
   State *state = env->state;
-  uint8_t macros = state->import_macros;
-  if (state->cpp_state_unknown) macros |= state->input_import_macros;
-  return (macros & ImportMacroObject) || ((macros & ImportMacroFunction) && import_macro_invocation(env));
+  if (valid(env, CPP_DECLARATION) && (uncertain_macro || (state->input_has_cpp && !state->definite_declaration)))
+    return finish(CPP_DECLARATION, "CPP declaration alternatives");
+  return FAIL;
+}
+
+static uint8_t possible_import_macros(Env *env) {
+  State *state = env->state;
+  return state->import_macros | (state->cpp_state_unknown ? state->input_import_macros : 0);
+}
+
+static bool parenthesized_import_macro(Env *env) {
+  return possible_import_macros(env) && import_macro_invocation(env);
 }
 
 static bool import_macro_invocation(Env *env) {

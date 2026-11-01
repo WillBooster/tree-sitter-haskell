@@ -27,14 +27,15 @@ const cppMacroPrograms = [
     splices: [],
   },
   {
-    name: 'object macro splice',
+    name: 'object macro form',
     source:
       '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define import const (pure [])\nimport Prelude.True\nfollowing=2\n',
     bindings: ['seed', 'following'],
-    splices: ['import Prelude.True'],
+    splices: [],
+    imports: ['import Prelude.True'],
   },
   {
-    name: 'function macro splice',
+    name: 'function macro call',
     source:
       '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define import(value) const (pure []) value\nimport(Prelude.True)\nfollowing=2\n',
     bindings: ['seed', 'following'],
@@ -45,42 +46,48 @@ const cppMacroPrograms = [
     source:
       '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#if 0\n-- inactive\n#else\n#define import const (pure [])\n#endif\nimport Prelude.True\nfollowing=2\n',
     bindings: ['seed', 'following'],
-    splices: ['import Prelude.True'],
+    splices: [],
+    imports: ['import Prelude.True'],
   },
   {
     name: 'conditional undefinition',
     source:
       '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define import const (pure [])\n#if 0\n#undef import\n#endif\nimport Prelude.True\nfollowing=2\n',
     bindings: ['seed', 'following'],
-    splices: ['import Prelude.True'],
+    splices: [],
+    imports: ['import Prelude.True'],
   },
   {
     name: 'NUL in a closed C comment',
     source:
       '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define /* comment\0 */ import const (pure [])\nimport Prelude.True\nfollowing=2\n',
     bindings: ['seed', 'following'],
-    splices: ['import Prelude.True'],
+    splices: [],
+    imports: ['import Prelude.True'],
   },
   {
     name: 'multiline comment in definition',
     source:
       '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define /* comment\n-- */ import const (pure [])\nimport Prelude.True\nfollowing=2\n',
     bindings: ['seed', 'following'],
-    splices: ['import Prelude.True'],
+    splices: [],
+    imports: ['import Prelude.True'],
   },
   {
     name: 'comment-separated definition',
     source:
       '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define/* gap */import const (pure [])\nimport Prelude.True\nfollowing=2\n',
     bindings: ['seed', 'following'],
-    splices: ['import Prelude.True'],
+    splices: [],
+    imports: ['import Prelude.True'],
   },
   {
     name: 'spliced macro name',
     source:
       '{-# LANGUAGE CPP, TemplateHaskell #-}\nmodule Probe where\nseed=()\n#define im\\\nport const (pure [])\nimport Prelude.True\nfollowing=2\n',
     bindings: ['seed', 'following'],
-    splices: ['import Prelude.True'],
+    splices: [],
+    imports: ['import Prelude.True'],
   },
 ];
 
@@ -204,18 +211,27 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
   });
 
   if (dialect === 'Haskell') {
-    test.each(cppMacroPrograms)(`${dialect} retains local import macros: $name`, ({ source, bindings, splices }) => {
-      const tree = parser.parse(source)!;
-      try {
-        expect(tree.rootNode.hasError, source).toBe(false);
-        expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
-          bindings
-        );
-        expect(tree.rootNode.descendantsOfType('top_splice').map((node) => node.text)).toEqual(splices);
-      } finally {
-        tree.delete();
+    test.each(cppMacroPrograms)(
+      `${dialect} retains local import macros: $name`,
+      ({ source, bindings, splices, imports = [] }) => {
+        const tree = parser.parse(source)!;
+        try {
+          expect(tree.rootNode.hasError, source).toBe(false);
+          expect(tree.rootNode.descendantsOfType('bind').map((node) => node.childForFieldName('name')?.text)).toEqual(
+            bindings
+          );
+          expect(tree.rootNode.descendantsOfType('top_splice').map((node) => node.text)).toEqual(splices);
+          expect(
+            tree.rootNode
+              .descendantsOfType('import')
+              .filter((node) => node.isNamed)
+              .map((node) => node.text)
+          ).toEqual(imports);
+        } finally {
+          tree.delete();
+        }
       }
-    });
+    );
   }
 
   test.each([
@@ -242,7 +258,12 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
       const tree = parser.parse(source)!;
       try {
         expect(tree.rootNode.hasError).toBe(false);
-        expect(tree.rootNode.descendantsOfType('top_splice').map((node) => node.text)).toContain('import Prelude.True');
+        expect(
+          tree.rootNode
+            .descendantsOfType('import')
+            .filter((node) => node.isNamed)
+            .map((node) => node.text)
+        ).toEqual(['import Prelude.True']);
         expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following=2');
       } finally {
         tree.delete();
@@ -322,6 +343,22 @@ for (const [dialect, parser] of ['Haskell', 'HSC'].map((name, index) => [name, p
       }
     );
   }
+
+  test.each(['#if 0\n#define import 1\n#endif\n', '#ifdef FOO\n#define import 1\n#else\n#undef import\n#endif\n'])(
+    `${dialect} preserves ordinary imports with uncertain macro bindings: %j`,
+    (directives) => {
+      const tree = parser.parse(`{-# LANGUAGE CPP #-}\nmodule Probe where\n${directives}import Data.Maybe\nx=1\n`)!;
+      try {
+        expect(tree.rootNode.hasError).toBe(false);
+        expect(tree.rootNode.childForFieldName('imports')?.namedChildren.map((node) => node.text)).toEqual([
+          'import Data.Maybe',
+        ]);
+        expect(tree.rootNode.descendantsOfType('top_splice')).toHaveLength(0);
+      } finally {
+        tree.delete();
+      }
+    }
+  );
 
   test.each(cppImportRejections)(`${dialect} rejects late imports after $name`, ({ source }) => {
     const tree = parser.parse(source)!;

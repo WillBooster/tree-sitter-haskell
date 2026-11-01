@@ -144,16 +144,26 @@ module.exports = {
 
   _non_import_declaration: $ => seq($._cond_non_import_declaration, $.declaration),
 
-  _cpp_import: $ => seq($._cond_cpp_import, $.import),
+  _cpp_declaration: $ => seq($._cond_cpp_declaration, choice($.import, $.declaration)),
+
+  _cpp_initial_declarations: $ => seq($.declaration,
+    repeat(seq(semi($), choice($._non_import_declaration, $._cpp_declaration))), semi_opt($)),
+
+  _cpp_initial_body: $ => seq($._cond_cpp_initial,
+    field('imports', optional($.imports)),
+    field('declarations', optional(alias($._cpp_initial_declarations, $.declarations))),
+  ),
 
   declarations: $ => seq($._non_import_declaration,
-    repeat(seq(semi($), choice($._non_import_declaration, $._cpp_import))), semi_opt($)),
+    repeat(seq(semi($), choice($._non_import_declaration, $._cpp_declaration))), semi_opt($)),
 
   _body: $ => seq(
     choice($._cmd_layout_start, alias($._cmd_layout_start_explicit, '{')),
     semi_opt($),
-    field('imports', optional($.imports)),
-    field('declarations', optional($.declarations)),
+    choice($._cpp_initial_body, seq(
+      field('imports', optional($.imports)),
+      field('declarations', optional($.declarations)),
+    )),
     $._layout_end,
   ),
 
