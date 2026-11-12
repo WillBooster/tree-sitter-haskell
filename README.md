@@ -13,7 +13,7 @@ Haskell grammar for [tree-sitter](https://github.com/tree-sitter/tree-sitter), f
 to its authors and contributors. This is not an official release of that project.
 
 This fork is based on upstream's version 0.23.1 grammar and generates the parser with the
-[WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parser carries that fork's own ABI number. This package supports the fork's runtime version 17.0.1 or later within 17.x; upstream's runtime rejects it.
+[WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parser carries ABI `0x5742000c`, which upstream Tree-sitter runtimes reject. This package requires the fork's runtime (`@willbooster/web-tree-sitter` / `willbooster-tree-sitter`) version 19.1.1 or later within 19.x: 17.x and 18.x WillBooster runtimes share ABI `0x5742000c` and pass the ABI check, but 19.1.0 and later omit unused `TSLanguage` tables that pre-19.1.0 runtimes dereference.
 [Upstream's README at that version](https://github.com/tree-sitter/tree-sitter-haskell/blob/v0.23.1/README.md) lists
 the supported language extensions. The fork's node contracts are described below.
 
@@ -51,7 +51,7 @@ the trees that error recovery produces may change; such changes are released as 
 ## Usage
 
 The npm package ships `tree-sitter-haskell.wasm` for
-[@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter) version 17.0.1 or later within 17.x, which runs in Node.js, Bun, browsers, and Cloudflare Workers. In Node.js and Bun, load the grammar from its path:
+[@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter) version 19.1.1 or later within 19.x, which runs in Node.js, Bun, browsers, and Cloudflare Workers. In Node.js and Bun, load the grammar from its path:
 
 ```js
 import { fileURLToPath } from 'node:url';
@@ -96,20 +96,20 @@ For [hsc2hs](https://github.com/haskell/hsc2hs) source in `.hsc` files, load `tr
 
 Function and type declaration-head parentheses are anonymous syntax: the enclosing declaration directly exposes its `name`, parameter groups and infix `head` fields. Parentheses inside parameters and types retain their existing nodes. A grouped variable name, including a qualified name, uses one `parenthesized_name` node with a direct name child, independent of grouping depth. A symbolic variable operator keeps its required prefix parentheses in `prefix_id`: `(<+>)` and `(Demo.<+>)` remain `prefix_id`, while redundant grouping such as `((<+>))` adds one `parenthesized_name` wrapper around that node. This also applies to unapplied names. A parenthesized simple binding name uses `parenthesized_name` in the `bind` node's `name` field, retaining one wrapper at any grouping depth. Complex expressions retain ordinary `parens` nodes. These changes affect public syntax trees.
 
-Local `where` clauses form a `where_clause` node spanning the keyword and its binding block. Enclosing bindings, functions and case alternatives expose it through their `binds` field; the clause's optional `binds` field contains `local_binds`. The latter's `decl` fields and source ranges are unchanged. This provides a single named node for selecting or identifying the scope of `where` without including the enclosing declaration. For `let`, `binds` directly contains `local_binds`. Queries can still capture sibling `"where"` and `local_binds` nodes to obtain their separate ranges.
+Local `where` clauses form a `where_clause` node spanning the keyword and its binding block. Enclosing bindings, functions and case alternatives expose it through their `binds` field; the clause's optional `binds` field contains `local_binds`. The latter's `decl` fields and source ranges are unchanged. This provides a single named node for selecting or identifying the scope of `where` without including the enclosing declaration. For `let`, `binds` directly contains `local_binds`. Sibling `"where"` and `local_binds` children remain available with their separate ranges.
 
 Operator uses retain unresolved source order. Expressions use `operator_chain` with repeated `operand` and `operator` fields: `6 * 7 == 42` has operands `6`, `7`, `42` and operators `*`, `==`. Application stays inside an operand; explicit parentheses and greedy block bodies retain their own grouping. A `prefix_operator` field records each named `prefix_negation` token at its source position, including unary-only chains. Its semantic extent depends on fixities and language extensions, so the tree does not assign it an operand subtree.
 
 Type, pattern and constraint operators use `infix_chain` with repeated `operand` and `operator` fields, even for a single operator. Function, type and data declaration heads retain the `infix` node because they define one operator.
 
-Queries distinguish operands through the `expression_operand`, `type_operand`, `pattern_operand`, `binding_pattern_operand` and `constraint_operand` supertypes. For example, `(expression_operand/variable)` selects an expression variable and `(binding_pattern_operand/variable)` selects an explicit module-binding name. Match chains directly with `(operator_chain)` or `(infix_chain)` and their fields. The concrete operand node names remain shared across contexts. A `binding_field_pattern/field_pattern` with a `field` field and no `pattern` field is a module binding record pun. The `decl` supertype covers bindings in local blocks and declaration quotes, except multiplicity-annotated local bindings, which are `bind` nodes directly; module declarations use `declaration`.
+Node schemas (`src/node-types.json` and `hsc/src/node-types.json`) distinguish operands through the `expression_operand`, `type_operand`, `pattern_operand`, `binding_pattern_operand` and `constraint_operand` supertypes while keeping shared concrete operand node names across contexts. Inspect chains directly through `operator_chain` or `infix_chain` and their fields. A `field_pattern` under `binding_field_pattern` with a `field` field and no `pattern` field is a module binding record pun. The `decl` supertype covers bindings in local blocks and declaration quotes, except multiplicity-annotated local bindings, which are `bind` nodes directly; module declarations use `declaration`.
 
 In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-haskell) and on
 [willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter), the runtime this package is tested and
 fuzzed with:
 
 ```sh
-cargo add willbooster-tree-sitter@17.0.1 --rename tree-sitter
+cargo add willbooster-tree-sitter@19.1.1 --rename tree-sitter
 cargo add willbooster-tree-sitter-haskell --rename tree-sitter-haskell
 ```
 

@@ -102,7 +102,7 @@ static bool hsc_cpp_boundary(Env *env) {
 }
 
 static bool hsc_text_symbol(int32_t c) {
-  return c > 0 && c < 128 && strchr("!#$%&*+./<=>?@\\^|-~", c) != NULL;
+  return c != ':' && ascii_symop_char(c);
 }
 
 static void hsc_skip_text(Env *env) {

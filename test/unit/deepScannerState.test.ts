@@ -64,18 +64,17 @@ test.each(languages.flatMap((name) => [false, true].map((debug) => ({ name, debu
     const workspace = fs.mkdtempSync(path.join(root, '.tmp/deep-scanner-'));
     try {
       const input = path.join(workspace, 'input.hs');
-      const query = path.join(workspace, 'names.scm');
-      fs.writeFileSync(query, '(declarations (bind name: (variable) @name))');
+      const output = path.join(workspace, 'output.txt');
+      const config = path.join(workspace, 'config.json');
+      fs.writeFileSync(config, '{}');
       const library = path.join(workspace, `${name}-${debug ? 'debug' : 'optimized'}.dylib`);
-      run(['build', ...(debug ? ['-0'] : []), '-o', library, name === 'hsc' ? 'hsc' : '.']);
+      run(['build', ...(debug ? ['-0'] : []), '-o', library, name === 'hsc' ? 'hsc' : '.'], output);
       for (const { label, source } of examples) {
         fs.writeFileSync(input, source);
-        const arguments_ = ['--lib-path', library, '--lang-name', name];
-        run(['parse', ...arguments_, '--quiet', input]);
-        const output = run(['query', ...arguments_, query, input]);
+        const tail = run(['parse', '--config-path', config, '--lib-path', library, '--lang-name', name, input], output);
         const row = source.split('\n').length - 2;
-        expect(output, `${name} ${label}, debug ${debug}`).toContain(
-          `capture: 0 - name, start: (${row}, 0), end: (${row}, 9), text: \`following\``
+        expect(tail, `${name} ${label}, debug ${debug}`).toContain(
+          `    (bind [${row}, 0] - [${row}, 13]\n      name: (variable [${row}, 0] - [${row}, 9])`
         );
       }
     } finally {
@@ -103,15 +102,29 @@ function bracedSource(depth: number): string {
   return `value = (${'let { x = ('.repeat(depth)}deep${') } in x'.repeat(depth)})\nfollowing = 1\n`;
 }
 
-function run(arguments_: string[]): string {
-  const result = spawnSync('script/tree-sitter', arguments_, {
-    cwd: root,
-    encoding: 'utf8',
-    timeout: 120_000,
-    stdio: ['ignore', 'pipe', 'ignore'],
-    maxBuffer: 16 * 1024 * 1024,
-  });
+function run(arguments_: string[], outputPath: string): string {
+  const fd = fs.openSync(outputPath, 'w');
+  let result;
+  try {
+    result = spawnSync('script/tree-sitter', arguments_, {
+      cwd: root,
+      timeout: 120_000,
+      stdio: ['ignore', fd, 'ignore'],
+    });
+  } finally {
+    fs.closeSync(fd);
+  }
+  const size = fs.statSync(outputPath).size;
+  const length = Math.min(size, 4096);
+  const buffer = Buffer.alloc(length);
+  const readFd = fs.openSync(outputPath, 'r');
+  try {
+    fs.readSync(readFd, buffer, 0, length, size - length);
+  } finally {
+    fs.closeSync(readFd);
+  }
+  const tail = buffer.toString('utf8');
   expect(result.error, arguments_.join(' ')).toBeUndefined();
-  expect(result.status, arguments_.join(' ') + result.stdout).toBe(0);
-  return result.stdout;
+  expect(result.status, `${arguments_.join(' ')}\n${tail}`).toBe(0);
+  return tail;
 }

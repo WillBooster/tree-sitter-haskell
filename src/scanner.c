@@ -66,7 +66,6 @@
 #include "unicode.h"
 #include <assert.h>
 #include <stdbool.h>
-#include <string.h>
 
 #define PEEK env->lexer->lookahead
 
@@ -658,7 +657,7 @@ static Env env_new(TSLexer *l, const bool * symbols, State *state) {
   };
 }
 
-static void reset_newline(Env *env) { memset(&env->state->newline, 0, sizeof(Newline)); }
+static void reset_newline(Env *env) { env->state->newline = (Newline) {0}; }
 
 static bool newline_active(Env *env) { return env->state->newline.state == NInit || env->state->newline.state == NProcess; }
 
@@ -668,9 +667,11 @@ static bool newline_init(Env *env) { return env->state->newline.state == NInit; 
 // Lexer interaction
 // --------------------------------------------------------------------------------------------------------
 
-static bool is_eof(Env *env) { return env->lexer->eof(env->lexer); }
+static inline bool lexer_eof(TSLexer *lexer) { return lexer->lookahead == 0 && lexer->eof(lexer); }
 
-static bool not_eof(Env *env) { return !(is_eof(env)); }
+static inline bool is_eof(Env *env) { return lexer_eof(env->lexer); }
+
+static inline bool not_eof(Env *env) { return !is_eof(env); }
 
 #ifdef TREE_SITTER_DEBUG
 static uint32_t column(Env *env) {
@@ -1097,27 +1098,19 @@ static bool is_inner_id_char(const int32_t c) {
 
 static bool quoter_char(const int32_t c) { return is_id_char(c) || c == '.'; }
 
-static bool reserved_symbolic(const int32_t c) {
-  switch (c) {
-    case '(':
-    case ')':
-    case ',':
-    case ';':
-    case '[':
-    case ']':
-    case '`':
-    case '{':
-    case '}':
-    case '"':
-    case '\'':
-    case '_':
-      return true;
-    default: return false;
-  }
+static inline bool ascii_symop_char(int32_t c) {
+  static const uint64_t bits[2] = {
+    (1ULL << '!') | (1ULL << '#') | (1ULL << '$') | (1ULL << '%') | (1ULL << '&')
+      | (1ULL << '*') | (1ULL << '+') | (1ULL << '-') | (1ULL << '.') | (1ULL << '/')
+      | (1ULL << ':') | (1ULL << '<') | (1ULL << '=') | (1ULL << '>') | (1ULL << '?'),
+    (1ULL << ('@' - 64)) | (1ULL << ('\\' - 64)) | (1ULL << ('^' - 64))
+      | (1ULL << ('|' - 64)) | (1ULL << ('~' - 64)),
+  };
+  return (uint32_t) c < 128 && ((bits[(uint32_t) c >> 6] >> (c & 63)) & 1) != 0;
 }
 
-static bool symop_char(const int32_t c) {
-  return is_symop_char(c) && !reserved_symbolic(c);
+static inline bool symop_char(const int32_t c) {
+  return (uint32_t) c < 128 ? ascii_symop_char(c) : is_symop_char(c);
 }
 
 /**
@@ -1294,13 +1287,11 @@ static void debug_finish(Env *env, Symbol result) {
  * This advances only over matching characters.
  */
 static bool seq_from(Env *env, const char *restrict s, uint32_t start) {
-  uint32_t len = (uint32_t) strlen(s);
-  for (uint32_t i = 0; i < len; i++) {
-    int32_t c = s[i];
-    int32_t c2 = peek(env, start + i);
-    if (c != c2) return false;
+  uint32_t i = 0;
+  for (; s[i] != '\0'; i++) {
+    if (peek(env, start + i) != (unsigned char) s[i]) return false;
   }
-  peek(env, start + len);
+  peek(env, start + i);
   return true;
 }
 
@@ -1411,17 +1402,19 @@ static bool token_end(int32_t c) { return !is_inner_id_char(c); }
  * Check if lookahead contains the string `s` starting at position `offset + start`, followed by a non-id character.
  * See `seq`.
  */
-#ifndef HSC_EXT
 static bool token_from(Env *env, const char *restrict s, uint32_t start) {
-  return seq_from(env, s, start) && token_end(peek(env, start + (uint32_t) strlen(s)));
+  uint32_t i = 0;
+  for (; s[i] != '\0'; i++) {
+    if (peek(env, start + i) != (unsigned char) s[i]) return false;
+  }
+  return token_end(peek(env, start + i));
 }
-#endif
 
 /**
  * `token_from` at the current offset.
  */
 static bool token(Env *env, const char *restrict s) {
-  return seq(env, s) && token_end(peek(env, (uint32_t) strlen(s)));
+  return token_from(env, s, 0);
 }
 
 /**
@@ -1438,7 +1431,11 @@ static bool any_token_from(Env *env, size_t n, const char * tokens[], uint32_t s
 #endif
 
 static bool match_symop(Env *env, const char *restrict target) {
-  return symop_lookahead(env) == strlen(target) && seq(env, target);
+  uint32_t len = symop_lookahead(env);
+  for (uint32_t i = 0; i < len; i++) {
+    if (target[i] == '\0' || unsafe_peek(env, i) != (unsigned char) target[i]) return false;
+  }
+  return target[len] == '\0';
 }
 
 static bool uninitialized(Env *env) { return !has_contexts(env); }
@@ -3546,7 +3543,7 @@ static bool parenthesized_label(Env *env) {
 }
 
 static bool label_before_closing_paren(TSLexer *lexer) {
-  while (!lexer->eof(lexer)) {
+  while (!lexer_eof(lexer)) {
     while (is_string_gap_space(lexer->lookahead)) lexer->advance(lexer, false);
     switch (lexer->lookahead) {
       case ')': return true;
@@ -3564,7 +3561,7 @@ static bool label_before_closing_paren(TSLexer *lexer) {
 
 static bool skip_quoted_label(TSLexer *lexer) {
   lexer->advance(lexer, false);
-  while (!lexer->eof(lexer)) {
+  while (!lexer_eof(lexer)) {
     switch (lexer->lookahead) {
       case '"':
         lexer->advance(lexer, false);
@@ -3587,7 +3584,7 @@ static bool skip_label_escape(TSLexer *lexer) {
   } else if (lexer->lookahead == '^') {
     lexer->advance(lexer, false);
   }
-  if (lexer->eof(lexer)) return false;
+  if (lexer_eof(lexer)) return false;
   lexer->advance(lexer, false);
   return true;
 }
@@ -3597,7 +3594,7 @@ static bool skip_label_block_comment(TSLexer *lexer) {
   if (lexer->lookahead != '-') return false;
   lexer->advance(lexer, false);
   uint32_t depth = 1;
-  while (depth && !lexer->eof(lexer)) {
+  while (depth && !lexer_eof(lexer)) {
     int32_t previous = lexer->lookahead;
     lexer->advance(lexer, false);
     if ((previous == '{' && lexer->lookahead == '-') || (previous == '-' && lexer->lookahead == '}')) {
@@ -3614,7 +3611,7 @@ static bool skip_label_line_comment(TSLexer *lexer) {
   if (lexer->lookahead != '-') return false;
   while (lexer->lookahead == '-') lexer->advance(lexer, false);
   if (symop_char(lexer->lookahead)) return false;
-  while (!lexer->eof(lexer) && !is_newline(lexer->lookahead)) lexer->advance(lexer, false);
+  while (!lexer_eof(lexer) && !is_newline(lexer->lookahead)) lexer->advance(lexer, false);
   return true;
 }
 
@@ -3677,6 +3674,8 @@ static bool integer_digit(int32_t c, unsigned radix) {
   return radix == 16 && ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
 }
 
+static bool primitive_integer_width(const char *width);
+
 static bool primitive_integer_type(TSLexer *lexer) {
   char name[7] = {0};
   unsigned length = 0;
@@ -3685,12 +3684,18 @@ static bool primitive_integer_type(TSLexer *lexer) {
     name[length++] = (char) lexer->lookahead;
     lexer->advance(lexer, false);
   }
-  const char *width;
-  if (strncmp(name, "Int", 3) == 0) width = name + 3;
-  else if (strncmp(name, "Word", 4) == 0) width = name + 4;
-  else return false;
-  return !*width || strcmp(width, "8") == 0 || strcmp(width, "16") == 0 ||
-    strcmp(width, "32") == 0 || strcmp(width, "64") == 0;
+  if (name[0] == 'I' && name[1] == 'n' && name[2] == 't') return primitive_integer_width(name + 3);
+  if (name[0] == 'W' && name[1] == 'o' && name[2] == 'r' && name[3] == 'd') return primitive_integer_width(name + 4);
+  return false;
+}
+
+static bool primitive_integer_width(const char *width) {
+  if (width[0] == '\0') return true;
+  if (width[1] == '\0') return width[0] == '8';
+  if (width[2] != '\0') return false;
+  return (width[0] == '1' && width[1] == '6')
+    || (width[0] == '3' && width[1] == '2')
+    || (width[0] == '6' && width[1] == '4');
 }
 
 static Symbol unboxed_label_start(Env *env, bool whitespace) {
@@ -3749,7 +3754,8 @@ enum {
   ContextRepeat = 1 << 4,
   ContextIndent = 1 << 5,
   ContextReference = 1 << 6,
-  ContextCppState = 1 << 7,
+  ContextCppState = ContextReference | 1,
+  CppHasDepth = 1 << 4,
   ContextSearchWindow = 64,
   ContextSortMask = ContextRepeat - 1,
 };
@@ -3765,11 +3771,14 @@ typedef struct {
 
 static bool serialize_contexts(const Contexts *contexts, char *buffer, unsigned *length, bool compress);
 static unsigned serialize_cpp_state(const State *state, char *buffer, unsigned length);
+static void deserialize_payload(State *state, const char *cursor, const char *end);
+static void deserialize_cpp_state(State *state, const char **cursor, const char *end);
+static void deserialize_context_run(Contexts *contexts, uint32_t tag, const char **cursor, const char *end);
 static bool serialize_context(char *buffer, unsigned *length, Context context, uint32_t count);
 static bool serialize_context_reference(char *buffer, unsigned *length, ContextMatch match);
 static void deserialize_context_reference(Contexts *contexts, const char **cursor, const char *end);
-static bool serialize_uint(char *buffer, unsigned *length, uint32_t value);
-static uint32_t deserialize_uint(const char **cursor, const char *end);
+static inline bool serialize_uint(char *buffer, unsigned *length, uint32_t value);
+static inline uint32_t deserialize_uint(const char **cursor, const char *end);
 static uint32_t context_run_length(const Contexts *contexts, uint32_t start);
 static ContextMatch context_match(const Contexts *contexts, uint32_t start);
 static ContextMatch context_match_at_distance(const Contexts *contexts, uint32_t start, uint32_t distance);
@@ -3789,13 +3798,15 @@ bool tree_sitter_haskell_external_scanner_scan(void *payload, TSLexer *lexer, co
 unsigned tree_sitter_haskell_external_scanner_serialize(void *payload, char *buffer) {
   State *state = (State *) payload;
   Newline newline = state->newline;
+  assert(newline.state != NInactive || (newline.end == 0 && newline.indent == 0));
   unsigned length = 0;
   uint32_t flags = newline.state | (newline.eof << 2) | (newline.no_semi << 3)
     | (newline.skip_semi << 4) | (newline.unsafe << 5)
     | (state->comment.active << 6) | (state->comment.block << 7) | (state->comment.haddock << 8);
-  if (!serialize_uint(buffer, &length, flags)
-      || !serialize_uint(buffer, &length, newline.end)
-      || !serialize_uint(buffer, &length, newline.indent)) return 0;
+  if (!serialize_uint(buffer, &length, flags)) return 0;
+  if (newline.state != NInactive
+      && (!serialize_uint(buffer, &length, newline.end)
+          || !serialize_uint(buffer, &length, newline.indent))) return 0;
   unsigned prefix = length;
   if (!serialize_contexts(&state->contexts, buffer, &length, false)) {
     length = prefix;
@@ -3807,15 +3818,13 @@ unsigned tree_sitter_haskell_external_scanner_serialize(void *payload, char *buf
 static unsigned serialize_cpp_state(const State *state, char *buffer, unsigned length) {
   unsigned prefix = length;
   uint32_t flags = state->import_macros | (state->cpp_state_unknown << 2)
-    | (state->definite_declaration << 3);
+    | (state->definite_declaration << 3) | ((state->cpp_depth > 0) ? CppHasDepth : 0);
   if (serialize_uint(buffer, &length, ContextCppState)
       && serialize_uint(buffer, &length, flags)
-      && serialize_uint(buffer, &length, state->cpp_depth)) return length;
+      && (state->cpp_depth == 0 || serialize_uint(buffer, &length, state->cpp_depth))) return length;
   return prefix;
 }
 
-// code-gauge-allow functionCognitiveComplexity 18 -- Prefix fields, context references, and the optional CPP trailer share one cursor-ordered wire format; splitting the decoder would separate their length invariants.
-// code-gauge-allow functionNcss 36 -- Prefix fields, context references, and the optional CPP trailer share one cursor-ordered wire format; splitting the decoder would separate their length invariants.
 void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
   State *state = (State *) payload;
   state->contexts.size = 0;
@@ -3825,47 +3834,56 @@ void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char 
   state->cpp_state_unknown = length > 0;
   state->cpp_depth = 0;
   state->newline = (Newline) {.state = NResume};
-  if (length > 0) {
-    const char *cursor = buffer;
-    const char *end = buffer + length;
-    uint32_t flags = deserialize_uint(&cursor, end);
-    state->comment = (Comment) {.active = flags & 64, .block = flags & 128, .haddock = flags & 256};
-    uint32_t newline_end = deserialize_uint(&cursor, end);
-    uint32_t newline_indent = deserialize_uint(&cursor, end);
-    state->newline = (Newline) {
-      .state = flags & 3,
-      .end = newline_end,
-      .indent = newline_indent,
-      .eof = flags & 4,
-      .no_semi = flags & 8,
-      .skip_semi = flags & 16,
-      .unsafe = flags & 32,
-    };
-    while (cursor < end) {
-      uint32_t tag = deserialize_uint(&cursor, end);
-      if (tag == ContextCppState) {
-        uint32_t cpp_flags = deserialize_uint(&cursor, end);
-        state->import_macros = cpp_flags & 3;
-        state->cpp_state_unknown = cpp_flags & 4;
-        state->definite_declaration = cpp_flags & 8;
-        state->cpp_depth = deserialize_uint(&cursor, end);
-        break;
-      }
-      if (tag == ContextReference) {
-        deserialize_context_reference(&state->contexts, &cursor, end);
-        continue;
-      }
-      uint32_t count = (tag & ContextRepeat) ? deserialize_uint(&cursor, end) + 1 : 1;
-      Context context = {
-        .sort = tag & ContextSortMask,
-        .indent = (tag & ContextIndent) ? deserialize_uint(&cursor, end) : 0,
-      };
-      for (uint32_t i = 0; i < count; i++) array_push(&state->contexts, context);
-    }
-  }
+  if (length > 0) deserialize_payload(state, buffer, buffer + length);
   state->lookahead.size = 0;
   state->lookahead.offset = 0;
-  array_reserve(&state->lookahead, 8);
+}
+
+static void deserialize_payload(State *state, const char *cursor, const char *end) {
+  uint32_t flags = deserialize_uint(&cursor, end);
+  state->comment = (Comment) {.active = flags & 64, .block = flags & 128, .haddock = flags & 256};
+  uint32_t newline_state = flags & 3;
+  uint32_t newline_end = 0;
+  uint32_t newline_indent = 0;
+  if (newline_state != NInactive) {
+    newline_end = deserialize_uint(&cursor, end);
+    newline_indent = deserialize_uint(&cursor, end);
+  }
+  state->newline = (Newline) {
+    .state = newline_state,
+    .end = newline_end,
+    .indent = newline_indent,
+    .eof = flags & 4,
+    .no_semi = flags & 8,
+    .skip_semi = flags & 16,
+    .unsafe = flags & 32,
+  };
+  while (cursor < end) {
+    uint32_t tag = deserialize_uint(&cursor, end);
+    if (tag == ContextCppState) {
+      deserialize_cpp_state(state, &cursor, end);
+      break;
+    }
+    if (tag == ContextReference) deserialize_context_reference(&state->contexts, &cursor, end);
+    else deserialize_context_run(&state->contexts, tag, &cursor, end);
+  }
+}
+
+static void deserialize_cpp_state(State *state, const char **cursor, const char *end) {
+  uint32_t cpp_flags = deserialize_uint(cursor, end);
+  state->import_macros = cpp_flags & 3;
+  state->cpp_state_unknown = cpp_flags & 4;
+  state->definite_declaration = cpp_flags & 8;
+  state->cpp_depth = (cpp_flags & CppHasDepth) ? deserialize_uint(cursor, end) : 0;
+}
+
+static void deserialize_context_run(Contexts *contexts, uint32_t tag, const char **cursor, const char *end) {
+  uint32_t count = (tag & ContextRepeat) ? deserialize_uint(cursor, end) + 1 : 1;
+  Context context = {
+    .sort = tag & ContextSortMask,
+    .indent = (tag & ContextIndent) ? deserialize_uint(cursor, end) : 0,
+  };
+  for (uint32_t i = 0; i < count; i++) array_push(contexts, context);
 }
 
 void tree_sitter_haskell_external_scanner_destroy(void *payload) {
@@ -3921,7 +3939,12 @@ static void deserialize_context_reference(Contexts *contexts, const char **curso
   }
 }
 
-static bool serialize_uint(char *buffer, unsigned *length, uint32_t value) {
+static inline bool serialize_uint(char *buffer, unsigned *length, uint32_t value) {
+  if (value < 128) {
+    if (*length == TREE_SITTER_SERIALIZATION_BUFFER_SIZE) return false;
+    buffer[(*length)++] = (char) value;
+    return true;
+  }
   do {
     if (*length == TREE_SITTER_SERIALIZATION_BUFFER_SIZE) return false;
     uint8_t byte = value & 127;
@@ -3931,9 +3954,12 @@ static bool serialize_uint(char *buffer, unsigned *length, uint32_t value) {
   return true;
 }
 
-static uint32_t deserialize_uint(const char **cursor, const char *end) {
-  uint32_t value = 0;
-  unsigned shift = 0;
+static inline uint32_t deserialize_uint(const char **cursor, const char *end) {
+  assert(*cursor < end);
+  uint8_t first = (uint8_t) *(*cursor)++;
+  if (first < 128) return first;
+  uint32_t value = first & 127;
+  unsigned shift = 7;
   uint8_t byte;
   do {
     assert(*cursor < end && shift < 32);
