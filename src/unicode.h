@@ -7,15 +7,35 @@ typedef struct {
   const uint8_t *bits;
 } UnicodeBlock;
 
+static const UnicodeBlock *unicode_find_block(int32_t c, const UnicodeBlock *blocks, uint32_t count);
+static const UnicodeBlock *unicode_bsearch_block(int32_t c, const UnicodeBlock *blocks, uint32_t count);
+
 static bool unicode_contains(int32_t c, const UnicodeBlock *blocks, uint32_t count) {
-  for (uint32_t i = 0; i < count; i++) {
-    if (c < blocks[i].first) return false;
-    if (c <= blocks[i].last) {
-      uint32_t offset = c - blocks[i].first;
-      return (blocks[i].bits[offset >> 3] & (1u << (offset & 7))) != 0;
-    }
+  if (c < blocks[0].first) return false;
+  const UnicodeBlock *block = c <= blocks[0].last ? &blocks[0] : unicode_find_block(c, blocks, count);
+  if (!block) return false;
+  uint32_t offset = (uint32_t) (c - block->first);
+  return (block->bits[offset >> 3] & (1u << (offset & 7))) != 0;
+}
+
+static const UnicodeBlock *unicode_find_block(int32_t c, const UnicodeBlock *blocks, uint32_t count) {
+  if (count > 4) return unicode_bsearch_block(c, blocks, count);
+  for (uint32_t i = 1; i < count; i++) {
+    if (c <= blocks[i].last) return c >= blocks[i].first ? &blocks[i] : 0;
   }
-  return false;
+  return 0;
+}
+
+static const UnicodeBlock *unicode_bsearch_block(int32_t c, const UnicodeBlock *blocks, uint32_t count) {
+  uint32_t low = 1;
+  uint32_t high = count;
+  while (low < high) {
+    uint32_t mid = low + ((high - low) >> 1);
+    if (c < blocks[mid].first) high = mid;
+    else if (c > blocks[mid].last) low = mid + 1;
+    else return &blocks[mid];
+  }
+  return 0;
 }
 
 static const uint8_t varid_start_0[] = {
@@ -1025,6 +1045,7 @@ static const UnicodeBlock varid_start_blocks[] = {
 };
 
 static bool is_varid_start_char(int32_t c) {
+  if ((uint32_t) c < 128) return (uint32_t) (c - 'a') < 26;
   return unicode_contains(c, varid_start_blocks, sizeof(varid_start_blocks) / sizeof(varid_start_blocks[0]));
 }
 
@@ -1298,6 +1319,7 @@ static const UnicodeBlock identifier_suffix_blocks[] = {
 };
 
 static bool is_identifier_suffix_char(int32_t c) {
+  if ((uint32_t) c < 128) return (uint32_t) (c - '0') < 10 || (uint32_t) (c - 'A') < 26;
   return unicode_contains(c, identifier_suffix_blocks, sizeof(identifier_suffix_blocks) / sizeof(identifier_suffix_blocks[0]));
 }
 
@@ -1396,6 +1418,7 @@ static const UnicodeBlock conid_start_blocks[] = {
 };
 
 static bool is_conid_start_char(int32_t c) {
+  if ((uint32_t) c < 128) return (uint32_t) (c - 'A') < 26;
   return unicode_contains(c, conid_start_blocks, sizeof(conid_start_blocks) / sizeof(conid_start_blocks[0]));
 }
 
@@ -1692,9 +1715,11 @@ static const UnicodeBlock space_blocks[] = {
 };
 
 static bool is_space_char(int32_t c) {
+  if ((uint32_t) c < 128) return c == ' ';
   return unicode_contains(c, space_blocks, sizeof(space_blocks) / sizeof(space_blocks[0]));
 }
 
 static bool is_identifier_char(int32_t c) {
+  if ((uint32_t) c < 128) return (uint32_t) ((c | 32) - 'a') < 26 || (uint32_t) (c - '0') < 10;
   return is_varid_start_char(c) || is_identifier_suffix_char(c);
 }

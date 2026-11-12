@@ -13,6 +13,12 @@ const categories = {
   symop: ['Pc', 'Pd', 'Po', 'Sc', 'Sk', 'Sm', 'So'],
   space: ['Zs'],
 };
+const asciiFastPaths = {
+  varid_start: "  if ((uint32_t) c < 128) return (uint32_t) (c - 'a') < 26;\n",
+  identifier_suffix: "  if ((uint32_t) c < 128) return (uint32_t) (c - '0') < 10 || (uint32_t) (c - 'A') < 26;\n",
+  conid_start: "  if ((uint32_t) c < 128) return (uint32_t) (c - 'A') < 26;\n",
+  space: "  if ((uint32_t) c < 128) return c == ' ';\n",
+};
 const root = path.resolve(import.meta.dirname, '..');
 const bytes = process.argv[2] ? await fs.readFile(process.argv[2]) : await readSource();
 assert.equal(createHash('sha256').update(bytes).digest('hex'), sourceSha256, 'Unexpected UnicodeData source');
@@ -23,7 +29,52 @@ const tables = Object.entries(categories).map(([name, selected]) =>
     points.filter((point) => selected.includes(point.category)).map((point) => point.value)
   )
 );
-const header = `#include <stdbool.h>\n#include <stdint.h>\n\ntypedef struct {\n  int32_t first;\n  int32_t last;\n  const uint8_t *bits;\n} UnicodeBlock;\n\nstatic bool unicode_contains(int32_t c, const UnicodeBlock *blocks, uint32_t count) {\n  for (uint32_t i = 0; i < count; i++) {\n    if (c < blocks[i].first) return false;\n    if (c <= blocks[i].last) {\n      uint32_t offset = c - blocks[i].first;\n      return (blocks[i].bits[offset >> 3] & (1u << (offset & 7))) != 0;\n    }\n  }\n  return false;\n}\n\n${tables.join('\n')}\nstatic bool is_identifier_char(int32_t c) {\n  return is_varid_start_char(c) || is_identifier_suffix_char(c);\n}\n`;
+const header = `#include <stdbool.h>
+#include <stdint.h>
+
+typedef struct {
+  int32_t first;
+  int32_t last;
+  const uint8_t *bits;
+} UnicodeBlock;
+
+static const UnicodeBlock *unicode_find_block(int32_t c, const UnicodeBlock *blocks, uint32_t count);
+static const UnicodeBlock *unicode_bsearch_block(int32_t c, const UnicodeBlock *blocks, uint32_t count);
+
+static bool unicode_contains(int32_t c, const UnicodeBlock *blocks, uint32_t count) {
+  if (c < blocks[0].first) return false;
+  const UnicodeBlock *block = c <= blocks[0].last ? &blocks[0] : unicode_find_block(c, blocks, count);
+  if (!block) return false;
+  uint32_t offset = (uint32_t) (c - block->first);
+  return (block->bits[offset >> 3] & (1u << (offset & 7))) != 0;
+}
+
+static const UnicodeBlock *unicode_find_block(int32_t c, const UnicodeBlock *blocks, uint32_t count) {
+  if (count > 4) return unicode_bsearch_block(c, blocks, count);
+  for (uint32_t i = 1; i < count; i++) {
+    if (c <= blocks[i].last) return c >= blocks[i].first ? &blocks[i] : 0;
+  }
+  return 0;
+}
+
+static const UnicodeBlock *unicode_bsearch_block(int32_t c, const UnicodeBlock *blocks, uint32_t count) {
+  uint32_t low = 1;
+  uint32_t high = count;
+  while (low < high) {
+    uint32_t mid = low + ((high - low) >> 1);
+    if (c < blocks[mid].first) high = mid;
+    else if (c > blocks[mid].last) low = mid + 1;
+    else return &blocks[mid];
+  }
+  return 0;
+}
+
+${tables.join('\n')}
+static bool is_identifier_char(int32_t c) {
+  if ((uint32_t) c < 128) return (uint32_t) ((c | 32) - 'a') < 26 || (uint32_t) (c - '0') < 10;
+  return is_varid_start_char(c) || is_identifier_suffix_char(c);
+}
+`;
 await fs.mkdir(path.join(root, '.tmp'), { recursive: true });
 const workspace = await fs.mkdtemp(path.join(root, '.tmp/unicode-'));
 try {
@@ -99,5 +150,6 @@ function generateTable(name, points) {
     return `static const uint8_t ${name}_${index}[] = {\n${rows.join('\n')}\n};\n`;
   });
   const blocks = groups.map((group, index) => `  {${group[0]}, ${group.at(-1)}, ${name}_${index}},`).join('\n');
-  return `${arrays.join('\n')}\nstatic const UnicodeBlock ${name}_blocks[] = {\n${blocks}\n};\n\nstatic bool is_${name}_char(int32_t c) {\n  return unicode_contains(c, ${name}_blocks, sizeof(${name}_blocks) / sizeof(${name}_blocks[0]));\n}\n`;
+  const fastPath = asciiFastPaths[name] ?? '';
+  return `${arrays.join('\n')}\nstatic const UnicodeBlock ${name}_blocks[] = {\n${blocks}\n};\n\nstatic bool is_${name}_char(int32_t c) {\n${fastPath}  return unicode_contains(c, ${name}_blocks, sizeof(${name}_blocks) / sizeof(${name}_blocks[0]));\n}\n`;
 }

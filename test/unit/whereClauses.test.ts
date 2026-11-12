@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { Language, type Node, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, type Node, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
@@ -97,7 +97,6 @@ test.each(languages.flatMap((language) => fixtures.map((fixture) => ({ ...fixtur
   '$dialect exposes $name and its variants as selectable where clauses',
   ({ language, source, clauses, bodyDeclarations, variants = [] }) => {
     const parser = new Parser().setLanguage(language);
-    const query = new Query(language, '(("where" @keyword) (local_binds) @body)');
     try {
       const replaced = [
         { before: '1', after: '22', clauses: clauses.map((text) => text.replace('1', '22')), bodyDeclarations },
@@ -110,13 +109,12 @@ test.each(languages.flatMap((language) => fixtures.map((fixture) => ({ ...fixtur
       for (const variant of [{ source, clauses, bodyDeclarations }, ...replaced]) {
         const tree = parser.parse(variant.source)!;
         try {
-          expectClauses(tree.rootNode, query, variant.source, variant.clauses, variant.bodyDeclarations);
+          expectClauses(tree.rootNode, variant.source, variant.clauses, variant.bodyDeclarations);
         } finally {
           tree.delete();
         }
       }
     } finally {
-      query.delete();
       parser.delete();
     }
   }
@@ -124,7 +122,6 @@ test.each(languages.flatMap((language) => fixtures.map((fixture) => ({ ...fixtur
 
 function expectClauses(
   rootNode: Node,
-  query: Query,
   source: string,
   expected: string[],
   bodyDeclarations?: (string[] | undefined)[]
@@ -143,19 +140,29 @@ function expectClauses(
     expect(clause.startPosition).toEqual(position(source, clause.startIndex));
     expect(clause.endPosition).toEqual(position(source, clause.endIndex));
   }
-  const captured = query
-    .matches(rootNode)
-    .map(({ captures }) => {
-      const keyword = captures.find(({ name }) => name === 'keyword')!.node;
-      const body = captures.find(({ name }) => name === 'body')!.node;
-      return [keyword.startIndex, body.endIndex] as const;
-    })
-    .toSorted(([a], [b]) => a - b);
   const withBodies = clauses.filter((clause) => clause.childForFieldName('binds'));
-  expect(captured).toEqual(withBodies.map((clause) => [clause.startIndex, clause.endIndex]));
+  expect(captureWhereBodies(rootNode)).toEqual(withBodies.map((clause) => [clause.startIndex, clause.endIndex]));
   const following = rootNode.childForFieldName('declarations')?.lastNamedChild;
   expect(following?.text).toBe('following = 2');
   expect(following?.startPosition).toEqual(position(source, source.indexOf('following')));
+}
+
+function captureWhereBodies(rootNode: Node): (readonly [number, number])[] {
+  const captured: (readonly [number, number])[] = [];
+  const pending: Node[] = [rootNode];
+  while (pending.length > 0) {
+    const node = pending.pop()!;
+    const children = node.children.filter((child) => !child.isExtra);
+    for (let index = 0; index + 1 < children.length; index++) {
+      const keyword = children[index]!;
+      const body = children[index + 1]!;
+      if (!keyword.isNamed && keyword.type === 'where' && body.isNamed && body.type === 'local_binds') {
+        captured.push([keyword.startIndex, body.endIndex]);
+      }
+    }
+    pending.push(...node.children);
+  }
+  return captured.toSorted(([a], [b]) => a - b);
 }
 
 function position(source: string, index: number): { row: number; column: number } {

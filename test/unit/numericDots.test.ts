@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 import { currentWasmPath } from '../helpers/generationInputs.js';
@@ -11,7 +11,6 @@ const language = await Language.load(currentWasmPath(root));
 
 test('keeps dot operators before numeric and quoted operands in applications and right sections', () => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(operator) @operator');
   try {
     for (const operandText of ['0', '14', '0xF', '0b10', '0o7', '1_000', '1e3', '1.25', "'True"]) {
       for (const left of ['left', '#foo', '(left)', '[left]', '']) {
@@ -23,7 +22,7 @@ test('keeps dot operators before numeric and quoted operands in applications and
             expect(tree.rootNode.hasError, source).toBe(false);
             expect(tree.rootNode.descendantsOfType(left ? 'operator_chain' : 'right_section'), source).toHaveLength(1);
             expect(
-              query.captures(tree.rootNode).map(({ node }) => [node.text, node.startIndex, node.endIndex])
+              tree.rootNode.descendantsOfType('operator').map((node) => [node.text, node.startIndex, node.endIndex])
             ).toEqual([['.', source.indexOf('.'), source.indexOf('.') + 1]]);
             const expressionNode = tree.rootNode.descendantsOfType(left ? 'operator_chain' : 'right_section')[0]!;
             const operand = left
@@ -40,7 +39,6 @@ test('keeps dot operators before numeric and quoted operands in applications and
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
