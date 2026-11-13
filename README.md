@@ -13,7 +13,7 @@ Haskell grammar for [tree-sitter](https://github.com/tree-sitter/tree-sitter), f
 to its authors and contributors. This is not an official release of that project.
 
 This fork is based on upstream's version 0.23.1 grammar and generates the parser with the
-[WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parser carries ABI `0x5742000c`, which upstream Tree-sitter runtimes reject. This package requires the fork's runtime (`@willbooster/web-tree-sitter` / `willbooster-tree-sitter`) version 20.0.0 or later within 20.x: 17.x and 18.x WillBooster runtimes share ABI `0x5742000c` and pass the ABI check, but 19.1.0 and later omit unused `TSLanguage` tables that pre-19.1.0 runtimes dereference.
+[WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parser carries ABI `0x5742000c`, which upstream Tree-sitter runtimes reject. This package targets and requires the fork's non-incremental 20.x runtime (`@willbooster/web-tree-sitter` / `willbooster-tree-sitter` version 20.0.0 or later within 20.x). Earlier WillBooster runtimes also share ABI `0x5742000c` and pass the ABI check, so the ABI check alone does not reject incompatible runtimes: 17.x and 18.x dereference `TSLanguage` tables omitted since 19.1.0, and 19.x predates the 20.0.0 full-parse-only API.
 [Upstream's README at that version](https://github.com/tree-sitter/tree-sitter-haskell/blob/v0.23.1/README.md) lists
 the supported language extensions. The fork's node contracts are described below.
 
