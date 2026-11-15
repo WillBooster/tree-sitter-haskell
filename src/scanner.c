@@ -1467,18 +1467,7 @@ static QualifiedName qualified_name(Env *env, bool (*name)(Env *)) {
   return NoQualifiedName;
 }
 
-/**
- * Use the lookahead buffer to determine whether a character is escaped, by counting the number of backslashes.
- */
-static bool odd_backslashes_before(Env *env, int32_t index) {
-  bool odd = false;
-  while (index >= 0 && peek(env, (uint32_t) index) == '\\') {
-    odd = !odd;
-    index--;
-  }
-  return odd;
-}
-
+static bool odd_backslashes_before(Env *env, int32_t index);
 static uint32_t take_multiline_string_literal(Env *env);
 static bool is_string_gap_space(int32_t c);
 
@@ -1489,6 +1478,15 @@ static uint32_t take_string_literal(Env *env) {
     end = advance_until_char(env, end, '"') + 1;
     if (is_eof(env) || !odd_backslashes_before(env, (int) end - 2)) return end;
   }
+}
+
+static bool odd_backslashes_before(Env *env, int32_t index) {
+  bool odd = false;
+  while (index >= 0 && unsafe_peek(env, (uint32_t) index) == '\\') {
+    odd = !odd;
+    index--;
+  }
+  return odd;
 }
 
 static uint32_t take_multiline_string_literal(Env *env) {
@@ -3883,7 +3881,9 @@ static void deserialize_context_run(Contexts *contexts, uint32_t tag, const char
     .sort = tag & ContextSortMask,
     .indent = (tag & ContextIndent) ? deserialize_uint(cursor, end) : 0,
   };
-  for (uint32_t i = 0; i < count; i++) array_push(contexts, context);
+  array_reserve(contexts, contexts->size + count);
+  for (uint32_t i = 0; i < count; i++) contexts->contents[contexts->size + i] = context;
+  contexts->size += count;
 }
 
 void tree_sitter_haskell_external_scanner_destroy(void *payload) {
@@ -3928,14 +3928,15 @@ static void deserialize_context_reference(Contexts *contexts, const char **curso
   uint32_t encoded_delta = deserialize_uint(cursor, end);
   int64_t delta = encoded_delta & 1 ? -(int64_t) (encoded_delta >> 1) - 1 : encoded_delta >> 1;
   assert(distance > 0 && distance <= contexts->size);
+  array_reserve(contexts, contexts->size + count);
   for (uint32_t i = 0; i < count; i++) {
-    Context context = *array_get(contexts, contexts->size - distance);
+    Context context = contexts->contents[contexts->size - distance];
     if (context.indent) {
       int64_t indent = (int64_t) context.indent + delta;
       assert(indent > 0 && indent <= UINT32_MAX);
       context.indent = (uint32_t) indent;
     }
-    array_push(contexts, context);
+    contexts->contents[contexts->size++] = context;
   }
 }
 
