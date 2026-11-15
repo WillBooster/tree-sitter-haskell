@@ -13,7 +13,7 @@ Haskell grammar for [tree-sitter](https://github.com/tree-sitter/tree-sitter), f
 to its authors and contributors. This is not an official release of that project.
 
 This fork is based on upstream's version 0.23.1 grammar and generates the parser with the
-[WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parser carries ABI `0x5742000d`, which upstream Tree-sitter runtimes and WillBooster runtimes prior to 23.0.0 reject. This package targets and requires the fork's non-incremental 23.x runtime (`@willbooster/web-tree-sitter` / `willbooster-tree-sitter` version 23.0.0 or later within 23.x).
+[WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parser carries ABI `0x5742000d`, which upstream Tree-sitter runtimes and WillBooster runtimes prior to 22.0.0 reject. This package targets and requires the fork's non-incremental 23.x runtime (`@willbooster/web-tree-sitter` / `willbooster-tree-sitter` version 23.0.0 or later within 23.x).
 [Upstream's README at that version](https://github.com/tree-sitter/tree-sitter-haskell/blob/v0.23.1/README.md) lists
 the supported language extensions. The fork's node contracts are described below.
 
