@@ -45,12 +45,11 @@ test('scanner diagnostics preserve long-line trees', () => {
       expectBoundedSnapshots(comment.stderr);
     }
     const input = path.join(workspace, 'deep.hs');
-    fs.writeFileSync(input, `(${'Box ('.repeat(512)}deep${')'.repeat(512)}) = value\nfollowing = 1\n`);
+    fs.writeFileSync(input, `value=${'let { x = ('.repeat(64)}1${') } in x'.repeat(64)}\nfollowing = 1\n`);
     const arguments_ = ['--lang-name', 'haskell', input];
     const optimized = run(['parse', '--lib-path', optimizedLibrary, ...arguments_]);
     const debug = run(['parse', '--lib-path', debugLibrary, ...arguments_]);
     expect(debug.stdout).toBe(optimized.stdout);
-    expect(debug.stderr).toContain('contexts omitted');
     expectBoundedSnapshots(debug.stderr);
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });

@@ -1225,6 +1225,7 @@ static void debug_context(Context ctx) {
     else if (ctx.sort == QuoteLayout) dbg("quote ");
     dbg("%d", ctx.indent);
   }
+  if (ctx.count > 1) dbg("*%u", ctx.count);
 }
 
 static void debug_newline(Env *env) {
