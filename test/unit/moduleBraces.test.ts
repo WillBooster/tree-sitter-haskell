@@ -123,3 +123,23 @@ describe.each(['haskell', 'hsc', 'haskell_ghc2021'] as const)('%s alternating co
     }
   });
 });
+
+describe.each(['haskell', 'hsc', 'haskell_ghc2021'] as const)('%s compound scopes', (name) => {
+  test.each([
+    ['(let { x = (let { y = let z = ', ' in z } in y) } in x)', 3],
+    ['[let { x = [let { y = let z = ', ' in z } in y] } in x]', 3],
+    ['(let { x = (let { y = do ', ' } in y) } in x)', 2],
+  ] as const)('preserves nested compound contexts: %s', async (open, close, letsPerBlock) => {
+    const depth = 200;
+    const parser = new Parser().setLanguage(await Language.load(currentWasmPath(root, name)));
+    const tree = parser.parse(`value=${open.repeat(depth)}1${close.repeat(depth)}\nfollowing=2\n`)!;
+    try {
+      expect(tree.rootNode.hasError, tree.rootNode.toString()).toBe(false);
+      expect(tree.rootNode.descendantsOfType('let_in')).toHaveLength(depth * letsPerBlock);
+      expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.text).toBe('following=2');
+    } finally {
+      tree.delete();
+      parser.delete();
+    }
+  });
+});
