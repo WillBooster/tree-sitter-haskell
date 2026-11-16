@@ -17,6 +17,8 @@ include = [
   "/grammar.js",
   "/hsc/grammar.js",
   "/hsc/src/**",
+  "/ghc2021/grammar.js",
+  "/ghc2021/src/**",
   "/grammar/*.js",
   "/src/*",
   "!/src/.*",

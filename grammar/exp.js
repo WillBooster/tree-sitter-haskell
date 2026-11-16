@@ -11,7 +11,7 @@ const {
   qualified,
 } = require('./util.js')
 
-module.exports = {
+module.exports = (extensions = true) => ({
 
   // ------------------------------------------------------------------------
   // names
@@ -176,7 +176,7 @@ module.exports = {
 
   rec: $ => seq('rec', $._statements),
 
-  _do_keyword: _ => choice('mdo', 'do'),
+  _do_keyword: _ => extensions ? choice('mdo', 'do') : 'do',
 
   do_module: $ => field('qualified_do', qualified($, $._do_keyword)),
 
@@ -362,15 +362,15 @@ module.exports = {
     $.parenthesized_name,
     alias($._exp_apply, $.apply),
     alias($._exp_record, $.record),
-    alias($._exp_projection, $.projection),
+    ...(extensions ? [alias($._exp_projection, $.projection)] : []),
     alias($._exp_arithmetic_sequence, $.arithmetic_sequence),
     alias($._exp_list_comprehension, $.list_comprehension),
     alias($._exp_unboxed_tuple, $.unboxed_tuple),
     alias($._exp_unboxed_sum, $.unboxed_sum),
-    alias($._exp_projection_selector, $.projection_selector),
-    alias($._exp_quote, $.quote),
-    alias($._exp_typed_quote, $.typed_quote),
-    alias($._exp_th_quoted_name, $.th_quoted_name),
+    ...(extensions ? [alias($._exp_projection_selector, $.projection_selector)] : []),
+    ...(extensions ? [alias($._exp_quote, $.quote)] : []),
+    ...(extensions ? [alias($._exp_typed_quote, $.typed_quote)] : []),
+    ...(extensions ? [alias($._exp_th_quoted_name, $.th_quoted_name)] : []),
     alias($._exp_lambda_case, $.lambda_case),
     alias($._exp_lambda_cases, $.lambda_cases),
     alias($._exp_do, $.do),
@@ -405,4 +405,4 @@ module.exports = {
     prec.right($.expression),
   ),
 
-}
+})

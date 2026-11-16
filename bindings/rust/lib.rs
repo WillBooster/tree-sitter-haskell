@@ -30,6 +30,7 @@ use tree_sitter_language::LanguageFn;
 unsafe extern "C" {
     fn tree_sitter_haskell() -> *const ();
     fn tree_sitter_hsc() -> *const ();
+    fn tree_sitter_haskell_ghc2021() -> *const ();
 }
 
 /// The tree-sitter [`LanguageFn`] for this grammar.
@@ -41,6 +42,13 @@ pub const HSC_LANGUAGE: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_h
 /// The node schema of the hsc2hs dialect.
 pub const HSC_NODE_TYPES: &str = include_str!("../../hsc/src/node-types.json");
 
+/// GHC2021 lexical syntax without TH, record-dot, recursive-do or pattern-synonym keywords.
+pub const GHC2021_LANGUAGE: LanguageFn =
+    unsafe { LanguageFn::from_raw(tree_sitter_haskell_ghc2021) };
+
+/// The node schema of the GHC2021 lexical variant.
+pub const GHC2021_NODE_TYPES: &str = include_str!("../../ghc2021/src/node-types.json");
+
 /// The content of the [`node-types.json`] file for this grammar.
 ///
 /// [`node-types.json`]: https://tree-sitter.github.io/tree-sitter/using-parsers/6-static-node-types
@@ -49,7 +57,7 @@ pub const NODE_TYPES: &str = include_str!("../../src/node-types.json");
 #[cfg(test)]
 mod tests {
     #[test]
-    fn parses_both_published_language_entry_points() {
+    fn parses_published_language_entry_points() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&super::LANGUAGE.into()).unwrap();
         let ordinary = parser.parse("main = putStrLn \"Hello\"\n").unwrap();
@@ -83,5 +91,12 @@ mod tests {
         }
         assert_eq!(directives, [("const", " (1 + sizeof(\"}\"))")]);
         assert_eq!(bindings, ["following", "value"]);
+        parser
+            .set_language(&super::GHC2021_LANGUAGE.into())
+            .unwrap();
+        let ordinary_operators = parser
+            .parse("pattern = 1\nmain = print$sum [x|x<-[1..3]]\n")
+            .unwrap();
+        assert!(!ordinary_operators.root_node().has_error());
     }
 }

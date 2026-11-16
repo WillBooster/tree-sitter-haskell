@@ -16,6 +16,12 @@
       "path": "hsc",
       "file-types": ["hsc"],
       "injection-regex": "^hsc$"
+    },
+    {
+      "name": "haskell_ghc2021",
+      "camelcase": "HaskellGhc2021",
+      "scope": "source.haskell.ghc2021",
+      "path": "ghc2021"
     }
   ],
   "metadata": {

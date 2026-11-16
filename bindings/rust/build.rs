@@ -28,5 +28,9 @@ fn main() {
 
     c_config.file("hsc/src/parser.c").file("hsc/src/scanner.c");
     println!("cargo:rerun-if-changed=hsc/src");
+    c_config
+        .file("ghc2021/src/parser.c")
+        .file("ghc2021/src/scanner.c");
+    println!("cargo:rerun-if-changed=ghc2021/src");
     c_config.compile("tree-sitter-haskell");
 }
