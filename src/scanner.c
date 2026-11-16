@@ -302,9 +302,9 @@ static char const *context_names[] = {
 #endif
 
 /**
- * The persistent state maintains a stack of layout contexts.
- * New entries are created when a layout symbol is valid at the current position, and they are removed when the indent
- * of a line satisfies conditions that depend on the current context sort, or when certain tokens (like `else`) occur.
+ * Each context record represents `count` identical contexts. A `NoContext` record instead repeats the preceding
+ * `pattern_width` raw records for `extra_cycles` additional copies; that pattern may itself contain repeat records.
+ * Markers are not layout contexts: stack readers must skip them or expand their final cycle before removing a context.
  */
 typedef struct {
   ContextSort sort;
