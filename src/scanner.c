@@ -623,6 +623,7 @@ typedef struct {
   bool input_has_unclosed_cpp_comment;
   uint32_t input_unclosed_cpp_comment_start;
   ImportInvocationMemo input_invocation_memo;
+  bool initialized;
   bool definite_declaration;
   bool cpp_state_unknown;
   uint32_t cpp_depth;
@@ -1439,7 +1440,7 @@ static bool match_symop(Env *env, const char *restrict target) {
   return target[len] == '\0';
 }
 
-static bool uninitialized(Env *env) { return !has_contexts(env); }
+static bool uninitialized(Env *env) { return !env->state->initialized && !has_contexts(env); }
 
 static uint32_t conid(Env *env) {
   if (!is_conid_start_char(peek0(env))) return 0;
@@ -1826,14 +1827,17 @@ static Symbol end_layout_brace(Env *env) {
  * Exceptions are:
  *
  * - Brace layouts
- * - The top-level layout, which should only be ended at the end of file.
- *   For leniency, we change the current indent to the smaller value.
+ * - Outside GHC2021, the top-level layout accepts a smaller indent instead of ending.
  */
 static Symbol end_layout_indent(Env *env) {
   if (valid(env, END) && indent_less(env, env->state->newline.indent)) {
     if (top_layout(env)) {
-	  array_back(&env->state->contexts)->indent = env->state->newline.indent;
+#ifdef GHC2021_LEXICAL
+      return end_layout_unchecked(env, "dedented module");
+#else
+      array_back(&env->state->contexts)->indent = env->state->newline.indent;
       return update_state("end top layout");
+#endif
     }
     else {
       env->state->newline.skip_semi = false;
@@ -2953,6 +2957,7 @@ static Symbol process_token_interior(Env *env, Lexed next) {
  * Process a `Lexed` token to initialize the context stack.
  */
 static Symbol process_token_init(Env *env, uint32_t indent, Lexed next) {
+  env->state->initialized = true;
   switch (next) {
     case LModule:
       push_context(env, ModuleHeader, 0);
@@ -2990,7 +2995,6 @@ static Symbol newline_extras(Env *env, Space space) {
 // finding a pragma.
 static Symbol newline_process(Env *env) {
   dbg("newline post\n");
-  uint32_t indent = env->state->newline.indent;
   Lexed end = env->state->newline.end;
   SEQ(end_layout_indent(env));
   SEQ(process_token_safe(env, end, false));
@@ -3003,7 +3007,7 @@ static Symbol newline_process(Env *env) {
   // Maybe there's a way to run it before and after `start_layout_newline` with conditions.
   SEQ(semicolon(env));
   reset_newline(env);
-  if (uninitialized(env)) SEQ(process_token_init(env, indent, end));
+  if (uninitialized(env)) SEQ(process_token_init(env, start_column(env), end));
   else {
     SEQ(process_token_symop(env, true, end));
     SEQ(process_token_splice(env, end));
@@ -3834,7 +3838,7 @@ unsigned tree_sitter_haskell_external_scanner_serialize(void *payload, char *buf
   unsigned length = 0;
   uint32_t flags = newline.state | (newline.eof << 2) | (newline.no_semi << 3)
     | (newline.skip_semi << 4) | (newline.unsafe << 5)
-    | (state->comment.active << 6) | (state->comment.block << 7) | (state->comment.haddock << 8);
+    | (state->comment.active << 6) | (state->comment.block << 7) | (state->comment.haddock << 8) | (state->initialized << 9);
   if (!serialize_uint(buffer, &length, flags)) return 0;
   if (newline.state != NInactive
       && (!serialize_uint(buffer, &length, newline.end)
@@ -3860,6 +3864,7 @@ static unsigned serialize_cpp_state(const State *state, char *buffer, unsigned l
 void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
   State *state = (State *) payload;
   state->contexts.size = 0;
+  state->initialized = false;
   state->comment = (Comment) {0};
   state->import_macros = 0;
   state->definite_declaration = false;
@@ -3873,6 +3878,7 @@ void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char 
 
 static void deserialize_payload(State *state, const char *cursor, const char *end) {
   uint32_t flags = deserialize_uint(&cursor, end);
+  state->initialized = flags & 512;
   state->comment = (Comment) {.active = flags & 64, .block = flags & 128, .haddock = flags & 256};
   uint32_t newline_state = flags & 3;
   uint32_t newline_end = 0;
