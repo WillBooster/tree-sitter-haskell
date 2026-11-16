@@ -90,3 +90,21 @@ test('GHC2021 declarations cannot dedent past an initial import', async () => {
     parser.delete();
   }
 });
+
+describe.each(['haskell', 'hsc', 'haskell_ghc2021'] as const)('%s nested explicit layouts', (name) => {
+  test.each([50, 1200])('preserves %i nested brace scopes and following declarations', async (depth) => {
+    const source = `module Main where\nvalue=${'let { x = '.repeat(depth)}1${' } in x'.repeat(depth)}\nfollowing=2\n`;
+    const parser = new Parser().setLanguage(await Language.load(currentWasmPath(root, name)));
+    const tree = parser.parse(source)!;
+    try {
+      expect(tree.rootNode.hasError, tree.rootNode.toString()).toBe(false);
+      expect(tree.rootNode.descendantsOfType('let_in')).toHaveLength(depth);
+      expect(tree.rootNode.childForFieldName('declarations')?.lastNamedChild?.childForFieldName('name')?.text).toBe(
+        'following'
+      );
+    } finally {
+      tree.delete();
+      parser.delete();
+    }
+  });
+});
