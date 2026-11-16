@@ -311,7 +311,7 @@ typedef struct {
   uint32_t indent;
   uint32_t count;
   uint32_t pattern_width;
-  uint32_t repetitions;
+  uint32_t extra_cycles;
 } Context;
 
 /**
@@ -991,7 +991,8 @@ static bool has_contexts(Env *env) { return env->state->contexts.size != 0; }
 enum { ContextPatternWindow = 64 };
 
 static void compress_context_pattern(Contexts *contexts);
-static bool context_pattern_matches(const Contexts *contexts, uint32_t end, uint32_t width, bool extending);
+static bool context_pattern_matches(const Contexts *contexts, uint32_t previous, uint32_t current, uint32_t width);
+static void expand_context_pattern(Contexts *contexts);
 
 /**
  * Push a layout context onto the stack.
@@ -1002,7 +1003,7 @@ static void push_context(Env *env, ContextSort sort, uint32_t indent) {
   Contexts *contexts = &env->state->contexts;
   if (contexts->size) {
     Context *last = array_back(contexts);
-    if (last->sort == sort && last->indent == indent && last->count < UINT32_MAX && last->repetitions == 0) {
+    if (last->sort == sort && last->indent == indent && last->count < UINT32_MAX && last->extra_cycles == 0) {
       last->count++;
       return;
     }
@@ -1012,32 +1013,52 @@ static void push_context(Env *env, ContextSort sort, uint32_t indent) {
   compress_context_pattern(contexts);
 }
 
+// code-gauge-allow functionCognitiveComplexity 18 -- Bounded pattern search distinguishes extending a run from finding four closed copies.
 static void compress_context_pattern(Contexts *contexts) {
   for (uint32_t width = 2; width <= ContextPatternWindow && width < contexts->size; width++) {
-    uint32_t end = contexts->size - width;
-    Context *previous_end = array_get(contexts, end - 1);
-    bool extending = previous_end->pattern_width == width && previous_end->repetitions < UINT32_MAX;
-    if (!extending && end < width) continue;
-    if (context_pattern_matches(contexts, end, width, extending)) {
-      contexts->size = end;
-      previous_end->pattern_width = width;
-      previous_end->repetitions = extending ? previous_end->repetitions + 1 : 2;
-      return;
+    uint32_t current = contexts->size - width;
+    Context *marker = array_get(contexts, current - 1);
+    bool extending = marker->sort == NoContext && marker->pattern_width == width
+      && marker->extra_cycles < UINT32_MAX;
+    uint32_t previous = extending ? current - 1 : current;
+    if (previous < width || (!extending && current < 3 * width)) continue;
+    if (!context_pattern_matches(contexts, previous - width, current, width)) continue;
+    if (!extending
+        && (!context_pattern_matches(contexts, current - 2 * width, current, width)
+            || !context_pattern_matches(contexts, current - 3 * width, current, width))) continue;
+    if (extending) {
+      contexts->size = current;
+      marker->extra_cycles++;
     }
+    else {
+      contexts->size = current - 2 * width;
+      array_push(contexts, ((Context) {.sort = NoContext, .pattern_width = width, .extra_cycles = 3}));
+    }
+    return;
   }
 }
 
-static bool context_pattern_matches(const Contexts *contexts, uint32_t end, uint32_t width, bool extending) {
-  uint32_t start = end - width;
+static bool context_pattern_matches(const Contexts *contexts, uint32_t previous, uint32_t current, uint32_t width) {
   for (uint32_t i = 0; i < width; i++) {
-    Context previous = *array_get(contexts, start + i);
-    Context current = *array_get(contexts, end + i);
-    if ((previous.repetitions && !(extending && i == width - 1)) || current.repetitions
-        || previous.sort != current.sort || previous.indent != current.indent || previous.count != current.count) {
-      return false;
-    }
+    Context a = *array_get(contexts, previous + i);
+    Context b = *array_get(contexts, current + i);
+    if (a.sort != b.sort || a.indent != b.indent || a.count != b.count
+        || a.pattern_width != b.pattern_width || a.extra_cycles != b.extra_cycles
+        || (a.sort == NoContext && a.pattern_width > i)) return false;
   }
   return true;
+}
+
+static void expand_context_pattern(Contexts *contexts) {
+  Context marker = *array_back(contexts);
+  uint32_t start = contexts->size - 1 - marker.pattern_width;
+  if (marker.extra_cycles == 1) array_pop(contexts);
+  else array_back(contexts)->extra_cycles--;
+  array_reserve(contexts, contexts->size + marker.pattern_width);
+  for (uint32_t i = 0; i < marker.pattern_width; i++) {
+    Context context = contexts->contents[start + i];
+    array_push(contexts, context);
+  }
 }
 
 /**
@@ -1045,29 +1066,21 @@ static bool context_pattern_matches(const Contexts *contexts, uint32_t end, uint
  */
 static void pop(Env *env) {
   if (has_contexts(env)) {
-	dbg("pop: %s\n", context_names[array_back(&env->state->contexts)->sort]);
-    Context *last = array_back(&env->state->contexts);
-    if (last->repetitions) {
-      uint32_t width = last->pattern_width;
-      uint32_t start = env->state->contexts.size - width;
-      Contexts *contexts = &env->state->contexts;
-      last->repetitions--;
-      if (last->repetitions == 1) last->repetitions = last->pattern_width = 0;
-      array_reserve(contexts, contexts->size + width);
-      for (uint32_t i = 0; i < width; i++) {
-        Context context = contexts->contents[start + i];
-        context.repetitions = context.pattern_width = 0;
-        array_push(contexts, context);
-      }
-      last = array_back(contexts);
-    }
+    Contexts *contexts = &env->state->contexts;
+    while (array_back(contexts)->sort == NoContext) expand_context_pattern(contexts);
+    Context *last = array_back(contexts);
+    dbg("pop: %s\n", context_names[last->sort]);
     if (last->count > 1) last->count--;
-    else array_pop(&env->state->contexts);
+    else array_pop(contexts);
   }
 }
 
 static ContextSort current_context(Env *env) {
-  return has_contexts(env) ? array_back(&env->state->contexts)->sort : NoContext;
+  for (uint32_t i = env->state->contexts.size; i > 0; i--) {
+    Context context = *array_get(&env->state->contexts, i - 1);
+    if (context.sort != NoContext) return context.sort;
+  }
+  return NoContext;
 }
 
 static bool is_layout_context(Env *env) {
@@ -1276,7 +1289,7 @@ static void debug_context(Context ctx) {
     dbg("%d", ctx.indent);
   }
   if (ctx.count > 1) dbg("*%u", ctx.count);
-  if (ctx.repetitions) dbg("[repeat %u x %u]", ctx.pattern_width, ctx.repetitions);
+  if (ctx.extra_cycles) dbg("[repeat %u +%u]", ctx.pattern_width, ctx.extra_cycles);
 }
 
 static void debug_newline(Env *env) {
@@ -1996,7 +2009,7 @@ static bool layouts_in_texp(Env *env) {
     for (int32_t i = (int32_t) env->state->contexts.size - 2; i >= 0; i--) {
 	  Context *cur = array_get(&env->state->contexts, i);
       if (cur->sort == TExp || cur->sort == Braces) return true;
-      else if (cur->sort > Braces) break;
+      else if (cur->sort > Braces && cur->sort != NoContext) break;
     }
   }
   return false;
@@ -3871,7 +3884,6 @@ typedef struct {
 } ContextMatch;
 
 static bool serialize_contexts(const Contexts *contexts, char *buffer, unsigned *length, bool compress);
-static bool serialize_expanded_contexts(const Contexts *contexts, char *buffer, unsigned *length);
 static unsigned serialize_cpp_state(const State *state, char *buffer, unsigned length);
 static void deserialize_payload(State *state, const char *cursor, const char *end);
 static void deserialize_cpp_state(State *state, const char **cursor, const char *end);
@@ -3911,7 +3923,7 @@ unsigned tree_sitter_haskell_external_scanner_serialize(void *payload, char *buf
   unsigned prefix = length;
   if (!serialize_contexts(&state->contexts, buffer, &length, false)) {
     length = prefix;
-    if (!serialize_expanded_contexts(&state->contexts, buffer, &length)) return 0;
+    if (!serialize_contexts(&state->contexts, buffer, &length, true)) return 0;
   }
   return serialize_cpp_state(state, buffer, length);
 }
@@ -3968,9 +3980,10 @@ static void deserialize_payload(State *state, const char *cursor, const char *en
       break;
     }
     if (tag == ContextPattern) {
-      Context *last = array_back(&state->contexts);
-      last->pattern_width = deserialize_uint(&cursor, end);
-      last->repetitions = deserialize_uint(&cursor, end);
+      Context marker = {.sort = NoContext};
+      marker.pattern_width = deserialize_uint(&cursor, end);
+      marker.extra_cycles = deserialize_uint(&cursor, end);
+      array_push(&state->contexts, marker);
     }
     else if (tag == ContextReference) deserialize_context_reference(&state->contexts, &cursor, end);
     else deserialize_context_run(&state->contexts, tag, &cursor, end);
@@ -4010,36 +4023,17 @@ static bool serialize_contexts(const Contexts *contexts, char *buffer, unsigned 
       ? serialize_context_reference(buffer, length, match)
       : serialize_context(buffer, length, context, context.count);
     if (!written) return false;
-    if (!match.distance && context.repetitions
-        && (!serialize_uint(buffer, length, ContextPattern)
-            || !serialize_uint(buffer, length, context.pattern_width)
-            || !serialize_uint(buffer, length, context.repetitions))) return false;
     i += match.count;
   }
   return true;
 }
 
-static bool serialize_expanded_contexts(const Contexts *contexts, char *buffer, unsigned *length) {
-  Contexts expanded = array_new();
-  for (uint32_t i = 0; i < contexts->size; i++) {
-    Context context = *array_get(contexts, i);
-    uint32_t repetitions = context.repetitions;
-    uint32_t width = context.pattern_width;
-    context.repetitions = context.pattern_width = 0;
-    array_push(&expanded, context);
-    for (uint32_t repetition = 1; repetition < repetitions; repetition++) {
-      for (uint32_t j = 0; j < width; j++) {
-        Context repeated = expanded.contents[expanded.size - width];
-        array_push(&expanded, repeated);
-      }
-    }
-  }
-  bool written = serialize_contexts(&expanded, buffer, length, true);
-  array_delete(&expanded);
-  return written;
-}
-
 static bool serialize_context(char *buffer, unsigned *length, Context context, uint32_t count) {
+  if (context.sort == NoContext) {
+    return serialize_uint(buffer, length, ContextPattern)
+      && serialize_uint(buffer, length, context.pattern_width)
+      && serialize_uint(buffer, length, context.extra_cycles);
+  }
   uint32_t tag = context.sort | (count > 1 ? ContextRepeat : 0) | (context.indent > 0 ? ContextIndent : 0);
   return serialize_uint(buffer, length, tag)
     && (count == 1 || serialize_uint(buffer, length, count - 1))
@@ -4117,7 +4111,7 @@ static ContextMatch context_match_at_distance(const Contexts *contexts, uint32_t
   while (match.count < contexts->size - start) {
     Context current = *array_get(contexts, start + match.count);
     Context previous = *array_get(contexts, start + match.count - distance);
-    if (current.repetitions != previous.repetitions || current.pattern_width != previous.pattern_width
+    if (current.extra_cycles != previous.extra_cycles || current.pattern_width != previous.pattern_width
         || current.sort != previous.sort || current.count != previous.count
         || (current.indent == 0) != (previous.indent == 0)) break;
     if (current.indent) {
