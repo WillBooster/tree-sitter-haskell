@@ -143,3 +143,43 @@ describe.each(['haskell', 'hsc', 'haskell_ghc2021'] as const)('%s compound scope
     }
   });
 });
+
+describe.each(['haskell', 'hsc', 'haskell_ghc2021'] as const)('%s explicit block indentation', (name) => {
+  test.each([
+    'main = do\n{ print 1; print 2 }\n',
+    'main = case 1 of\n{ 1 -> print 1; _ -> print 2 }\n',
+    'main = print x where\n{ x = 1 }\n',
+    'main = print (let\n{ x = 1 } in x)\n',
+    'class C a where\n{ m :: a -> Int }\n',
+    'instance C Int where\n{ m _ = 1 }\n',
+    'main = do\n  let x = do\n{- comment -}\n{ pure 1 }\n  print x\n',
+  ])('opens a pending block before enclosing layout actions: %s', async (source) => {
+    const parser = new Parser().setLanguage(await Language.load(currentWasmPath(root, name)));
+    const tree = parser.parse(source)!;
+    try {
+      expect(tree.rootNode.hasError, tree.rootNode.toString()).toBe(false);
+    } finally {
+      tree.delete();
+      parser.delete();
+    }
+  });
+});
+
+describe.each(['haskell', 'hsc', 'haskell_ghc2021'] as const)('%s comma-separated syntax', (name) => {
+  test.each([
+    'value = [1, 2, 3, ]',
+    'value xs = case xs of { [a, ] -> a }',
+    'data T = T { a :: Int, b :: Int, }',
+    'value = let [x,y,] = [1,2] in x',
+    'value = [(x,y) | x <- [1,2], y <- [3,], True]',
+  ])('reports a trailing comma as invalid: %s', async (source) => {
+    const parser = new Parser().setLanguage(await Language.load(currentWasmPath(root, name)));
+    const tree = parser.parse(source)!;
+    try {
+      expect(tree.rootNode.hasError, tree.rootNode.toString()).toBe(true);
+    } finally {
+      tree.delete();
+      parser.delete();
+    }
+  });
+});

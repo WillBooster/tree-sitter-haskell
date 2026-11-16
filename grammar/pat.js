@@ -29,7 +29,7 @@ const patternRules = (name, recordField) => {
 
     [name('_pat_unboxed_sum')]: $ => unboxed_sum_single($, rule($, '_pat_texp')),
 
-    [name('_pat_list')]: $ => brackets($, sep1(',', field('element', rule($, '_pat_texp'))), optional(',')),
+    [name('_pat_list')]: $ => brackets($, sep1(',', field('element', rule($, '_pat_texp')))),
 
     // ------------------------------------------------------------------------
     // record

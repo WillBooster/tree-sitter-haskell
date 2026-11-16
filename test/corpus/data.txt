@@ -975,7 +975,7 @@ data List a = [] | a : List a
               (variable))))))))
 
 ================================================================================
-data: lenient trailing comma in record
+data: invalid trailing comma in record
 ================================================================================
 
 data A =
@@ -1002,7 +1002,8 @@ data A =
               (field
                 (field_name
                   (variable))
-                (name)))))))))
+                (name))
+              (ERROR))))))))
 
 ================================================================================
 data: infix bang

@@ -2598,7 +2598,7 @@ a = (# | | a :: A | #)
             (name)))))))
 
 ================================================================================
-exp: lenient trailing comma in list
+exp: invalid trailing comma in list
 ================================================================================
 
 a =
@@ -2616,7 +2616,8 @@ a =
       (match
         (list
           (variable)
-          (constructor))))))
+          (constructor)
+          (MISSING variable))))))
 
 ================================================================================
 exp: dollar infix with applications in operands

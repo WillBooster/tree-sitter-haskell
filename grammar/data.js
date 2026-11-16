@@ -35,7 +35,7 @@ module.exports = {
     field('type', $._parameter_type),
   )),
 
-  _record_fields: $ => braces($, sep(',', field('field', $.field)), optional(',')),
+  _record_fields: $ => braces($, sep(',', field('field', $.field))),
 
   // ------------------------------------------------------------------------
   // deriving

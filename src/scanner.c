@@ -3073,7 +3073,8 @@ static Symbol newline_extras(Env *env, Space space) {
 static Symbol newline_process(Env *env) {
   dbg("newline post\n");
   Lexed end = env->state->newline.end;
-  SEQ(end_layout_indent(env));
+  const bool explicit_start = end == LBraceOpen && valid_layout_start_sym(env) != FAIL;
+  if (!explicit_start) SEQ(end_layout_indent(env));
   SEQ(process_token_safe(env, end, false));
   Space space = skip_whitespace(env);
   MARK("newline_post");
@@ -3082,7 +3083,7 @@ static Symbol newline_process(Env *env) {
   // TODO it is only necessary to run this late because of very few situations, like nondecreasing indent.
   // But it has the consequence that whitespace is included in the parent in nested layouts.
   // Maybe there's a way to run it before and after `start_layout_newline` with conditions.
-  SEQ(semicolon(env));
+  if (!explicit_start) SEQ(semicolon(env));
   reset_newline(env);
   if (uninitialized(env)) SEQ(process_token_init(env, start_column(env), end));
   else {
