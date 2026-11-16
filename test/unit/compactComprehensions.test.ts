@@ -44,6 +44,7 @@ describe.each(['haskell_ghc2021'] as const)('%s comprehension and quotation boun
     ['rec = print 1\nmain = do\n  print 2\n  rec', 'variable', 'rec'],
     ['main = print$negate 1', 'operator', '$'],
     ['main = print$(1)', 'operator', '$'],
+    ['main = print ((.succ) (+1) 1)', 'operator', '.'],
     ['import qualified Data.Map as M\nmain = print $ (M.size.M.fromList) [(1,2)]', 'operator', '.'],
     ['main = print (map (show.fst) [(1,2)])', 'operator', '.'],
   ])('parses ordinary lexical syntax: %s', (source, nodeType, token) => {
@@ -69,6 +70,32 @@ describe.each(['haskell_ghc2021'] as const)('%s comprehension and quotation boun
         tree.delete();
         parser.delete();
       }
+    }
+  });
+
+  test.each(['$', '$$', '.', '.+', '...'])('parses ordinary %s before structured operands', (operator) => {
+    for (const operand of ['b', '(Maybe b)', '[b]', '(b,b)']) {
+      const source = `module Structured where\nclass a ${operator} b where\nf :: (a${operator}${operand}) => a -> b\nf = undefined\n`;
+      const parser = new Parser().setLanguage(language);
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(false);
+      } finally {
+        tree.delete();
+        parser.delete();
+      }
+    }
+  });
+
+  test.each(['Int.(Maybe Bool)', 'Int.[Bool]'])('parses structured instance head %s', (head) => {
+    const parser = new Parser().setLanguage(language);
+    const source = `module StructuredInstance where\nclass a . b where\ninstance ${head} where\n`;
+    const tree = parser.parse(source)!;
+    try {
+      expect(tree.rootNode.hasError, source).toBe(false);
+    } finally {
+      tree.delete();
+      parser.delete();
     }
   });
 

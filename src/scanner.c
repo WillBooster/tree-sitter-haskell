@@ -2336,6 +2336,8 @@ static Lexed lex_extras(Env *env, bool allow_cpp) {
   return LNothing;
 }
 
+static Lexed dialect_symop(Lexed token, bool qualifying);
+
 /**
  * The main lexing entry point, branching on the first character, then advancing as far as necessary to identify all
  * interesting tokens.
@@ -2343,7 +2345,7 @@ static Lexed lex_extras(Env *env, bool allow_cpp) {
 // code-gauge-allow functionNcss 40 -- The lexer dispatches on the leading character before contextual interpretation.
 static Lexed lex(Env *env, bool bol) {
   SEQ(lex_extras(env, bol));
-  if (symop_char(peek0(env))) return lex_symop(env);
+  if (symop_char(peek0(env))) return dialect_symop(lex_symop(env), true);
   switch (peek0(env)) {
     case 'w':
       return try_end_token(env, "where", LWhere);
@@ -2865,6 +2867,7 @@ static Symbol process_token_safe(Env *env, Lexed next, bool allow_pragma) {
  */
 // code-gauge-allow functionNcss 49 -- The dispatch keeps operator classification and lexical dialect alternatives together.
 static Symbol process_token_symop(Env *env, bool whitespace, Lexed next) {
+  next = dialect_symop(next, !whitespace && valid(env, QUAL_DOT));
 #ifdef HSC_EXT
   if (next == LHscHash) return finish_if_valid(env, HSC_HASH, "hsc hash");
 #endif
@@ -2873,12 +2876,8 @@ static Symbol process_token_symop(Env *env, bool whitespace, Lexed next) {
       SEQ(finish_if_valid(env, DOTDOT, "symop"));
       return tight_op(env, whitespace, QUAL_DOT);
     case LDotId:
-#ifdef GHC2021_LEXICAL
-      return tight_or_varsym(env, whitespace, QUAL_DOT);
-#else
       SEQ(finish_if_valid(env, whitespace ? PREFIX_DOT : TIGHT_DOT, "symop"));
       return tight_op(env, whitespace, QUAL_DOT);
-#endif
     case LDotSymop:
       return tight_or_varsym(env, whitespace, QUAL_DOT);
     case LDotOpen:
@@ -2892,8 +2891,7 @@ static Symbol process_token_symop(Env *env, bool whitespace, Lexed next) {
     case LPercent:
       return prefix_or_varsym(env, whitespace, PREFIX_PERCENT);
     case LSymop:
-      if (char0(env, ':')) return finish_symop(env, CONSYM);
-      else return finish_symop(env, VARSYM);
+      return finish_symop(env, char0(env, ':') ? CONSYM : VARSYM);
     // The following are handled here despite not being purely symop tokens because `process_token_symop` is executed
     // last, and these handlers all have potentially quite far lookahead and can fail.
     case LSymopSpecial:
@@ -2920,11 +2918,7 @@ static Symbol process_token_symop(Env *env, bool whitespace, Lexed next) {
 static Symbol process_token_splice(Env *env, Lexed next) {
   switch (next) {
     case LDollar:
-#ifdef GHC2021_LEXICAL
-      return finish_symop(env, VARSYM);
-#else
       return finish_if_valid(env, SPLICE, "symop");
-#endif
     default:
       break;
   }
@@ -3314,7 +3308,7 @@ static CtrResult ctr_top(Env *env, Lexed next) {
 // code-gauge-allow functionNcss 52 -- Constraint traversal keeps token-specific cursor transitions in one dispatch.
 static CtrResult ctr_lookahead_step(Env *env, CtrState *state, Lexed next) {
 #ifdef GHC2021_LEXICAL
-  if (next == LDollar || (next == LDotId && env->state->lookahead.offset != state->qualifier_end)) next = LSymop;
+  next = dialect_symop(next, env->state->lookahead.offset == state->qualifier_end);
   state->qualifier_end = UINT32_MAX;
 #endif
   state->reset = 1;
@@ -3366,6 +3360,15 @@ static CtrResult ctr_lookahead_step(Env *env, CtrState *state, Lexed next) {
   }
   if (state->brackets != 0) return CtrUndecided;
   return ctr_top(env, next);
+}
+
+static Lexed dialect_symop(Lexed token, bool qualifying) {
+#ifdef GHC2021_LEXICAL
+  if (token == LDollar || token == LDotOpen || (!qualifying && (token == LDotId || token == LDotSymop))) return LSymop;
+#else
+  (void)qualifying;
+#endif
+  return token;
 }
 
 /**
