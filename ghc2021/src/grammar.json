@@ -3559,10 +3559,6 @@
         {
           "type": "SYMBOL",
           "name": "let"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "rec"
         }
       ]
     },

@@ -33,8 +33,8 @@ jobs:
       # Release builds regenerate src/ from all script/generate inputs. Detect committed output drift here,
       # including new untracked generated files, which git diff would otherwise miss.
       - run: |
-          git add --intent-to-add -- src/ hsc/src/
-          git diff --exit-code -- src/ hsc/src/
+          git add --intent-to-add -- src/ hsc/src/ ghc2021/src/
+          git diff --exit-code -- src/ hsc/src/ ghc2021/src/
       - run: bun run test/ci
   # Runs the parser under libFuzzer with AddressSanitizer and UndefinedBehaviorSanitizer, seeded with the
   # input of each corpus case. Every grammar change regenerates the parser, so it runs on every change. The parser
@@ -49,6 +49,8 @@ jobs:
             grammar: .
           - language: hsc
             grammar: hsc
+          - language: haskell_ghc2021
+            grammar: ghc2021
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1

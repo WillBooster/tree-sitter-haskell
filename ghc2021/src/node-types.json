@@ -688,10 +688,6 @@
       {
         "type": "let",
         "named": true
-      },
-      {
-        "type": "rec",
-        "named": true
       }
     ]
   },
@@ -5133,22 +5129,6 @@
     }
   },
   {
-    "type": "rec",
-    "named": true,
-    "fields": {
-      "statement": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "statement",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "record",
     "named": true,
     "fields": {
@@ -6430,10 +6410,6 @@
   },
   {
     "type": "quote",
-    "named": false
-  },
-  {
-    "type": "rec",
     "named": false
   },
   {

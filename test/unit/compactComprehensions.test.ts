@@ -41,6 +41,8 @@ describe.each(['haskell_ghc2021'] as const)('%s comprehension and quotation boun
   test.each([
     'pattern :: Int\npattern = 2\nmain = print pattern',
     'mdo :: Int\nmdo = 1\nmain = print mdo',
+    'main = do\n  rec <- getLine\n  print rec',
+    'rec = print 1\nmain = do\n  print 2\n  rec',
     'main = print$negate 1',
     'main = print$(1)',
     'import qualified Data.Map as M\nmain = print $ (M.size.M.fromList) [(1,2)]',
@@ -53,6 +55,32 @@ describe.each(['haskell_ghc2021'] as const)('%s comprehension and quotation boun
       expect(tree.rootNode.descendantsOfType(['projection', 'splice', 'quasiquote', 'pattern_synonym'])).toHaveLength(
         0
       );
+    } finally {
+      tree.delete();
+      parser.delete();
+    }
+  });
+  test.each(['$', '.', '$$'])('parses tight ordinary class operator %s', (operator) => {
+    for (const gap of ['', ' ']) {
+      const source = `module Constraint where\nclass a ${operator} b where\nf :: (a${gap}${operator}${gap}b) => a -> b\nf = undefined\ninstance Int ${operator} Bool where\n`;
+      const parser = new Parser().setLanguage(language);
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(false);
+      } finally {
+        tree.delete();
+        parser.delete();
+      }
+    }
+  });
+
+  test('retains qualified class constraints', () => {
+    const source =
+      'module Qualified where\nimport qualified Data.Foldable as F\nf :: F.Foldable t => t a -> Int\nf = F.length\n';
+    const parser = new Parser().setLanguage(language);
+    const tree = parser.parse(source)!;
+    try {
+      expect(tree.rootNode.hasError).toBe(false);
     } finally {
       tree.delete();
       parser.delete();

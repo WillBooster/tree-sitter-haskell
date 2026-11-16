@@ -169,7 +169,7 @@ module.exports = (extensions = true) => ({
     alias($._exp_statement, $.exp),
     alias($.generator, $.bind),
     $.let,
-    $.rec,
+    ...(extensions ? [$.rec] : []),
   ),
 
   _statements: $ => layout_sort($, $._cmd_layout_start_do, field('statement', $.statement)),

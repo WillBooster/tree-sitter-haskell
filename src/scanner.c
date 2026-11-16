@@ -3209,6 +3209,9 @@ typedef struct {
   bool infix;
   bool data_infix;
   bool type_instance;
+#ifdef GHC2021_LEXICAL
+  uint32_t qualifier_end;
+#endif
 } CtrState;
 
 /**
@@ -3308,8 +3311,12 @@ static CtrResult ctr_top(Env *env, Lexed next) {
  * If the token wasn't identified to be irrelevant for the lookahead result, and the current bracket nesting level is
  * zero, call `ctr_top`.
  */
-// code-gauge-allow functionNcss 48 -- Constraint traversal keeps token-specific cursor transitions in one dispatch.
+// code-gauge-allow functionNcss 52 -- Constraint traversal keeps token-specific cursor transitions in one dispatch.
 static CtrResult ctr_lookahead_step(Env *env, CtrState *state, Lexed next) {
+#ifdef GHC2021_LEXICAL
+  if (next == LDollar || (next == LDotId && env->state->lookahead.offset != state->qualifier_end)) next = LSymop;
+  state->qualifier_end = UINT32_MAX;
+#endif
   state->reset = 1;
   switch (next) {
     case LBraceClose:
@@ -3326,6 +3333,9 @@ static CtrResult ctr_lookahead_step(Env *env, CtrState *state, Lexed next) {
       break;
     case LUpper:
       state->reset = conid(env);
+#ifdef GHC2021_LEXICAL
+      state->qualifier_end = env->state->lookahead.offset + state->reset;
+#endif
       return CtrUndecided;
     case LDotId:
       return CtrUndecided;
@@ -3369,10 +3379,13 @@ static CtrResult ctr_lookahead_step(Env *env, CtrState *state, Lexed next) {
  *
  * A context arrow is always a termination criterion; an infix operator only if CONTEXT isn't valid.
  */
-// code-gauge-allow functionNcss 45 -- The bounded traversal coordinates its shared context and cursor.
+// code-gauge-allow functionNcss 46 -- The bounded traversal coordinates its shared context and cursor.
 static Symbol constraint_lookahead(Env *env) {
   dbg("type lookahead\n");
   CtrState state = {.reset = 0};
+#ifdef GHC2021_LEXICAL
+  state.qualifier_end = UINT32_MAX;
+#endif
   bool done = false;
   while (!done && not_eof(env)) {
     // Setting indent to 99999 only to not trigger the following termination condition when no newline was advanced over
