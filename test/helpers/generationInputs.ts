@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export function currentWasmPath(root: string, language: 'haskell' | 'hsc' = 'haskell'): string {
+export function currentWasmPath(root: string, language: 'haskell' | 'hsc' | 'haskell_ghc2021' = 'haskell'): string {
   const wasmPath = path.join(root, `tree-sitter-${language}.wasm`);
   const filesIn = (directory: string): string[] =>
     fs.readdirSync(path.join(root, directory)).map((name) => `${directory}/${name}`);
@@ -14,6 +14,9 @@ export function currentWasmPath(root: string, language: 'haskell' | 'hsc' = 'has
     'src/scanner.c',
     'src/unicode.h',
     ...filesIn('src/tree_sitter'),
+    ...(language === 'haskell_ghc2021'
+      ? ['ghc2021/grammar.js', 'ghc2021/src/parser.c', 'ghc2021/src/scanner.c', ...filesIn('ghc2021/src/tree_sitter')]
+      : []),
     ...(language === 'hsc'
       ? ['hsc/grammar.js', 'hsc/src/parser.c', 'hsc/src/scanner.c', ...filesIn('hsc/src/tree_sitter')]
       : []),

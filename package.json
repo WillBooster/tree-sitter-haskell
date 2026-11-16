@@ -20,7 +20,9 @@
     "tree-sitter.json",
     "*.wasm",
     "hsc/grammar.js",
-    "hsc/src/node-types.json"
+    "hsc/src/node-types.json",
+    "ghc2021/grammar.js",
+    "ghc2021/src/node-types.json"
   ],
   "publishConfig": {
     "access": "public",

@@ -92,6 +92,8 @@ parser.setLanguage(await Language.load(haskell));
 
 The package also ships `grammar.js` with the files in `grammar/` it loads and the node types in `src/node-types.json`.
 
+For GHC2021 lexical syntax without Template Haskell, record-dot syntax, recursive `mdo`, or pattern-synonym keywords, load `tree-sitter-haskell_ghc2021.wasm`. This variant treats compact comprehensions, tight `$` and `.` operators, and the identifiers `pattern` and `mdo` as ordinary Haskell. Its node schema is `ghc2021/src/node-types.json`. Other extension and layout restrictions remain the consumer's responsibility.
+
 For [hsc2hs](https://github.com/haskell/hsc2hs) source in `.hsc` files, load `tree-sitter-hsc.wasm` instead. This dialect parses C directives and the doubled hashes that hsc2hs turns into literal hashes. Its node schema is `hsc/src/node-types.json`.
 
 Function and type declaration-head parentheses are anonymous syntax: the enclosing declaration directly exposes its `name`, parameter groups and infix `head` fields. Parentheses inside parameters and types retain their existing nodes. A grouped variable name, including a qualified name, uses one `parenthesized_name` node with a direct name child, independent of grouping depth. A symbolic variable operator keeps its required prefix parentheses in `prefix_id`: `(<+>)` and `(Demo.<+>)` remain `prefix_id`, while redundant grouping such as `((<+>))` adds one `parenthesized_name` wrapper around that node. This also applies to unapplied names. A parenthesized simple binding name uses `parenthesized_name` in the `bind` node's `name` field, retaining one wrapper at any grouping depth. Complex expressions retain ordinary `parens` nodes. These changes affect public syntax trees.
@@ -118,7 +120,7 @@ let mut parser = tree_sitter::Parser::new();
 parser.set_language(&tree_sitter_haskell::LANGUAGE.into())?;
 ```
 
-For `.hsc` files in Rust, select `HSC_LANGUAGE` and `HSC_NODE_TYPES`.
+For `.hsc` files in Rust, select `HSC_LANGUAGE` and `HSC_NODE_TYPES`. For the GHC2021 lexical variant, select `GHC2021_LANGUAGE` and `GHC2021_NODE_TYPES`.
 
 ## Development
 
@@ -134,7 +136,7 @@ cargo test --locked
 
 - Run Tree-sitter CLI commands through `script/tree-sitter`, which uses the `willbooster-tree-sitter` version locked in `Cargo.lock`.
 - Keep `@willbooster/web-tree-sitter` (`package.json`) and `willbooster-tree-sitter` (`Cargo.lock`) on the same version (`test/unit/runtimeVersion.test.ts`).
-- After changing `grammar.js`, `grammar/`, `hsc/grammar.js`, `tree-sitter.json`, `test/corpus/`, or tracked files in `examples/`, stage `examples/` changes with `git add -A examples` and run `bun run build/ci` to regenerate `src/`, `hsc/src/`, and `*.wasm` (`script/generate`).
+- After changing `grammar.js`, `grammar/`, `hsc/grammar.js`, `ghc2021/grammar.js`, `tree-sitter.json`, `test/corpus/`, or tracked files in `examples/`, stage `examples/` changes with `git add -A examples` and run `bun run build/ci` to regenerate `src/`, `hsc/src/`, `ghc2021/src/`, and `*.wasm` (`script/generate`).
 - After a grammar change or a moved commit pin in `script/parse-examples` alters which real-world files fail, run `script/parse-examples` and review the `script/known-failures.txt` diff before committing.
 
 ### References

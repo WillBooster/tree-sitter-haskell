@@ -54,11 +54,14 @@ while IFS= read -r grammar; do
   profile="$workspace/$name.json"
   script/tree-sitter profile --grammar-path "$grammar" --output "$profile" "${training[@]}"
   script/tree-sitter generate "$grammar/grammar.js" --profile "$profile"
-  if [[ ${1:-} == --build-wasm ]]; then
-    script/tree-sitter build --wasm --optimization 2 "$grammar"
-  fi
   backup=
   rm -rf "$workspace/src"
 done <<< "$grammars"
+
+if [[ ${1:-} == --build-wasm ]]; then
+  while IFS= read -r grammar; do
+    script/tree-sitter build --wasm --optimization 2 "$grammar"
+  done <<< "$grammars"
+fi
 
 mv "$examples" "$root/.tmp/generation-profiles/examples.z"

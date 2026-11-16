@@ -1322,6 +1322,7 @@ static bool is_space_or_tab(int32_t c) {
  * Advance until the next newline or EOF, used to consume the body of a cpp directive.
  * Escaped newlines are treated as line continuations, which allow spaces and tabs between backslash and newline.
  */
+// code-gauge-allow functionCognitiveComplexity 19 -- Escaped newlines distinguish each lexical newline and closing-token case.
 static void take_line_escaped_newline(Env *env) {
   for (;;) {
     while (not_eof(env) && !is_newline(PEEK) && PEEK != '\\') S_ADVANCE;
@@ -2065,6 +2066,7 @@ static Lexed lex_symop(Env *env) {
   return LSymop;
 }
 
+// code-gauge-allow functionNcss 52 -- Each symbolic character has a separate token classification.
 static Lexed lex_single_symop(Env *env, int32_t c1) {
   switch (c1) {
     case '?':
@@ -2334,13 +2336,16 @@ static Lexed lex_extras(Env *env, bool allow_cpp) {
   return LNothing;
 }
 
+static Lexed dialect_symop(Lexed token, bool qualifying);
+
 /**
  * The main lexing entry point, branching on the first character, then advancing as far as necessary to identify all
  * interesting tokens.
  */
+// code-gauge-allow functionNcss 40 -- The lexer dispatches on the leading character before contextual interpretation.
 static Lexed lex(Env *env, bool bol) {
   SEQ(lex_extras(env, bol));
-  if (symop_char(peek0(env))) return lex_symop(env);
+  if (symop_char(peek0(env))) return dialect_symop(lex_symop(env), true);
   switch (peek0(env)) {
     case 'w':
       return try_end_token(env, "where", LWhere);
@@ -2608,6 +2613,8 @@ static void inline_comment(Env *env) {
   } while (line_comment_herald(env) && (haddock || !next_line_haddock(env)));
 }
 
+// code-gauge-allow functionCognitiveComplexity 16 -- Nested comment delimiters and escaped newlines share one cursor.
+// code-gauge-allow functionNcss 39 -- The loop handles nested delimiters and column updates together.
 static uint32_t consume_block_comment(Env *env, uint32_t col, bool content) {
   uint32_t level = 0;
   while (not_eof(env)) {
@@ -2806,6 +2813,7 @@ static Symbol semicolon(Env *env) {
  *
  * This is called by `newline_post` before marking, so the actions must not fail after advancing.
  */
+// code-gauge-allow functionNcss 48 -- Each lexical token has its own layout-ending or extra-token action.
 static Symbol process_token_safe(Env *env, Lexed next, bool allow_pragma) {
   switch (next) {
     case LWhere:
@@ -2857,7 +2865,9 @@ static Symbol process_token_safe(Env *env, Lexed next, bool allow_pragma) {
 /**
  * Process a `Lexed` token if it results in a symbolic operator.
  */
+// code-gauge-allow functionNcss 49 -- The dispatch keeps operator classification and lexical dialect alternatives together.
 static Symbol process_token_symop(Env *env, bool whitespace, Lexed next) {
+  next = dialect_symop(next, !whitespace && valid(env, QUAL_DOT));
 #ifdef HSC_EXT
   if (next == LHscHash) return finish_if_valid(env, HSC_HASH, "hsc hash");
 #endif
@@ -2881,8 +2891,7 @@ static Symbol process_token_symop(Env *env, bool whitespace, Lexed next) {
     case LPercent:
       return prefix_or_varsym(env, whitespace, PREFIX_PERCENT);
     case LSymop:
-      if (char0(env, ':')) return finish_symop(env, CONSYM);
-      else return finish_symop(env, VARSYM);
+      return finish_symop(env, char0(env, ':') ? CONSYM : VARSYM);
     // The following are handled here despite not being purely symop tokens because `process_token_symop` is executed
     // last, and these handlers all have potentially quite far lookahead and can fail.
     case LSymopSpecial:
@@ -3013,6 +3022,7 @@ static Symbol newline_post(Env *env) {
  * Repeatedly lex lookahead until encountering something that is neither a comment nor CPP, skipping whitespace and
  * newlines in between.
  */
+// code-gauge-allow functionNcss 46 -- Newline lookahead retains shared layout state across token alternatives.
 static void newline_lookahead(Env *env, Newline *newline) {
   for (;;) {
     // Using `peek0` to look for whitespace requires the lookahead buffer to have been reset immediately before this
@@ -3193,6 +3203,9 @@ typedef struct {
   bool infix;
   bool data_infix;
   bool type_instance;
+#ifdef GHC2021_LEXICAL
+  uint32_t qualifier_end;
+#endif
 } CtrState;
 
 /**
@@ -3235,6 +3248,7 @@ static CtrResult ctr_stop_on_token(Env *env, const char * restrict target) {
  * terminating at `::`:
  * > `a :: (C + D :: Constraint) => E`
  */
+// code-gauge-allow functionNcss 42 -- Constraint lookahead dispatches every token in the current context.
 static CtrResult ctr_top(Env *env, Lexed next) {
   switch (next) {
     case LCArrow:
@@ -3291,7 +3305,12 @@ static CtrResult ctr_top(Env *env, Lexed next) {
  * If the token wasn't identified to be irrelevant for the lookahead result, and the current bracket nesting level is
  * zero, call `ctr_top`.
  */
+// code-gauge-allow functionNcss 52 -- Constraint traversal keeps token-specific cursor transitions in one dispatch.
 static CtrResult ctr_lookahead_step(Env *env, CtrState *state, Lexed next) {
+#ifdef GHC2021_LEXICAL
+  next = dialect_symop(next, env->state->lookahead.offset == state->qualifier_end);
+  state->qualifier_end = UINT32_MAX;
+#endif
   state->reset = 1;
   switch (next) {
     case LBraceClose:
@@ -3308,6 +3327,9 @@ static CtrResult ctr_lookahead_step(Env *env, CtrState *state, Lexed next) {
       break;
     case LUpper:
       state->reset = conid(env);
+#ifdef GHC2021_LEXICAL
+      state->qualifier_end = env->state->lookahead.offset + state->reset;
+#endif
       return CtrUndecided;
     case LDotId:
       return CtrUndecided;
@@ -3340,6 +3362,15 @@ static CtrResult ctr_lookahead_step(Env *env, CtrState *state, Lexed next) {
   return ctr_top(env, next);
 }
 
+static Lexed dialect_symop(Lexed token, bool qualifying) {
+#ifdef GHC2021_LEXICAL
+  if (token == LDollar || token == LDotOpen || (!qualifying && (token == LDotId || token == LDotSymop))) return LSymop;
+#else
+  (void)qualifying;
+#endif
+  return token;
+}
+
 /**
  * Main loop for context lookahead.
  *
@@ -3351,9 +3382,13 @@ static CtrResult ctr_lookahead_step(Env *env, CtrState *state, Lexed next) {
  *
  * A context arrow is always a termination criterion; an infix operator only if CONTEXT isn't valid.
  */
+// code-gauge-allow functionNcss 46 -- The bounded traversal coordinates its shared context and cursor.
 static Symbol constraint_lookahead(Env *env) {
   dbg("type lookahead\n");
   CtrState state = {.reset = 0};
+#ifdef GHC2021_LEXICAL
+  state.qualifier_end = UINT32_MAX;
+#endif
   bool done = false;
   while (!done && not_eof(env)) {
     // Setting indent to 99999 only to not trigger the following termination condition when no newline was advanced over

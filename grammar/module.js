@@ -7,7 +7,7 @@ const {
   semis,
 } = require('./util.js')
 
-const declaration = ($, bindings) => choice(
+const declaration = ($, bindings, extensions) => choice(
     bindings,
     $.type_synonym,
     $.kind_signature,
@@ -22,14 +22,14 @@ const declaration = ($, bindings) => choice(
     $.instance,
     $.default_types,
     $.deriving_instance,
-    $.pattern_synonym,
+    ...(extensions ? [$.pattern_synonym] : []),
     $.foreign_import,
     $.foreign_export,
     $.fixity,
     $.top_splice,
   )
 
-module.exports = {
+module.exports = (extensions = true) => ({
 
   // ------------------------------------------------------------------------
   // module names
@@ -47,7 +47,7 @@ module.exports = {
   // import/export
   // ------------------------------------------------------------------------
 
-  namespace: _ => choice('pattern', 'type'),
+  namespace: _ => extensions ? choice('pattern', 'type') : 'type',
 
   _ie_value: $ => choice(
     field('variable', $._varids),
@@ -172,8 +172,8 @@ module.exports = {
     alias($._cond_layout_end_explicit, '}'),
   ),
 
-  declaration: $ => declaration($, $._module_decl),
+  declaration: $ => declaration($, $._module_decl, extensions),
 
-  _quoted_declaration: $ => declaration($, $.decl),
+  _quoted_declaration: $ => declaration($, $.decl, extensions),
 
-}
+})
