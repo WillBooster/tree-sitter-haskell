@@ -128,6 +128,7 @@ describe.each(['haskell', 'hsc', 'haskell_ghc2021'] as const)('%s compound scope
   test.each([
     ['(let { x = (let { y = let z = ', ' in z } in y) } in x)', 3],
     ['[let { x = [let { y = let z = ', ' in z } in y] } in x]', 3],
+    ['((let { x = let { y = ', ' } in y } in x))', 2],
     ['(let { x = (let { y = do ', ' } in y) } in x)', 2],
   ] as const)('preserves nested compound contexts: %s', async (open, close, letsPerBlock) => {
     const depth = 200;

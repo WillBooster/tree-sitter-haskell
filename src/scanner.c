@@ -1005,6 +1005,7 @@ static void push_context(Env *env, ContextSort sort, uint32_t indent) {
     Context *last = array_back(contexts);
     if (last->sort == sort && last->indent == indent && last->count < UINT32_MAX && last->extra_cycles == 0) {
       last->count++;
+      compress_context_pattern(contexts);
       return;
     }
   }
