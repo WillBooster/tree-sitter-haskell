@@ -45,7 +45,14 @@ test('scanner diagnostics preserve long-line trees', () => {
       expectBoundedSnapshots(comment.stderr);
     }
     const input = path.join(workspace, 'deep.hs');
-    fs.writeFileSync(input, `value=${'let { x = ('.repeat(64)}1${') } in x'.repeat(64)}\nfollowing = 1\n`);
+    const depth = 160;
+    const source =
+      'value =\n' +
+      Array.from({ length: depth }, (_, index) => `${' '.repeat(index * 8 + 2)}let x =\n`).join('') +
+      `${' '.repeat(depth * 8 + 2)}1\n` +
+      Array.from({ length: depth }, (_, index) => `${' '.repeat((depth - index - 1) * 8 + 2)}in x\n`).join('') +
+      'following = 1\n';
+    fs.writeFileSync(input, source);
     const arguments_ = ['--lang-name', 'haskell', input];
     const optimized = run(['parse', '--lib-path', optimizedLibrary, ...arguments_]);
     const debug = run(['parse', '--lib-path', debugLibrary, ...arguments_]);
