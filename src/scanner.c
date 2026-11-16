@@ -1746,9 +1746,10 @@ static bool indent_can_start_layout(Env *env, ContextSort sort, uint32_t indent)
  * - Otherwise, examine indent.
  */
 static Symbol start_layout(Env *env, const StartLayout start, uint32_t indent, const char * restrict desc) {
-  if (in_module_header(env)) pop(env);
-  else if (start.sort == Braces) MARK("start_layout brace");
-  else if (!indent_can_start_layout(env, start.sort, indent)) return FAIL;
+  const bool module_header = in_module_header(env);
+  if (module_header) pop(env);
+  if (start.sort == Braces) MARK("start_layout brace");
+  else if (!module_header && !indent_can_start_layout(env, start.sort, indent)) return FAIL;
   push_context(env, start.sort, indent);
   return finish(start.sym, desc);
 }
@@ -1790,10 +1791,8 @@ static Symbol texp_context(Env *env) {
 // Ending layouts
 // --------------------------------------------------------------------------------------------------------
 
-/**
- * Separated this from `end_layout` because it caused some weird performance glitches.
- */
 static Symbol end_layout_unchecked(Env *env, const char *restrict desc) {
+  if (current_context(env) == Braces) return FAIL;
   pop(env);
   return finish(END, desc);
 }
