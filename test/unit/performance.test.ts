@@ -84,22 +84,24 @@ test('parses repeated macro-call lookahead inside a closed comment in linear tim
   expect(largeFastest / smallFastest).toBeLessThan(9);
 });
 
-test.each(['v = let { x = 1 in x;\n', 'v=let {x=1 in x;\nvalue = let { x = 1 in x;\n'])(
-  'parses malformed explicit lets in linear time: %j',
-  { timeout: 60_000 },
-  (line) => {
-    const small = line.repeat(2000);
-    const large = line.repeat(20_000);
-    parseCpuTime(large);
-    let smallFastest = Infinity;
-    let largeFastest = Infinity;
-    for (let run = 0; run < 5; run++) {
-      smallFastest = Math.min(smallFastest, parseCpuTime(small));
-      largeFastest = Math.min(largeFastest, parseCpuTime(large));
-    }
-    expect(largeFastest / smallFastest).toBeLessThan(18);
+test.each([
+  'v = let { x = 1 in x;\n',
+  'v=let {x=1 in x;\nvalue = let { x = 1 in x;\n',
+  'v = (let { x = 1 in x);\n',
+  'v = [let { x = 1 in x];\n',
+  'v = (R { x = 1\n',
+])('parses malformed explicit lets in linear time: %j', { timeout: 60_000 }, (line) => {
+  const small = line.repeat(2000);
+  const large = line.repeat(20_000);
+  parseCpuTime(large);
+  let smallFastest = Infinity;
+  let largeFastest = Infinity;
+  for (let run = 0; run < 5; run++) {
+    smallFastest = Math.min(smallFastest, parseCpuTime(small));
+    largeFastest = Math.min(largeFastest, parseCpuTime(large));
   }
-);
+  expect(largeFastest / smallFastest).toBeLessThan(18);
+});
 
 function parseCpuTime(source: string, expectedError = true): number {
   const start = process.threadCpuUsage();

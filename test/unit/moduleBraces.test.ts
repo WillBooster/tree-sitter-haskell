@@ -108,3 +108,18 @@ describe.each(['haskell', 'hsc', 'haskell_ghc2021'] as const)('%s nested explici
     }
   });
 });
+
+describe.each(['haskell', 'hsc', 'haskell_ghc2021'] as const)('%s alternating context scopes', (name) => {
+  test.each([2, 50, 1200])('closes %i nested parentheses and explicit layouts', async (depth) => {
+    const source = `value=${'(let { x = '.repeat(depth)}1${' } in x)'.repeat(depth)}\nfollowing=2\n`;
+    const parser = new Parser().setLanguage(await Language.load(currentWasmPath(root, name)));
+    const tree = parser.parse(source)!;
+    try {
+      expect(tree.rootNode.hasError, tree.rootNode.toString()).toBe(false);
+      expect(tree.rootNode.descendantsOfType('bind').at(-1)?.text).toBe('following=2');
+    } finally {
+      tree.delete();
+      parser.delete();
+    }
+  });
+});
