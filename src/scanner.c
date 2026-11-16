@@ -302,13 +302,16 @@ static char const *context_names[] = {
 #endif
 
 /**
- * The persistent state maintains a stack of layout contexts.
- * New entries are created when a layout symbol is valid at the current position, and they are removed when the indent
- * of a line satisfies conditions that depend on the current context sort, or when certain tokens (like `else`) occur.
+ * Each context record represents `count` identical contexts. A `NoContext` record instead repeats the preceding
+ * `pattern_width` raw records for `extra_cycles` additional copies; that pattern may itself contain repeat records.
+ * Markers are not layout contexts: stack readers must skip them or expand their final cycle before removing a context.
  */
 typedef struct {
   ContextSort sort;
   uint32_t indent;
+  uint32_t count;
+  uint32_t pattern_width;
+  uint32_t extra_cycles;
 } Context;
 
 /**
@@ -623,6 +626,7 @@ typedef struct {
   bool input_has_unclosed_cpp_comment;
   uint32_t input_unclosed_cpp_comment_start;
   ImportInvocationMemo input_invocation_memo;
+  bool initialized;
   bool definite_declaration;
   bool cpp_state_unknown;
   uint32_t cpp_depth;
@@ -984,13 +988,78 @@ static uint32_t advance_until_char(Env *env, uint32_t i, int32_t c) {
 
 static bool has_contexts(Env *env) { return env->state->contexts.size != 0; }
 
+enum { ContextPatternWindow = 64 };
+
+static void compress_context_pattern(Contexts *contexts);
+static bool context_pattern_matches(const Contexts *contexts, uint32_t previous, uint32_t current, uint32_t width);
+static void expand_context_pattern(Contexts *contexts);
+
 /**
  * Push a layout context onto the stack.
  */
 static void push_context(Env *env, ContextSort sort, uint32_t indent) {
+  if (sort == Braces) indent = 0;
   dbg("push: %s %d\n", context_names[sort], indent);
-  Context ctx = (Context) {.sort = sort, .indent = indent};
-  array_push(&env->state->contexts, ctx);
+  Contexts *contexts = &env->state->contexts;
+  if (contexts->size) {
+    Context *last = array_back(contexts);
+    if (last->sort == sort && last->indent == indent && last->count < UINT32_MAX && last->extra_cycles == 0) {
+      last->count++;
+      compress_context_pattern(contexts);
+      return;
+    }
+  }
+  Context ctx = (Context) {.sort = sort, .indent = indent, .count = 1};
+  array_push(contexts, ctx);
+  compress_context_pattern(contexts);
+}
+
+// code-gauge-allow functionCognitiveComplexity 18 -- Bounded pattern search distinguishes extending a run from finding four closed copies.
+static void compress_context_pattern(Contexts *contexts) {
+  for (uint32_t width = 2; width <= ContextPatternWindow && width < contexts->size; width++) {
+    uint32_t current = contexts->size - width;
+    Context *marker = array_get(contexts, current - 1);
+    bool extending = marker->sort == NoContext && marker->pattern_width == width
+      && marker->extra_cycles < UINT32_MAX;
+    uint32_t previous = extending ? current - 1 : current;
+    if (previous < width || (!extending && current < 3 * width)) continue;
+    if (!context_pattern_matches(contexts, previous - width, current, width)) continue;
+    if (!extending
+        && (!context_pattern_matches(contexts, current - 2 * width, current, width)
+            || !context_pattern_matches(contexts, current - 3 * width, current, width))) continue;
+    if (extending) {
+      contexts->size = current;
+      marker->extra_cycles++;
+    }
+    else {
+      contexts->size = current - 2 * width;
+      array_push(contexts, ((Context) {.sort = NoContext, .pattern_width = width, .extra_cycles = 3}));
+    }
+    return;
+  }
+}
+
+static bool context_pattern_matches(const Contexts *contexts, uint32_t previous, uint32_t current, uint32_t width) {
+  for (uint32_t i = 0; i < width; i++) {
+    Context a = *array_get(contexts, previous + i);
+    Context b = *array_get(contexts, current + i);
+    if (a.sort != b.sort || a.indent != b.indent || a.count != b.count
+        || a.pattern_width != b.pattern_width || a.extra_cycles != b.extra_cycles
+        || (a.sort == NoContext && a.pattern_width > i)) return false;
+  }
+  return true;
+}
+
+static void expand_context_pattern(Contexts *contexts) {
+  Context marker = *array_back(contexts);
+  uint32_t start = contexts->size - 1 - marker.pattern_width;
+  if (marker.extra_cycles == 1) array_pop(contexts);
+  else array_back(contexts)->extra_cycles--;
+  array_reserve(contexts, contexts->size + marker.pattern_width);
+  for (uint32_t i = 0; i < marker.pattern_width; i++) {
+    Context context = contexts->contents[start + i];
+    array_push(contexts, context);
+  }
 }
 
 /**
@@ -998,13 +1067,21 @@ static void push_context(Env *env, ContextSort sort, uint32_t indent) {
  */
 static void pop(Env *env) {
   if (has_contexts(env)) {
-	dbg("pop: %s\n", context_names[array_back(&env->state->contexts)->sort]);
-	array_pop(&env->state->contexts);
+    Contexts *contexts = &env->state->contexts;
+    while (array_back(contexts)->sort == NoContext) expand_context_pattern(contexts);
+    Context *last = array_back(contexts);
+    dbg("pop: %s\n", context_names[last->sort]);
+    if (last->count > 1) last->count--;
+    else array_pop(contexts);
   }
 }
 
 static ContextSort current_context(Env *env) {
-  return has_contexts(env) ? array_back(&env->state->contexts)->sort : NoContext;
+  for (uint32_t i = env->state->contexts.size; i > 0; i--) {
+    Context context = *array_get(&env->state->contexts, i - 1);
+    if (context.sort != NoContext) return context.sort;
+  }
+  return NoContext;
 }
 
 static bool is_layout_context(Env *env) {
@@ -1040,7 +1117,7 @@ static bool indent_lesseq(Env *env, uint32_t indent) {
 }
 
 static bool top_layout(Env *env) {
-  return env->state->contexts.size == 1;
+  return env->state->contexts.size == 1 && array_back(&env->state->contexts)->count == 1;
 }
 
 static bool in_module_header(Env *env) {
@@ -1212,6 +1289,8 @@ static void debug_context(Context ctx) {
     else if (ctx.sort == QuoteLayout) dbg("quote ");
     dbg("%d", ctx.indent);
   }
+  if (ctx.count > 1) dbg("*%u", ctx.count);
+  if (ctx.extra_cycles) dbg("[repeat %u +%u]", ctx.pattern_width, ctx.extra_cycles);
 }
 
 static void debug_newline(Env *env) {
@@ -1439,7 +1518,7 @@ static bool match_symop(Env *env, const char *restrict target) {
   return target[len] == '\0';
 }
 
-static bool uninitialized(Env *env) { return !has_contexts(env); }
+static bool uninitialized(Env *env) { return !env->state->initialized && !has_contexts(env); }
 
 static uint32_t conid(Env *env) {
   if (!is_conid_start_char(peek0(env))) return 0;
@@ -1746,9 +1825,10 @@ static bool indent_can_start_layout(Env *env, ContextSort sort, uint32_t indent)
  * - Otherwise, examine indent.
  */
 static Symbol start_layout(Env *env, const StartLayout start, uint32_t indent, const char * restrict desc) {
-  if (in_module_header(env)) pop(env);
-  else if (start.sort == Braces) MARK("start_layout brace");
-  else if (!indent_can_start_layout(env, start.sort, indent)) return FAIL;
+  const bool module_header = in_module_header(env);
+  if (module_header) pop(env);
+  if (start.sort == Braces) MARK("start_layout brace");
+  else if (!module_header && !indent_can_start_layout(env, start.sort, indent)) return FAIL;
   push_context(env, start.sort, indent);
   return finish(start.sym, desc);
 }
@@ -1790,10 +1870,8 @@ static Symbol texp_context(Env *env) {
 // Ending layouts
 // --------------------------------------------------------------------------------------------------------
 
-/**
- * Separated this from `end_layout` because it caused some weird performance glitches.
- */
 static Symbol end_layout_unchecked(Env *env, const char *restrict desc) {
+  if (current_context(env) == Braces) return FAIL;
   pop(env);
   return finish(END, desc);
 }
@@ -1827,14 +1905,17 @@ static Symbol end_layout_brace(Env *env) {
  * Exceptions are:
  *
  * - Brace layouts
- * - The top-level layout, which should only be ended at the end of file.
- *   For leniency, we change the current indent to the smaller value.
+ * - Outside GHC2021, the top-level layout accepts a smaller indent instead of ending.
  */
 static Symbol end_layout_indent(Env *env) {
   if (valid(env, END) && indent_less(env, env->state->newline.indent)) {
     if (top_layout(env)) {
-	  array_back(&env->state->contexts)->indent = env->state->newline.indent;
+#ifdef GHC2021_LEXICAL
+      return end_layout_unchecked(env, "dedented module");
+#else
+      array_back(&env->state->contexts)->indent = env->state->newline.indent;
       return update_state("end top layout");
+#endif
     }
     else {
       env->state->newline.skip_semi = false;
@@ -1929,7 +2010,7 @@ static bool layouts_in_texp(Env *env) {
     for (int32_t i = (int32_t) env->state->contexts.size - 2; i >= 0; i--) {
 	  Context *cur = array_get(&env->state->contexts, i);
       if (cur->sort == TExp || cur->sort == Braces) return true;
-      else if (cur->sort > Braces) break;
+      else if (cur->sort > Braces && cur->sort != NoContext) break;
     }
   }
   return false;
@@ -1962,8 +2043,8 @@ static Symbol token_end_layout_texp(Env *env) {
 }
 
 static Symbol force_end_context(Env *env) {
-  for (int32_t i = (int32_t) env->state->contexts.size - 1; i >= 0; i--) {
-	ContextSort ctx = array_get(&env->state->contexts, i)->sort;
+  while (has_contexts(env)) {
+    ContextSort ctx = current_context(env);
     Symbol s = context_end_sym(ctx);
     pop(env);
     if (s != FAIL && valid(env, s)) return finish(s, "force_end_context");
@@ -2954,6 +3035,7 @@ static Symbol process_token_interior(Env *env, Lexed next) {
  * Process a `Lexed` token to initialize the context stack.
  */
 static Symbol process_token_init(Env *env, uint32_t indent, Lexed next) {
+  env->state->initialized = true;
   switch (next) {
     case LModule:
       push_context(env, ModuleHeader, 0);
@@ -2991,9 +3073,9 @@ static Symbol newline_extras(Env *env, Space space) {
 // finding a pragma.
 static Symbol newline_process(Env *env) {
   dbg("newline post\n");
-  uint32_t indent = env->state->newline.indent;
   Lexed end = env->state->newline.end;
-  SEQ(end_layout_indent(env));
+  const bool explicit_start = end == LBraceOpen && valid_layout_start_sym(env) != FAIL;
+  if (!explicit_start) SEQ(end_layout_indent(env));
   SEQ(process_token_safe(env, end, false));
   Space space = skip_whitespace(env);
   MARK("newline_post");
@@ -3002,9 +3084,9 @@ static Symbol newline_process(Env *env) {
   // TODO it is only necessary to run this late because of very few situations, like nondecreasing indent.
   // But it has the consequence that whitespace is included in the parent in nested layouts.
   // Maybe there's a way to run it before and after `start_layout_newline` with conditions.
-  SEQ(semicolon(env));
+  if (!explicit_start) SEQ(semicolon(env));
   reset_newline(env);
-  if (uninitialized(env)) SEQ(process_token_init(env, indent, end));
+  if (uninitialized(env)) SEQ(process_token_init(env, start_column(env), end));
   else {
     SEQ(process_token_symop(env, true, end));
     SEQ(process_token_splice(env, end));
@@ -3788,6 +3870,7 @@ enum {
   ContextIndent = 1 << 5,
   ContextReference = 1 << 6,
   ContextCppState = ContextReference | 1,
+  ContextPattern = ContextReference | 2,
   CppHasDepth = 1 << 4,
   ContextSearchWindow = 64,
   ContextSortMask = ContextRepeat - 1,
@@ -3812,7 +3895,6 @@ static bool serialize_context_reference(char *buffer, unsigned *length, ContextM
 static void deserialize_context_reference(Contexts *contexts, const char **cursor, const char *end);
 static inline bool serialize_uint(char *buffer, unsigned *length, uint32_t value);
 static inline uint32_t deserialize_uint(const char **cursor, const char *end);
-static uint32_t context_run_length(const Contexts *contexts, uint32_t start);
 static ContextMatch context_match(const Contexts *contexts, uint32_t start);
 static ContextMatch context_match_at_distance(const Contexts *contexts, uint32_t start, uint32_t distance);
 
@@ -3835,7 +3917,7 @@ unsigned tree_sitter_haskell_external_scanner_serialize(void *payload, char *buf
   unsigned length = 0;
   uint32_t flags = newline.state | (newline.eof << 2) | (newline.no_semi << 3)
     | (newline.skip_semi << 4) | (newline.unsafe << 5)
-    | (state->comment.active << 6) | (state->comment.block << 7) | (state->comment.haddock << 8);
+    | (state->comment.active << 6) | (state->comment.block << 7) | (state->comment.haddock << 8) | (state->initialized << 9);
   if (!serialize_uint(buffer, &length, flags)) return 0;
   if (newline.state != NInactive
       && (!serialize_uint(buffer, &length, newline.end)
@@ -3861,6 +3943,7 @@ static unsigned serialize_cpp_state(const State *state, char *buffer, unsigned l
 void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
   State *state = (State *) payload;
   state->contexts.size = 0;
+  state->initialized = false;
   state->comment = (Comment) {0};
   state->import_macros = 0;
   state->definite_declaration = false;
@@ -3874,6 +3957,7 @@ void tree_sitter_haskell_external_scanner_deserialize(void *payload, const char 
 
 static void deserialize_payload(State *state, const char *cursor, const char *end) {
   uint32_t flags = deserialize_uint(&cursor, end);
+  state->initialized = flags & 512;
   state->comment = (Comment) {.active = flags & 64, .block = flags & 128, .haddock = flags & 256};
   uint32_t newline_state = flags & 3;
   uint32_t newline_end = 0;
@@ -3897,7 +3981,13 @@ static void deserialize_payload(State *state, const char *cursor, const char *en
       deserialize_cpp_state(state, &cursor, end);
       break;
     }
-    if (tag == ContextReference) deserialize_context_reference(&state->contexts, &cursor, end);
+    if (tag == ContextPattern) {
+      Context marker = {.sort = NoContext};
+      marker.pattern_width = deserialize_uint(&cursor, end);
+      marker.extra_cycles = deserialize_uint(&cursor, end);
+      array_push(&state->contexts, marker);
+    }
+    else if (tag == ContextReference) deserialize_context_reference(&state->contexts, &cursor, end);
     else deserialize_context_run(&state->contexts, tag, &cursor, end);
   }
 }
@@ -3915,10 +4005,9 @@ static void deserialize_context_run(Contexts *contexts, uint32_t tag, const char
   Context context = {
     .sort = tag & ContextSortMask,
     .indent = (tag & ContextIndent) ? deserialize_uint(cursor, end) : 0,
+    .count = count,
   };
-  array_reserve(contexts, contexts->size + count);
-  for (uint32_t i = 0; i < count; i++) contexts->contents[contexts->size + i] = context;
-  contexts->size += count;
+  array_push(contexts, context);
 }
 
 void tree_sitter_haskell_external_scanner_destroy(void *payload) {
@@ -3930,12 +4019,11 @@ void tree_sitter_haskell_external_scanner_destroy(void *payload) {
 
 static bool serialize_contexts(const Contexts *contexts, char *buffer, unsigned *length, bool compress) {
   for (uint32_t i = 0; i < contexts->size;) {
-    uint32_t count = context_run_length(contexts, i);
-    ContextMatch match = {.count = count};
-    if (compress && count == 1) match = context_match(contexts, i);
+    Context context = *array_get(contexts, i);
+    ContextMatch match = compress ? context_match(contexts, i) : (ContextMatch) {.count = 1};
     bool written = match.distance
       ? serialize_context_reference(buffer, length, match)
-      : serialize_context(buffer, length, *array_get(contexts, i), count);
+      : serialize_context(buffer, length, context, context.count);
     if (!written) return false;
     i += match.count;
   }
@@ -3943,6 +4031,11 @@ static bool serialize_contexts(const Contexts *contexts, char *buffer, unsigned 
 }
 
 static bool serialize_context(char *buffer, unsigned *length, Context context, uint32_t count) {
+  if (context.sort == NoContext) {
+    return serialize_uint(buffer, length, ContextPattern)
+      && serialize_uint(buffer, length, context.pattern_width)
+      && serialize_uint(buffer, length, context.extra_cycles);
+  }
   uint32_t tag = context.sort | (count > 1 ? ContextRepeat : 0) | (context.indent > 0 ? ContextIndent : 0);
   return serialize_uint(buffer, length, tag)
     && (count == 1 || serialize_uint(buffer, length, count - 1))
@@ -4006,17 +4099,6 @@ static inline uint32_t deserialize_uint(const char **cursor, const char *end) {
   return value;
 }
 
-static uint32_t context_run_length(const Contexts *contexts, uint32_t start) {
-  Context context = *array_get(contexts, start);
-  uint32_t end = start + 1;
-  while (end < contexts->size) {
-    Context next = *array_get(contexts, end);
-    if (next.sort != context.sort || next.indent != context.indent) break;
-    end++;
-  }
-  return end - start;
-}
-
 static ContextMatch context_match(const Contexts *contexts, uint32_t start) {
   for (uint32_t distance = 1; distance <= start && distance <= ContextSearchWindow; distance++) {
     ContextMatch match = context_match_at_distance(contexts, start, distance);
@@ -4031,7 +4113,9 @@ static ContextMatch context_match_at_distance(const Contexts *contexts, uint32_t
   while (match.count < contexts->size - start) {
     Context current = *array_get(contexts, start + match.count);
     Context previous = *array_get(contexts, start + match.count - distance);
-    if (current.sort != previous.sort || (current.indent == 0) != (previous.indent == 0)) break;
+    if (current.extra_cycles != previous.extra_cycles || current.pattern_width != previous.pattern_width
+        || current.sort != previous.sort || current.count != previous.count
+        || (current.indent == 0) != (previous.indent == 0)) break;
     if (current.indent) {
       int64_t difference = (int64_t) current.indent - previous.indent;
       if (difference < INT32_MIN || difference > INT32_MAX

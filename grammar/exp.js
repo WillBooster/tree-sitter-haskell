@@ -76,7 +76,7 @@ module.exports = (extensions = true) => ({
   // lists
   // ------------------------------------------------------------------------
 
-  _exp_list: $ => brackets($, sep1(',', field('element', $._exp)), optional(',')),
+  _exp_list: $ => brackets($, sep1(',', field('element', $._exp))),
 
   _exp_arithmetic_sequence: $ => brackets(
     $,
