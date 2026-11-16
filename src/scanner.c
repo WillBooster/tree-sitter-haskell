@@ -3871,6 +3871,7 @@ typedef struct {
 } ContextMatch;
 
 static bool serialize_contexts(const Contexts *contexts, char *buffer, unsigned *length, bool compress);
+static bool serialize_expanded_contexts(const Contexts *contexts, char *buffer, unsigned *length);
 static unsigned serialize_cpp_state(const State *state, char *buffer, unsigned length);
 static void deserialize_payload(State *state, const char *cursor, const char *end);
 static void deserialize_cpp_state(State *state, const char **cursor, const char *end);
@@ -3910,7 +3911,7 @@ unsigned tree_sitter_haskell_external_scanner_serialize(void *payload, char *buf
   unsigned prefix = length;
   if (!serialize_contexts(&state->contexts, buffer, &length, false)) {
     length = prefix;
-    if (!serialize_contexts(&state->contexts, buffer, &length, true)) return 0;
+    if (!serialize_expanded_contexts(&state->contexts, buffer, &length)) return 0;
   }
   return serialize_cpp_state(state, buffer, length);
 }
@@ -4009,13 +4010,33 @@ static bool serialize_contexts(const Contexts *contexts, char *buffer, unsigned 
       ? serialize_context_reference(buffer, length, match)
       : serialize_context(buffer, length, context, context.count);
     if (!written) return false;
-    if (context.repetitions
+    if (!match.distance && context.repetitions
         && (!serialize_uint(buffer, length, ContextPattern)
             || !serialize_uint(buffer, length, context.pattern_width)
             || !serialize_uint(buffer, length, context.repetitions))) return false;
     i += match.count;
   }
   return true;
+}
+
+static bool serialize_expanded_contexts(const Contexts *contexts, char *buffer, unsigned *length) {
+  Contexts expanded = array_new();
+  for (uint32_t i = 0; i < contexts->size; i++) {
+    Context context = *array_get(contexts, i);
+    uint32_t repetitions = context.repetitions;
+    uint32_t width = context.pattern_width;
+    context.repetitions = context.pattern_width = 0;
+    array_push(&expanded, context);
+    for (uint32_t repetition = 1; repetition < repetitions; repetition++) {
+      for (uint32_t j = 0; j < width; j++) {
+        Context repeated = expanded.contents[expanded.size - width];
+        array_push(&expanded, repeated);
+      }
+    }
+  }
+  bool written = serialize_contexts(&expanded, buffer, length, true);
+  array_delete(&expanded);
+  return written;
 }
 
 static bool serialize_context(char *buffer, unsigned *length, Context context, uint32_t count) {
@@ -4096,7 +4117,8 @@ static ContextMatch context_match_at_distance(const Contexts *contexts, uint32_t
   while (match.count < contexts->size - start) {
     Context current = *array_get(contexts, start + match.count);
     Context previous = *array_get(contexts, start + match.count - distance);
-    if (current.repetitions || previous.repetitions || current.sort != previous.sort || current.count != previous.count
+    if (current.repetitions != previous.repetitions || current.pattern_width != previous.pattern_width
+        || current.sort != previous.sort || current.count != previous.count
         || (current.indent == 0) != (previous.indent == 0)) break;
     if (current.indent) {
       int64_t difference = (int64_t) current.indent - previous.indent;
