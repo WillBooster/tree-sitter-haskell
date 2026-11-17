@@ -11079,6 +11079,10 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "fixity"
+        },
+        {
+          "type": "SYMBOL",
           "name": "decl"
         },
         {
@@ -11257,17 +11261,8 @@
                       "type": "FIELD",
                       "name": "decl",
                       "content": {
-                        "type": "CHOICE",
-                        "members": [
-                          {
-                            "type": "SYMBOL",
-                            "name": "fixity"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "_local_binding"
-                          }
-                        ]
+                        "type": "SYMBOL",
+                        "name": "_local_binding"
                       }
                     },
                     {
@@ -11295,17 +11290,8 @@
                             "type": "FIELD",
                             "name": "decl",
                             "content": {
-                              "type": "CHOICE",
-                              "members": [
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "fixity"
-                                },
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "_local_binding"
-                                }
-                              ]
+                              "type": "SYMBOL",
+                              "name": "_local_binding"
                             }
                           }
                         ]

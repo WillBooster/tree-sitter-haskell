@@ -106,6 +106,7 @@ module.exports = {
   _multiplicity_bind: $ => seq(field('multiplicity', $.modifier), binding($, $._pat)),
 
   _local_binding: $ => choice(
+    $.fixity,
     $.decl,
     alias($._multiplicity_bind, $.bind),
   ),
@@ -129,7 +130,7 @@ module.exports = {
     $.decl,
   ),
 
-  local_binds: $ => layout($, field('decl', choice($.fixity, $._local_binding))),
+  local_binds: $ => layout($, field('decl', $._local_binding)),
 
   where_clause: $ => seq($._where, optional(field('binds', $.local_binds))),
 
