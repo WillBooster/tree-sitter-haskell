@@ -58,14 +58,6 @@
         "named": true
       },
       {
-        "type": "prefix_unboxed_sum",
-        "named": true
-      },
-      {
-        "type": "prefix_unboxed_tuple",
-        "named": true
-      },
-      {
         "type": "qualified",
         "named": true
       },
@@ -79,18 +71,6 @@
       },
       {
         "type": "tuple",
-        "named": true
-      },
-      {
-        "type": "unboxed_sum",
-        "named": true
-      },
-      {
-        "type": "unboxed_tuple",
-        "named": true
-      },
-      {
-        "type": "unboxed_unit",
         "named": true
       },
       {
@@ -166,14 +146,6 @@
         "named": true
       },
       {
-        "type": "prefix_unboxed_sum",
-        "named": true
-      },
-      {
-        "type": "prefix_unboxed_tuple",
-        "named": true
-      },
-      {
         "type": "promoted",
         "named": true
       },
@@ -183,10 +155,6 @@
       },
       {
         "type": "tuple",
-        "named": true
-      },
-      {
-        "type": "unboxed_unit",
         "named": true
       },
       {
@@ -422,14 +390,6 @@
         "named": true
       },
       {
-        "type": "prefix_unboxed_sum",
-        "named": true
-      },
-      {
-        "type": "prefix_unboxed_tuple",
-        "named": true
-      },
-      {
         "type": "qualified",
         "named": true
       },
@@ -447,18 +407,6 @@
       },
       {
         "type": "typed_hole",
-        "named": true
-      },
-      {
-        "type": "unboxed_sum",
-        "named": true
-      },
-      {
-        "type": "unboxed_tuple",
-        "named": true
-      },
-      {
-        "type": "unboxed_unit",
         "named": true
       },
       {
@@ -556,14 +504,6 @@
         "named": true
       },
       {
-        "type": "prefix_unboxed_sum",
-        "named": true
-      },
-      {
-        "type": "prefix_unboxed_tuple",
-        "named": true
-      },
-      {
         "type": "qualified",
         "named": true
       },
@@ -577,18 +517,6 @@
       },
       {
         "type": "tuple",
-        "named": true
-      },
-      {
-        "type": "unboxed_sum",
-        "named": true
-      },
-      {
-        "type": "unboxed_tuple",
-        "named": true
-      },
-      {
-        "type": "unboxed_unit",
         "named": true
       },
       {
@@ -724,14 +652,6 @@
         "named": true
       },
       {
-        "type": "prefix_unboxed_sum",
-        "named": true
-      },
-      {
-        "type": "prefix_unboxed_tuple",
-        "named": true
-      },
-      {
         "type": "promoted",
         "named": true
       },
@@ -745,18 +665,6 @@
       },
       {
         "type": "tuple",
-        "named": true
-      },
-      {
-        "type": "unboxed_sum",
-        "named": true
-      },
-      {
-        "type": "unboxed_tuple",
-        "named": true
-      },
-      {
-        "type": "unboxed_unit",
         "named": true
       },
       {
@@ -794,11 +702,6 @@
         "named": true
       }
     ]
-  },
-  {
-    "type": "(#",
-    "named": false,
-    "fields": {}
   },
   {
     "type": "abstract_family",
@@ -4960,16 +4863,6 @@
     "fields": {}
   },
   {
-    "type": "prefix_unboxed_sum",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "prefix_unboxed_tuple",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "promoted",
     "named": true,
     "fields": {},
@@ -5398,18 +5291,6 @@
         },
         {
           "type": "tuple",
-          "named": true
-        },
-        {
-          "type": "unboxed_sum",
-          "named": true
-        },
-        {
-          "type": "unboxed_tuple",
-          "named": true
-        },
-        {
-          "type": "unboxed_unit",
           "named": true
         },
         {
@@ -5934,91 +5815,6 @@
     }
   },
   {
-    "type": "unboxed_sum",
-    "named": true,
-    "fields": {
-      "element": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "binding_pattern_operand",
-            "named": true
-          },
-          {
-            "type": "expression_operand",
-            "named": true
-          },
-          {
-            "type": "operator_chain",
-            "named": true
-          },
-          {
-            "type": "pattern_operand",
-            "named": true
-          },
-          {
-            "type": "quantified_type",
-            "named": true
-          },
-          {
-            "type": "signature",
-            "named": true
-          },
-          {
-            "type": "view_pattern",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "unboxed_tuple",
-    "named": true,
-    "fields": {
-      "element": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "binding_pattern_operand",
-            "named": true
-          },
-          {
-            "type": "expression_operand",
-            "named": true
-          },
-          {
-            "type": "operator_chain",
-            "named": true
-          },
-          {
-            "type": "pattern_operand",
-            "named": true
-          },
-          {
-            "type": "quantified_type",
-            "named": true
-          },
-          {
-            "type": "signature",
-            "named": true
-          },
-          {
-            "type": "view_pattern",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "unboxed_unit",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "unit",
     "named": true,
     "fields": {}
@@ -6116,10 +5912,6 @@
   },
   {
     "type": "#",
-    "named": false
-  },
-  {
-    "type": "#)",
     "named": false
   },
   {

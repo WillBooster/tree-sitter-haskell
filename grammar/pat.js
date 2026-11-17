@@ -9,7 +9,7 @@ const {
   unboxed_sum_single,
 } = require('./util.js')
 
-const patternRules = (name, recordField) => {
+const patternRules = (name, recordField, unboxed) => {
   const rule = ($, key) => $[name(key)]
   return {
 
@@ -123,8 +123,7 @@ const patternRules = (name, recordField) => {
       alias(rule($, '_pat_parens'), $.parens),
       alias(rule($, '_pat_tuple'), $.tuple),
       alias(rule($, '_pat_or'), $.or_pattern),
-      alias(rule($, '_pat_unboxed_tuple'), $.unboxed_tuple),
-      alias(rule($, '_pat_unboxed_sum'), $.unboxed_sum),
+      ...(unboxed ? [alias(rule($, '_pat_unboxed_tuple'), $.unboxed_tuple), alias(rule($, '_pat_unboxed_sum'), $.unboxed_sum)] : []),
       alias(rule($, '_pat_list'), $.list),
       alias($._plist, $.list),
       alias(rule($, '_pat_strict'), $.strict),
@@ -168,12 +167,12 @@ const recordField = ($, pattern) => choice(
   seq(field('field', $._field_names), optional(seq('=', field('pattern', pattern)))),
 )
 
-module.exports = {
-  ...patternRules(name => name, $ => $.field_pattern),
-  ...patternRules(bindingRuleName, $ => $.binding_field_pattern),
+module.exports = (unboxed = true) => ({
+  ...patternRules(name => name, $ => $.field_pattern, unboxed),
+  ...patternRules(bindingRuleName, $ => $.binding_field_pattern, unboxed),
 
   binding_field_pattern: $ => choice(alias($._binding_field_pattern, $.field_pattern)),
   _binding_field_pattern: $ => recordField($, $._binding_pat_texp),
   field_pattern: $ => recordField($, $._pat_texp),
   patterns: $ => repeat1(prec('patterns', $._pat_apply_arg)),
-}
+})

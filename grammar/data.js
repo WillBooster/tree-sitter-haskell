@@ -9,7 +9,7 @@ const {
   forall,
 } = require('./util.js')
 
-module.exports = {
+module.exports = (unboxed = true) => ({
 
   // ------------------------------------------------------------------------
   // fields
@@ -120,11 +120,10 @@ module.exports = {
    */
   _datacon_special: $ => choice(
     $.unit,
-    $.unboxed_unit,
+    ...(unboxed ? [$.unboxed_unit] : []),
     alias($._plist, $.empty_list),
     alias($._type_tuple, $.tuple),
-    alias($._type_unboxed_tuple, $.unboxed_tuple),
-    alias($._datacon_unboxed_sum, $.unboxed_sum),
+    ...(unboxed ? [alias($._type_unboxed_tuple, $.unboxed_tuple), alias($._datacon_unboxed_sum, $.unboxed_sum)] : []),
   ),
 
   /**
@@ -238,4 +237,4 @@ module.exports = {
     alias($.decl_inst_newtype, $.newtype),
   ),
 
-}
+})
