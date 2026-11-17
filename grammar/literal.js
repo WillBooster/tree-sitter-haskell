@@ -12,7 +12,7 @@ const hex_exponent = /[pP][+-]?[0-9a-fA-F_]+/
 
 
 module.exports = (hashSuffix = /##?/) => {
-  const magic_hash = rule => token(seq(rule, optional(token.immediate(hashSuffix))))
+  const magic_hash = rule => hashSuffix ? token(seq(rule, optional(token.immediate(hashSuffix)))) : token(rule)
   return {
 
   float: _ => magic_hash(
@@ -59,7 +59,7 @@ module.exports = (hashSuffix = /##?/) => {
   ),
 
   integer: $ => choice(
-    $._sized_integer,
+    ...(hashSuffix ? [$._sized_integer] : []),
     $._binary_literal,
     $._integer_literal,
     $._octal_literal,
