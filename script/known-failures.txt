@@ -10,4 +10,3 @@ examples/pandoc/src/Text/Pandoc/Readers/ODT/Arrows/State.hs
 examples/pandoc/src/Text/Pandoc/Readers/ODT/ContentReader.hs
 examples/pandoc/src/Text/Pandoc/Readers/ODT/Generic/Utils.hs
 examples/pandoc/src/Text/Pandoc/Readers/ODT/StyleReader.hs
-examples/pandoc/test/Tests/Writers/Markdown.hs
