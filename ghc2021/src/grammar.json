@@ -1099,24 +1099,6 @@
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
-            "name": "_type_unboxed_tuple"
-          },
-          "named": true,
-          "value": "unboxed_tuple"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_type_unboxed_sum"
-          },
-          "named": true,
-          "value": "unboxed_sum"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
             "name": "_type_tuple"
           },
           "named": true,
@@ -4954,24 +4936,6 @@
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
-            "name": "_exp_unboxed_tuple"
-          },
-          "named": true,
-          "value": "unboxed_tuple"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_exp_unboxed_sum"
-          },
-          "named": true,
-          "value": "unboxed_sum"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
             "name": "_exp_lambda_case"
           },
           "named": true,
@@ -5832,24 +5796,6 @@
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
-            "name": "_pat_unboxed_tuple"
-          },
-          "named": true,
-          "value": "unboxed_tuple"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_pat_unboxed_sum"
-          },
-          "named": true,
-          "value": "unboxed_sum"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
             "name": "_pat_list"
           },
           "named": true,
@@ -6647,24 +6593,6 @@
           },
           "named": true,
           "value": "or_pattern"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_binding_pat_unboxed_tuple"
-          },
-          "named": true,
-          "value": "unboxed_tuple"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_binding_pat_unboxed_sum"
-          },
-          "named": true,
-          "value": "unboxed_sum"
         },
         {
           "type": "ALIAS",
@@ -9061,10 +8989,6 @@
           "name": "unit"
         },
         {
-          "type": "SYMBOL",
-          "name": "unboxed_unit"
-        },
-        {
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
@@ -9081,24 +9005,6 @@
           },
           "named": true,
           "value": "tuple"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_type_unboxed_tuple"
-          },
-          "named": true,
-          "value": "unboxed_tuple"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_datacon_unboxed_sum"
-          },
-          "named": true,
-          "value": "unboxed_sum"
         }
       ]
     },
@@ -13203,34 +13109,12 @@
       ]
     },
     "_unit_cons": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "unit"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "unboxed_unit"
-        }
-      ]
+      "type": "SYMBOL",
+      "name": "unit"
     },
     "_tuple_cons": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "prefix_tuple"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "prefix_unboxed_tuple"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "prefix_unboxed_sum"
-        }
-      ]
+      "type": "SYMBOL",
+      "name": "prefix_tuple"
     },
     "_qualified_variable": {
       "type": "PREC",

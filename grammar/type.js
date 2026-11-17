@@ -13,7 +13,7 @@ const {
   optional_where,
 } = require('./util.js')
 
-module.exports = {
+module.exports = (unboxed = true) => ({
 
   // ------------------------------------------------------------------------
   // type parameters
@@ -124,8 +124,7 @@ module.exports = {
     alias($._type_promoted, $.promoted),
     alias($._type_list, $.list),
     alias($._plist, $.prefix_list),
-    alias($._type_unboxed_tuple, $.unboxed_tuple),
-    alias($._type_unboxed_sum, $.unboxed_sum),
+    ...(unboxed ? [alias($._type_unboxed_tuple, $.unboxed_tuple), alias($._type_unboxed_sum, $.unboxed_sum)] : []),
     alias($._type_tuple, $.tuple),
     alias($._type_apply, $.apply),
     $._universal,
@@ -415,4 +414,4 @@ module.exports = {
     field('type', $._tycons),
     repeat1(field('role', $.type_role)),
   )
-}
+})

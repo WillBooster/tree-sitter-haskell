@@ -11,6 +11,7 @@ const {
   qualified,
 } = require('./util.js')
 
+// code-gauge-allow functionCognitiveComplexity 16 -- The dialect selects expression alternatives together.
 module.exports = (extensions = true) => ({
 
   // ------------------------------------------------------------------------
@@ -365,8 +366,7 @@ module.exports = (extensions = true) => ({
     ...(extensions ? [alias($._exp_projection, $.projection)] : []),
     alias($._exp_arithmetic_sequence, $.arithmetic_sequence),
     alias($._exp_list_comprehension, $.list_comprehension),
-    alias($._exp_unboxed_tuple, $.unboxed_tuple),
-    alias($._exp_unboxed_sum, $.unboxed_sum),
+    ...(extensions ? [alias($._exp_unboxed_tuple, $.unboxed_tuple), alias($._exp_unboxed_sum, $.unboxed_sum)] : []),
     ...(extensions ? [alias($._exp_projection_selector, $.projection_selector)] : []),
     ...(extensions ? [alias($._exp_quote, $.quote)] : []),
     ...(extensions ? [alias($._exp_typed_quote, $.typed_quote)] : []),

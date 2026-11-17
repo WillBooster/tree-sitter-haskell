@@ -3,7 +3,7 @@ const
   comment = require('./grammar/comment.js'),
   conflicts = require('./grammar/conflicts.js'),
   context = require('./grammar/context.js'),
-  data = require('./grammar/data.js'),
+  data = require('./grammar/data.js')(),
   decl = require('./grammar/decl.js'),
   exp = require('./grammar/exp.js')(),
   externals = require('./grammar/externals.js'),
@@ -14,11 +14,11 @@ const
   literal = require('./grammar/literal.js')(),
   module_ = require('./grammar/module.js')(),
   operator = require('./grammar/operator.js'),
-  pat = require('./grammar/pat.js'),
+  pat = require('./grammar/pat.js')(),
   patsyn = require('./grammar/patsyn.js'),
   precedences = require('./grammar/precedences.js'),
   th = require('./grammar/th.js'),
-  type = require('./grammar/type.js')
+  type = require('./grammar/type.js')()
 
 module.exports = grammar({
   name: 'haskell',
