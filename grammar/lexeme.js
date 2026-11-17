@@ -6,13 +6,13 @@ const varid_start_char = /[_\p{Ll}\p{Lo}]/
 
 const conid_start_char = /[\p{Lu}\p{Lt}]/
 
-module.exports = (hash = '#') => ({
+module.exports = (hash = '#', magicHash = true) => ({
 
-  variable: _ => token(seq(varid_start_char, id_char, hash === '#' ? /#*/ : /(##)*/)),
+  variable: _ => token(seq(varid_start_char, id_char, ...(magicHash ? [hash === '#' ? /#*/ : /(##)*/] : []))),
 
   implicit_variable: _ => token(seq('?', varid_start_char, id_char)),
 
-  name: _ => token(seq(conid_start_char, id_char, hash === '#' ? /#*/ : /(##)*/)),
+  name: _ => token(seq(conid_start_char, id_char, ...(magicHash ? [hash === '#' ? /#*/ : /(##)*/] : []))),
 
   label: _ => token(seq(hash, choice(/[\pL\p{Mn}\pN_']+/, quoted_string(
     /[^\p{C}\p{Zl}\p{Zp}\\"]/,

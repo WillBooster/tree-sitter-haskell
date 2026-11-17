@@ -1168,9 +1168,13 @@ static bool is_id_char(const int32_t c) {
   return c == '_' || c == '\'' || is_identifier_char(c);
 }
 
-// TODO hashes only work at the end of identifiers
 static bool is_inner_id_char(const int32_t c) {
+#ifdef GHC2021_LEXICAL
+  return is_id_char(c);
+#else
+  // TODO hashes only work at the end of identifiers
   return is_id_char(c) || c == '#';
+#endif
 }
 
 static bool quoter_char(const int32_t c) { return is_id_char(c) || c == '.'; }
@@ -3446,7 +3450,7 @@ static CtrResult ctr_lookahead_step(Env *env, CtrState *state, Lexed next) {
 
 static Lexed dialect_symop(Lexed token, bool qualifying) {
 #ifdef GHC2021_LEXICAL
-  if (token == LDollar || token == LDotOpen || (!qualifying && (token == LDotId || token == LDotSymop))) return LSymop;
+  if (token == LDollar || token == LHash || token == LDotOpen || (!qualifying && (token == LDotId || token == LDotSymop))) return LSymop;
 #else
   (void)qualifying;
 #endif

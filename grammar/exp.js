@@ -11,6 +11,7 @@ const {
   qualified,
 } = require('./util.js')
 
+// code-gauge-allow functionCognitiveComplexity 16 -- The expression grammar selects extension alternatives together for each dialect.
 module.exports = (extensions = true) => ({
 
   // ------------------------------------------------------------------------
@@ -22,7 +23,7 @@ module.exports = (extensions = true) => ({
     $._vars,
     $.variable,
     $.implicit_variable,
-    $.label,
+    ...(extensions ? [$.label] : []),
   ),
 
   _exp_typed_hole: _ => '_',
