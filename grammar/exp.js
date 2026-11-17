@@ -11,7 +11,7 @@ const {
   qualified,
 } = require('./util.js')
 
-// code-gauge-allow functionCognitiveComplexity 16 -- The dialect selects expression alternatives together.
+// code-gauge-allow functionCognitiveComplexity 18 -- The dialect selects expression alternatives together.
 module.exports = (extensions = true) => ({
 
   // ------------------------------------------------------------------------
@@ -23,7 +23,7 @@ module.exports = (extensions = true) => ({
     $._vars,
     $.variable,
     $.implicit_variable,
-    $.label,
+    ...(extensions ? [$.label] : []),
   ),
 
   _exp_typed_hole: _ => '_',

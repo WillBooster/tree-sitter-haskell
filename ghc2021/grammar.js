@@ -1,6 +1,8 @@
 const haskell = require('../grammar.js')
 const expressions = require('../grammar/exp.js')
 const modules = require('../grammar/module.js')
+const literal = require('../grammar/literal.js')
+const lexeme = require('../grammar/lexeme.js')
 const data = require('../grammar/data.js')
 const patterns = require('../grammar/pat.js')
 const types = require('../grammar/type.js')
@@ -10,6 +12,8 @@ module.exports = grammar(haskell, {
   rules: {
     ...expressions(false),
     ...modules(false),
+    ...literal(false),
+    ...lexeme('#', false),
     ...data(false),
     ...patterns(false),
     ...types(false),

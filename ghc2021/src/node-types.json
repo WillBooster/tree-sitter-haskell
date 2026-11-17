@@ -338,10 +338,6 @@
         "named": true
       },
       {
-        "type": "label",
-        "named": true
-      },
-      {
         "type": "lambda",
         "named": true
       },
@@ -6154,10 +6150,6 @@
   {
     "type": "instance",
     "named": false
-  },
-  {
-    "type": "label",
-    "named": true
   },
   {
     "type": "let",
