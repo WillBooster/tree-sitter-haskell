@@ -11,7 +11,7 @@ const {
   qualified,
 } = require('./util.js')
 
-// code-gauge-allow functionCognitiveComplexity 18 -- The dialect selects expression alternatives together.
+// code-gauge-allow functionCognitiveComplexity -- The dialect selects expression alternatives together.
 module.exports = (extensions = true) => ({
 
   // ------------------------------------------------------------------------
