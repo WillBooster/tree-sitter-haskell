@@ -664,3 +664,232 @@ th: top-level expression splice with negation
         (prefix_negation)
         (literal
           (integer))))))
+
+================================================================================
+th: decl quote layout starting on the quote's line
+================================================================================
+
+[d| greet :: String -> String
+    greet s = "hi " ++ s |]
+$([d| f :: Int
+      f = 1 |])
+x = [d| data T = T Int deriving Show
+        t3 = T 3 |]
+main = do
+  ds <- runQ [d|
+    f = 1
+    g = 2 |]
+  print (length ds)
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (top_splice
+      (quote
+        (quoted_decls
+          (signature
+            (variable)
+            (function
+              (name)
+              (name)))
+          (function
+            (variable)
+            (patterns
+              (variable))
+            (match
+              (operator_chain
+                (literal
+                  (string))
+                (operator)
+                (variable)))))))
+    (top_splice
+      (splice
+        (parens
+          (quote
+            (quoted_decls
+              (signature
+                (variable)
+                (name))
+              (bind
+                (variable)
+                (match
+                  (literal
+                    (integer)))))))))
+    (bind
+      (variable)
+      (match
+        (quote
+          (quoted_decls
+            (data_type
+              (name)
+              (data_constructors
+                (data_constructor
+                  (prefix
+                    (constructor)
+                    (name))))
+              (deriving
+                (name)))
+            (bind
+              (variable)
+              (match
+                (apply
+                  (constructor)
+                  (literal
+                    (integer)))))))))
+    (bind
+      (variable)
+      (match
+        (do
+          (bind
+            (variable)
+            (apply
+              (variable)
+              (quote
+                (quoted_decls
+                  (bind
+                    (variable)
+                    (match
+                      (literal
+                        (integer))))
+                  (bind
+                    (variable)
+                    (match
+                      (literal
+                        (integer))))))))
+          (exp
+            (apply
+              (variable)
+              (parens
+                (apply
+                  (variable)
+                  (variable))))))))))
+
+================================================================================
+th: decl quote with its body at the left margin
+================================================================================
+
+[d|
+greet s = "hi"
+|]
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (top_splice
+      (quote
+        (quoted_decls
+          (function
+            (variable)
+            (patterns
+              (variable))
+            (match
+              (literal
+                (string)))))))))
+
+================================================================================
+th: decl quote closing brackets in strings and comments
+================================================================================
+
+x = [d| { f = 1; g = "|]" } |]
+y = [d| f = "a|]b" {- |] -}
+        g = 2 -- |]
+      |]
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (quote
+          (quoted_decls
+            (bind
+              (variable)
+              (match
+                (literal
+                  (integer))))
+            (bind
+              (variable)
+              (match
+                (literal
+                  (string))))))))
+    (bind
+      (variable)
+      (match
+        (quote
+          (quoted_decls
+            (bind
+              (variable)
+              (match
+                (literal
+                  (string))))
+            (haddock
+              (content))
+            (bind
+              (variable)
+              (match
+                (literal
+                  (integer))))
+            (haddock
+              (content))))))))
+
+================================================================================
+th: decl quote in tuple expressions
+================================================================================
+
+x = ([d| f = do a
+                b
+         g = 1 |], 1)
+y = [[d| f a | a = 1
+             | otherwise = 2 |]]
+
+--------------------------------------------------------------------------------
+
+(haskell
+  (declarations
+    (bind
+      (variable)
+      (match
+        (tuple
+          (quote
+            (quoted_decls
+              (bind
+                (variable)
+                (match
+                  (do
+                    (exp
+                      (variable))
+                    (exp
+                      (variable)))))
+              (bind
+                (variable)
+                (match
+                  (literal
+                    (integer))))))
+          (literal
+            (integer)))))
+    (bind
+      (variable)
+      (match
+        (list
+          (quote
+            (quoted_decls
+              (function
+                (variable)
+                (patterns
+                  (variable))
+                (match
+                  (guards
+                    (boolean
+                      (variable)))
+                  (literal
+                    (integer)))
+                (match
+                  (guards
+                    (boolean
+                      (variable)))
+                  (literal
+                    (integer)))))))))))

@@ -288,8 +288,8 @@ static char const *context_names[] = {
   "do",
   "case",
   "let",
-  "multi_way_if",
   "quote",
+  "multi_way_if",
   "braces",
   "texp",
 #ifdef HSC_EXT
@@ -1801,6 +1801,7 @@ static StartLayout valid_layout_start(Env *env, Lexed next) {
 
 /**
  * If the current context is a brace layout, any indent is legal for a new layout.
+ * So it is for a declaration quote layout, which ends only at `|]`, so that its body may start at the left margin.
  * Otherwise, compare with the indent of the current context.
  * Since starting layouts is allowed in tuple expressions, we look at the last real indent, skipping over `TExp`s, using
  * 0 if none exists (which should never be the case).
@@ -1811,7 +1812,7 @@ static StartLayout valid_layout_start(Env *env, Lexed next) {
  * alt can start at the same level as the case layout.
  */
 static bool indent_can_start_layout(Env *env, ContextSort sort, uint32_t indent) {
-  if (current_context(env) == Braces) return true;
+  if (current_context(env) == Braces || sort == QuoteLayout) return true;
   uint32_t cur = current_indent(env);
   return (indent > cur || (indent == cur && sort == DoLayout));
 }
@@ -2008,14 +2009,16 @@ static Symbol end_layout_deriving(Env *env) {
 
 /**
  * Return `true` if there is a `TExp` context on the stack and only layouts above it.
+ * A declaration quote layout ends only at `|]`, so neither it nor a layout nested in it can be ended by a token that
+ * closes a tuple expression outside the quote, like the `=` in `($([d| f = 1 |]))`.
  */
 static bool layouts_in_texp(Env *env) {
-  if (is_layout_context(env) && (env->state->contexts.size > 1)) {
-    for (int32_t i = (int32_t) env->state->contexts.size - 2; i >= 0; i--) {
-	  Context *cur = array_get(&env->state->contexts, i);
-      if (cur->sort == TExp || cur->sort == Braces) return true;
-      else if (cur->sort > Braces && cur->sort != NoContext) break;
-    }
+  if (!is_layout_context(env)) return false;
+  for (int32_t i = (int32_t) env->state->contexts.size - 1; i >= 0; i--) {
+    ContextSort sort = array_get(&env->state->contexts, i)->sort;
+    if (sort == QuoteLayout) return false;
+    if (sort == TExp || sort == Braces) return true;
+    if (sort > Braces && sort != NoContext) break;
   }
   return false;
 }
@@ -2044,6 +2047,18 @@ static bool layouts_in_texp(Env *env) {
  */
 static Symbol token_end_layout_texp(Env *env) {
   return (valid(env, END) && layouts_in_texp(env)) ? end_layout(env, "texp") : FAIL;
+}
+
+/**
+ * A newline before `|]` at or right of the quote layout's indent separates the quote's declarations, as in
+ * `[d|\na = a\n|]` at the top level, so after ending the quote layout it must not also produce a semicolon in the
+ * enclosing layout.
+ */
+static Symbol end_layout_quote(Env *env) {
+  const bool quote = current_context(env) == QuoteLayout;
+  Symbol result = end_layout(env, "quote bracket");
+  if (result != FAIL && quote && newline_active(env)) env->state->newline.no_semi = true;
+  return result;
 }
 
 static Symbol force_end_context(Env *env) {
@@ -2939,8 +2954,7 @@ static Symbol process_token_safe(Env *env, Lexed next, bool allow_pragma) {
     case LTexpCloser:
       return token_end_layout_texp(env);
     case LQuoteClose:
-      return end_layout(env, "quote bracket");
-      break;
+      return end_layout_quote(env);
     default:
       break;
   }
